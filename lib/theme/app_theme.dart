@@ -41,5 +41,30 @@ abstract final class AppTheme {
           seedColor: AppColors.primary,
           brightness: Brightness.dark,
         ),
+        // 底部导航栏配色与主页统一：
+        // M3 默认背景取 colorScheme.surfaceContainer（偏灰），需覆盖为页面背景色
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: AppColors.scaffoldBg,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          indicatorColor: AppColors.primary.withValues(alpha: 0.25),
+          height: 68,
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return IconThemeData(
+              size: 24,
+              // 选中用品牌紫，未选中用次要文字色
+              color: selected ? AppColors.primary : AppColors.textSecondary,
+            );
+          }),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return TextStyle(
+              fontSize: 11.5,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+            );
+          }),
+        ),
       );
 }

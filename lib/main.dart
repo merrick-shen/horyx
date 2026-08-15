@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'pages/home_page.dart';
+import 'pages/app_shell.dart';
 import 'theme/app_theme.dart';
 
 /// 应用入口
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       title: 'Horyx',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
-      home: const HomePage(),
+      home: const AppShell(),
     );
   }
 }

@@ -10,5 +10,8 @@ void main() {
     expect(find.text('Horyx'), findsWidgets);
     // 游戏列表已渲染出占位卡片
     expect(find.text('开发中'), findsWidgets);
+    // 底部导航栏包含首页与设置入口
+    expect(find.text('首页'), findsOneWidget);
+    expect(find.text('设置'), findsOneWidget);
   });
 }
