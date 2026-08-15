@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'pages/app_shell.dart';
+import 'services/word_validator.dart';
 import 'theme/app_theme.dart';
 
 /// 应用入口
-void main() {
+Future<void> main() async {
+  // 词表加载依赖 rootBundle，需先初始化绑定
+  WidgetsFlutterBinding.ensureInitialized();
+  await WordValidator.load();
   runApp(const MyApp());
 }
 

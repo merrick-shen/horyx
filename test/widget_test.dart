@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:horyx/main.dart';
+import 'package:horyx/services/word_validator.dart';
 import 'package:horyx/widgets/game_card.dart';
 
 void main() {
+  // 测试直接 pumpWidget 不经过 main()，需手动预加载单词词表
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    await WordValidator.load();
+  });
+
   testWidgets('主页静态 UI 冒烟测试', (tester) async {
     await tester.pumpWidget(const MyApp());
 
@@ -44,12 +51,50 @@ void main() {
     await tester.tap(find.text('开始 PK'));
     await tester.pumpAndSettle();
 
-    // 对局视图：当前输入者、玩家序列（含玩家3）、输入框
+    // 对局视图：当前输入者、玩家序列、输入框
     expect(find.text('当前输入者'), findsOneWidget);
-    // 「玩家 3」同时出现在玩家序列与演示单词标签中
-    expect(find.text('玩家 3'), findsWidgets);
+    expect(find.text('玩家 3'), findsOneWidget);
     expect(find.byType(TextField), findsOneWidget);
-    // 单词列表为静态演示数据
+    // 初始无单词，显示空状态（多行文案用包含匹配）
+    expect(find.textContaining('还没有验证通过的单词'), findsOneWidget);
+  });
+
+  testWidgets('单词PK：提交流程（入列、轮换、重复与无效提示）', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始 PK'));
+    await tester.pumpAndSettle();
+
+    // 玩家1 输入有效单词：入列并轮换到玩家2
+    await tester.enterText(find.byType(TextField), 'apple');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
     expect(find.text('apple'), findsOneWidget);
+    expect(find.text('1 个'), findsOneWidget);
+
+    // 玩家2 输入重复单词（忽略大小写）：提示且不入列、不轮换
+    await tester.enterText(find.byType(TextField), 'Apple');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+    expect(find.text('单词已重复'), findsOneWidget);
+    expect(find.text('1 个'), findsOneWidget);
+
+    // 关闭提示后输入无效单词：提示不通过
+    await tester.tap(find.text('知道了'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'qqqqzz');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+    expect(find.text('不是有效的英文单词'), findsOneWidget);
+    expect(find.text('1 个'), findsOneWidget);
+
+    // 关闭提示后输入非字母：提示不通过
+    await tester.tap(find.text('知道了'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'app1e');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+    expect(find.text('单词只能由英文字母组成'), findsOneWidget);
   });
 }

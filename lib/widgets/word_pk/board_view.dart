@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../primary_button.dart';
+import '../../models/word_entry.dart';
+import '../../services/word_validator.dart';
 import '../../theme/app_theme.dart';
+import '../primary_button.dart';
 
 /// 单词PK - 对局视图
-/// 展示当前输入者、玩家序列、单词输入区与已验证单词列表
-/// 当前为静态 UI 阶段：单词列表为演示数据，输入与提交流程后续迭代接入
+/// 完整提交流程：空值/格式检查 → 重复检测 → 真实性验证 → 入列并轮换输入者
 class WordPkBoardView extends StatefulWidget {
   const WordPkBoardView({super.key, required this.playerCount});
 
@@ -17,16 +18,94 @@ class WordPkBoardView extends StatefulWidget {
 }
 
 class _WordPkBoardViewState extends State<WordPkBoardView> {
-  /// 输入框控制器（提交流程后续迭代实现）
   final _inputController = TextEditingController();
+  final _focusNode = FocusNode();
+  final _scrollController = ScrollController();
 
-  /// 静态演示单词：接入玩法逻辑后由真实输入驱动
-  static const List<String> _demoWords = ['apple', 'banana', 'cherry'];
+  /// 已验证通过的单词列表
+  final List<WordEntry> _entries = [];
+
+  /// 当前输入者序号（从 1 开始）
+  int _currentPlayer = 1;
 
   @override
   void dispose() {
     _inputController.dispose();
+    _focusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 提交输入：按「格式 → 重复 → 真实性」顺序校验
+  void _submit() {
+    final raw = _inputController.text.trim();
+
+    // 提交后保持焦点，便于下一位玩家直接输入
+    _focusNode.requestFocus();
+
+    if (raw.isEmpty) {
+      _showHint('请输入英文单词');
+      return;
+    }
+    // 仅允许纯英文字母，提前拦截中文、数字、空格等输入
+    if (!RegExp(r'^[A-Za-z]+$').hasMatch(raw)) {
+      _showHint('单词只能由英文字母组成');
+      return;
+    }
+    // 统一小写后参与重复比较，忽略大小写差异
+    final word = raw.toLowerCase();
+    if (_entries.any((e) => e.word == word)) {
+      _showHint('单词已重复');
+      return;
+    }
+    if (!WordValidator.isValid(word)) {
+      _showHint('不是有效的英文单词');
+      return;
+    }
+
+    // 全部校验通过：入列并轮换至下一位输入者
+    setState(() {
+      _entries.add(WordEntry(word: word, playerIndex: _currentPlayer));
+      _currentPlayer = _currentPlayer % widget.playerCount + 1;
+    });
+    _inputController.clear();
+    // 新输入成功时清除遗留的错误提示，避免信息干扰
+    _hideHint();
+    _scrollToLatest();
+  }
+
+  /// 展示错误/引导提示
+  /// 按需求需手动关闭（不自动消失），避免玩家漏看提示
+  void _showHint(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(days: 1),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: '知道了',
+            onPressed: _hideHint,
+          ),
+        ),
+      );
+  }
+
+  void _hideHint() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  }
+
+  /// 新单词入列后滚动到列表底部，保证最新单词可见
+  void _scrollToLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
@@ -41,11 +120,11 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const _CurrentPlayerCard(playerIndex: 1),
+                _CurrentPlayerCard(playerIndex: _currentPlayer),
                 const SizedBox(height: 16),
                 _PlayerSequence(
                   playerCount: widget.playerCount,
-                  currentIndex: 1,
+                  currentIndex: _currentPlayer,
                 ),
                 const SizedBox(height: 16),
                 // 单词输入行：输入框 + 提交按钮
@@ -54,14 +133,18 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                     Expanded(
                       child: TextField(
                         controller: _inputController,
+                        focusNode: _focusNode,
+                        // 键盘「完成」同样触发提交
+                        onSubmitted: (_) => _submit(),
                         // 英文单词输入场景关闭联想与自动纠正
                         autocorrect: false,
                         enableSuggestions: false,
                         textInputAction: TextInputAction.done,
                         decoration: InputDecoration(
                           hintText: '输入英文单词',
-                          hintStyle:
-                              const TextStyle(color: AppColors.textSecondary),
+                          hintStyle: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
                           filled: true,
                           fillColor: AppColors.surfaceBg,
                           contentPadding: const EdgeInsets.symmetric(
@@ -85,11 +168,10 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                       ),
                     ),
                     const SizedBox(width: 12),
-                    // 提交逻辑属下一迭代，先呈禁用态占位
-                    const PrimaryButton(
+                    PrimaryButton(
                       label: '提交',
                       icon: Icons.send_rounded,
-                      onPressed: null,
+                      onPressed: _submit,
                     ),
                   ],
                 ),
@@ -129,7 +211,7 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                                 border: Border.all(color: AppColors.stroke),
                               ),
                               child: Text(
-                                '${_demoWords.length} 个',
+                                '${_entries.length} 个',
                                 style: const TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 11,
@@ -140,16 +222,19 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                         ),
                         const SizedBox(height: 12),
                         Expanded(
-                          child: ListView.separated(
-                            padding: EdgeInsets.zero,
-                            itemCount: _demoWords.length,
-                            separatorBuilder: (_, _) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) => _WordChip(
-                              word: _demoWords[index],
-                              playerIndex: index + 1,
-                            ),
-                          ),
+                          child: _entries.isEmpty
+                              ? const _EmptyState()
+                              : ListView.separated(
+                                  controller: _scrollController,
+                                  padding: EdgeInsets.zero,
+                                  itemCount: _entries.length,
+                                  separatorBuilder: (_, _) =>
+                                      const SizedBox(height: 10),
+                                  itemBuilder: (context, index) => _WordChip(
+                                    word: _entries[index].word,
+                                    playerIndex: _entries[index].playerIndex,
+                                  ),
+                                ),
                         ),
                       ],
                     ),
@@ -215,12 +300,17 @@ class _CurrentPlayerCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 2),
-              Text(
-                '玩家 $playerIndex',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
+              // 玩家切换时淡入淡出，强化轮换感知
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: Text(
+                  '玩家 $playerIndex',
+                  key: ValueKey(playerIndex),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ],
@@ -233,7 +323,10 @@ class _CurrentPlayerCard extends StatelessWidget {
 
 /// 玩家序列：按人数排列，高亮当前输入者
 class _PlayerSequence extends StatelessWidget {
-  const _PlayerSequence({required this.playerCount, required this.currentIndex});
+  const _PlayerSequence({
+    required this.playerCount,
+    required this.currentIndex,
+  });
 
   final int playerCount;
   final int currentIndex;
@@ -245,7 +338,8 @@ class _PlayerSequence extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (int i = 1; i <= playerCount; i++)
-          Container(
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               // 当前输入者以描边 + 品牌色文字点亮
@@ -271,6 +365,33 @@ class _PlayerSequence extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// 单词列表空状态
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.emoji_events_outlined,
+            color: AppColors.textSecondary,
+            size: 30,
+          ),
+          SizedBox(height: 10),
+          Text(
+            '还没有验证通过的单词\n输入第一个单词开启 PK 吧',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 }
