@@ -3,14 +3,11 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// 顶部导航栏：品牌标识
-/// 导航项待后续接入真实页面后再添加
-class HomeNavBar extends StatelessWidget implements PreferredSizeWidget {
+/// 状态栏避让由页面层的 SafeArea 统一处理，本组件只负责自身内容
+class HomeNavBar extends StatelessWidget {
   const HomeNavBar({super.key});
 
   static const double _height = 64;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(_height);
 
   @override
   Widget build(BuildContext context) {
