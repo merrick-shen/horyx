@@ -200,4 +200,21 @@ void main() {
     expect(find.text('单词已重复'), findsNothing);
     expect(find.text('知道了'), findsNothing);
   });
+
+  testWidgets('设置页：主题入口跳转主题设置页', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 切换到底部导航「设置」页
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+
+    // 设置页展示主题设置入口
+    expect(find.text('主题'), findsOneWidget);
+
+    // 点击进入主题设置页（当前为占位）
+    await tester.tap(find.text('主题'));
+    await tester.pumpAndSettle();
+    expect(find.text('主题设置'), findsOneWidget);
+    expect(find.textContaining('功能开发中'), findsOneWidget);
+  });
 }
