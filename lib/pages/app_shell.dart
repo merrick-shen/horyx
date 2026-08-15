@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_theme.dart';
 import 'home_page.dart';
-import 'settings_page.dart';
+import 'more_page.dart';
 
-/// 应用根骨架：底部导航栏 + 首页/设置页切换
+/// 应用根骨架：底部导航栏 + 首页/更多页切换
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -27,7 +27,7 @@ class _AppShellState extends State<AppShell> {
           index: _currentIndex,
           children: const [
             HomePage(),
-            SettingsPage(),
+            MorePage(),
           ],
         ),
         // 顶部描边与顶部导航栏呼应，其余配色由全局主题统一提供

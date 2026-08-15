@@ -6,10 +6,10 @@ import '../widgets/setting_tile.dart';
 import 'placeholder_page.dart';
 import 'theme_settings_page.dart';
 
-/// 设置页
-/// 按模块分组展示设置项，新增模块在 [SettingsPage.build] 中扩展
-class SettingsPage extends StatelessWidget {
-  const SettingsPage({super.key});
+/// 更多页
+/// 按模块分组展示设置项，新增模块在 [MorePage.build] 中扩展
+class MorePage extends StatelessWidget {
+  const MorePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +83,7 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-/// 设置分组卡片：小节标题 + 设置项列表
+/// 分组卡片：小节标题 + 设置项列表
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.header, required this.children});
 
