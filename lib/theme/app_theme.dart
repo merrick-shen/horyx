@@ -32,8 +32,11 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// 次要文字（描述、辅助信息）
   final Color textSecondary;
 
-  /// 品牌强调色（UI 统一使用纯色，不使用渐变；深浅主题共用同一品牌紫）
+  /// 品牌强调色（UI 统一使用纯色，不使用渐变；深浅主题共用同一强调色）
   final Color primary;
+
+  /// 默认品牌紫：未自定义主题色彩时的强调色
+  static const Color brandPrimary = Color(0xFF7C5CFF);
 
   /// 深色调色板：深蓝黑夜色，营造游戏氛围
   static const AppPalette dark = AppPalette(
@@ -43,7 +46,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     stroke: Color(0xFF263253),
     textPrimary: Color(0xFFF3F6FF),
     textSecondary: Color(0xFF94A0C4),
-    primary: Color(0xFF7C5CFF),
+    primary: brandPrimary,
   );
 
   /// 浅色调色板：冷白底 + 淡紫灰层次，保持品牌紫强调色
@@ -54,8 +57,14 @@ class AppPalette extends ThemeExtension<AppPalette> {
     stroke: Color(0xFFE2E5F0),
     textPrimary: Color(0xFF1B2136),
     textSecondary: Color(0xFF5C6684),
-    primary: Color(0xFF7C5CFF),
+    primary: brandPrimary,
   );
+
+  /// 以指定强调色生成深色调色板（用户自定义主题色彩时使用）
+  static AppPalette darkOf(Color primary) => dark.copyWith(primary: primary);
+
+  /// 以指定强调色生成浅色调色板（用户自定义主题色彩时使用）
+  static AppPalette lightOf(Color primary) => light.copyWith(primary: primary);
 
   @override
   AppPalette copyWith({
@@ -99,10 +108,17 @@ extension AppPaletteContext on BuildContext {
   AppPalette get palette => Theme.of(this).extension<AppPalette>()!;
 }
 
+/// 颜色转 #RRGGBB 大写文本（主题色彩的展示格式）
+String colorToHex(Color color) =>
+    '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).toUpperCase().padLeft(6, '0')}';
+
 /// 全局主题配置：深浅两套主题共用一套构建逻辑，仅调色板与亮度不同
+/// 强调色（primary）由用户选择的主题色彩决定，构建时动态注入
 abstract final class AppTheme {
-  static ThemeData get dark => _build(Brightness.dark, AppPalette.dark);
-  static ThemeData get light => _build(Brightness.light, AppPalette.light);
+  static ThemeData darkOf(Color primary) =>
+      _build(Brightness.dark, AppPalette.darkOf(primary));
+  static ThemeData lightOf(Color primary) =>
+      _build(Brightness.light, AppPalette.lightOf(primary));
 
   static ThemeData _build(Brightness brightness, AppPalette palette) =>
       ThemeData(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../theme/app_theme.dart';
+
 /// 主题模式存储服务
 /// 基于 SharedPreferences 的本地键值存储：
 /// 保存用户选择的主题模式（自动/深色/浅色），应用重启后恢复；
@@ -11,6 +13,9 @@ class ThemeStorage {
 
   /// 主题模式的存储键
   static const String _key = 'theme_mode';
+
+  /// 主题色彩（强调色）的存储键
+  static const String _seedKey = 'theme_seed_color';
 
   /// 保存主题模式
   static Future<void> save(ThemeMode mode) async {
@@ -23,5 +28,19 @@ class ThemeStorage {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
     return ThemeMode.values.asNameMap()[raw] ?? ThemeMode.system;
+  }
+
+  /// 保存主题色彩（强调色）
+  static Future<void> saveSeedColor(Color color) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_seedKey, color.toARGB32());
+  }
+
+  /// 读取主题色彩；无记录时回退到默认品牌紫
+  static Future<Color> loadSeedColor() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getInt(_seedKey);
+    // 负数（alpha=FF 的 ARGB）与正数均合法，仅判断是否缺失
+    return raw == null ? AppPalette.brandPrimary : Color(raw);
   }
 }

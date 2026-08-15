@@ -12,9 +12,10 @@ Future<void> main() async {
   // 词表加载依赖 rootBundle，需先初始化绑定
   WidgetsFlutterBinding.ensureInitialized();
   await WordValidator.load();
-  // 启动时恢复用户上次选择的主题模式，避免重启后闪回默认深色
+  // 启动时恢复用户上次选择的主题模式与主题色彩，避免重启后回退默认值
   final themeMode = await ThemeStorage.load();
-  runApp(MyApp(themeController: ThemeController(themeMode)));
+  final seedColor = await ThemeStorage.loadSeedColor();
+  runApp(MyApp(themeController: ThemeController(themeMode, seedColor)));
 }
 
 class MyApp extends StatefulWidget {
@@ -62,8 +63,9 @@ class _MyAppState extends State<MyApp> {
         child: MaterialApp(
           title: 'Horyx',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
+          // 强调色由用户选择的主题色彩决定，随控制器实时重建
+          theme: AppTheme.lightOf(_controller.seedColor),
+          darkTheme: AppTheme.darkOf(_controller.seedColor),
           // 自动模式由系统深浅色决定实际生效主题
           themeMode: _controller.mode,
           // 所有路由（含 push 页面）统一在此处理状态栏样式：

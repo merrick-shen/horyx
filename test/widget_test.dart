@@ -6,6 +6,7 @@ import 'package:horyx/main.dart';
 import 'package:horyx/services/theme_storage.dart';
 import 'package:horyx/services/word_validator.dart';
 import 'package:horyx/theme/app_theme.dart';
+import 'package:horyx/theme/theme_controller.dart';
 import 'package:horyx/widgets/game_card.dart';
 
 void main() {
@@ -301,6 +302,93 @@ void main() {
     expect(
       tester.widget<Text>(find.text('单词PK').first).style?.color,
       AppPalette.light.textPrimary,
+    );
+  });
+
+  testWidgets('主题色彩：预设色切换即时生效并持久化', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 进入主题设置页
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('主题'));
+    await tester.pumpAndSettle();
+
+    // 主题色彩卡片展示：默认品牌紫选中（对勾）、自定义入口存在
+    expect(find.text('主题色彩'), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.text('自定义颜色'), findsOneWidget);
+
+    // 点击绿色预设：顶栏标题（强调色）立即变化并持久化
+    const green = Color(0xFF2FBF71);
+    await tester.tap(find.byKey(const ValueKey('preset_swatch_#2FBF71')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('主题设置')).style?.color,
+      green,
+    );
+    expect(await ThemeStorage.loadSeedColor(), green);
+
+    // 切回品牌紫：可再次切换
+    await tester.tap(find.byKey(const ValueKey('preset_swatch_#7C5CFF')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('主题设置')).style?.color,
+      AppPalette.brandPrimary,
+    );
+    expect(await ThemeStorage.loadSeedColor(), AppPalette.brandPrimary);
+  });
+
+  testWidgets('主题色彩：自定义颜色选择器调节并生效', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 进入主题设置页并打开自定义颜色弹窗
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('主题'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('自定义颜色'));
+    await tester.pumpAndSettle();
+
+    // 弹窗展示：三通道滑块与操作按钮
+    expect(find.text('自定义颜色'), findsWidgets);
+    expect(find.text('色相'), findsOneWidget);
+    expect(find.text('饱和度'), findsOneWidget);
+    expect(find.text('亮度'), findsOneWidget);
+    expect(find.byType(Slider), findsNWidgets(3));
+    expect(find.text('确定'), findsOneWidget);
+    expect(find.text('取消'), findsOneWidget);
+
+    // 拖动色相滑块改变颜色，点确定后生效并持久化
+    await tester.drag(find.byType(Slider).first, const Offset(120, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('确定'));
+    await tester.pumpAndSettle();
+
+    final effective = tester.widget<Text>(find.text('主题设置')).style?.color;
+    expect(effective, isNot(AppPalette.brandPrimary));
+    expect(await ThemeStorage.loadSeedColor(), effective);
+
+    // 重启（模拟 main 的恢复逻辑注入持久化颜色）后仍保持所选色彩：
+    // UniqueKey 强制整树重建，避免 pumpWidget 复用旧 Element/路由栈
+    await tester.pumpWidget(
+      MyApp(
+        key: UniqueKey(),
+        themeController: ThemeController(
+          ThemeMode.system,
+          await ThemeStorage.loadSeedColor(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    // 回到主题设置页确认强调色未回退
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('主题'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('主题设置')).style?.color,
+      effective,
     );
   });
 
