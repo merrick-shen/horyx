@@ -253,9 +253,12 @@ class _BoardView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 执子方轮换时淡入淡出提示
+                // 执子方轮换时淡入淡出提示，图标颜色对应执子方棋子
                 TurnCard(
                   icon: Icons.circle_rounded,
+                  iconColor: moves.length.isEven
+                      ? GomokuBoard.blackStone
+                      : GomokuBoard.whiteStone,
                   subtitle: '当前执子',
                   title: moves.length.isEven ? '黑方' : '白方',
                   titleKey: ValueKey(moves.length.isEven ? '黑方' : '白方'),

@@ -12,10 +12,15 @@ class TurnCard extends StatelessWidget {
     required this.subtitle,
     required this.title,
     this.titleKey,
+    this.iconColor,
   });
 
   /// 左侧图标
   final IconData icon;
+
+  /// 图标颜色；默认白色（品牌色卡片上），
+  /// 需表达具体含义时可覆盖（如五子棋执子方棋子颜色）
+  final Color? iconColor;
 
   /// 小标题（说明信息含义）
   final String subtitle;
@@ -53,7 +58,7 @@ class TurnCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
+            child: Icon(icon, color: iconColor ?? Colors.white, size: 22),
           ),
           const SizedBox(width: 14),
           Column(

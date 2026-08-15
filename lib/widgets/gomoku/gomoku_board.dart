@@ -25,6 +25,11 @@ class GomokuBoard extends StatelessWidget {
   /// 点击棋盘回调：换算为最近交叉点坐标（col/row 从 0 起）
   final void Function(int col, int row)? onCellTap;
 
+  /// 黑子/白子固有色（棋子颜色不随主题变化，仅描边随主题取色）
+  /// 对外公开供执子指示等处复用，保证全局棋子颜色一致
+  static const Color blackStone = Color(0xFF17181D);
+  static const Color whiteStone = Color(0xFFFFFFFF);
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
@@ -106,10 +111,6 @@ class _BoardPainter extends CustomPainter {
 
   /// 预选落子位置
   final (int, int)? pending;
-
-  /// 黑子/白子固有色（棋子颜色不随主题变化，仅描边随主题取色）
-  static const Color _blackStone = Color(0xFF17181D);
-  static const Color _whiteStone = Color(0xFFFFFFFF);
 
   /// 各路数对应的星位坐标（0 起算）
   /// 15 路：四角星 + 天元；19 路：九星位
@@ -200,7 +201,7 @@ class _BoardPainter extends CustomPainter {
     required double opacity,
   }) {
     final fill = Paint()
-      ..color = (black ? _blackStone : _whiteStone)
+      ..color = (black ? GomokuBoard.blackStone : GomokuBoard.whiteStone)
           .withValues(alpha: opacity)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, fill);

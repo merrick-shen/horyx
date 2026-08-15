@@ -293,6 +293,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('白方'), findsOneWidget);
 
+    // 执子图标颜色随执子方变化：黑方执子显示黑子色，落子后为白子色
+    final turnIcon = tester.widget<Icon>(find.byIcon(Icons.circle_rounded));
+    expect(turnIcon.color, GomokuBoard.whiteStone);
+
     // 白方点击已有棋子位置：不生成预选，确认按钮不出现
     await tester.tapAt(gomokuCell(tester, 7, 7));
     await tester.pumpAndSettle();
@@ -313,6 +317,11 @@ void main() {
     await tester.tap(find.text('悔棋'));
     await tester.pumpAndSettle();
     expect(find.text('黑方'), findsOneWidget);
+    // 空盘时图标恢复黑子色
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.circle_rounded)).color,
+      GomokuBoard.blackStone,
+    );
     await tester.tap(find.text('悔棋'));
     await tester.pumpAndSettle();
     expect(find.text('黑方'), findsOneWidget);
