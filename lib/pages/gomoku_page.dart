@@ -5,10 +5,10 @@ import '../services/gomoku_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/confirm_dialog.dart';
-import '../widgets/gomoku/gomoku_board.dart';
 import '../widgets/option_block.dart';
 import '../widgets/panel_card.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/stone_board.dart';
 import '../widgets/turn_card.dart';
 
 /// 五子棋游戏页
@@ -454,8 +454,8 @@ class _BoardView extends StatelessWidget {
                 TurnCard(
                   icon: Icons.circle_rounded,
                   iconColor: (isOver ? !blackTurn : blackTurn)
-                      ? GomokuBoard.blackStone
-                      : GomokuBoard.whiteStone,
+                      ? StoneBoard.blackStone
+                      : StoneBoard.whiteStone,
                   subtitle: isOver ? '对局结束' : '当前执子',
                   title: isOver ? '$winner胜利' : (blackTurn ? '黑方' : '白方'),
                   titleKey: ValueKey(
@@ -466,10 +466,21 @@ class _BoardView extends StatelessWidget {
                 // 棋盘占据剩余空间，正方形自适应宽高较小者
                 Expanded(
                   child: Center(
-                    child: GomokuBoard(
+                    // 五子棋无提子，落子序列奇偶即可推导颜色（先手黑）
+                    // 转换为显式颜色棋子集合供通用棋盘组件绘制
+                    child: StoneBoard(
                       size: boardSize,
-                      stones: moves,
-                      pending: pending,
+                      stones: [
+                        for (int i = 0; i < moves.length; i++)
+                          (moves[i].$1, moves[i].$2, i.isEven),
+                      ],
+                      pending: pending == null
+                          ? null
+                          : (
+                              pending!.$1,
+                              pending!.$2,
+                              moves.length.isEven,
+                            ),
                       onCellTap: onCellTap,
                     ),
                   ),

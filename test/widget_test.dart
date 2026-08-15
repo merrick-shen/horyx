@@ -8,7 +8,7 @@ import 'package:horyx/services/word_validator.dart';
 import 'package:horyx/theme/app_theme.dart';
 import 'package:horyx/theme/theme_controller.dart';
 import 'package:horyx/widgets/game_card.dart';
-import 'package:horyx/widgets/gomoku/gomoku_board.dart';
+import 'package:horyx/widgets/stone_board.dart';
 
 /// 在五子棋棋盘指定交叉点完成「点选 → 确认」完整落子
 Future<void> placeGomokuStone(WidgetTester tester, int col, int row) async {
@@ -21,7 +21,7 @@ Future<void> placeGomokuStone(WidgetTester tester, int col, int row) async {
 /// 计算五子棋棋盘交叉点的屏幕坐标（用于 tapAt 模拟点击棋盘）
 /// 棋盘结构：Container 内边距 8 + 画布区域，交叉点 = 边距(1格) + col*cell
 Offset gomokuCell(WidgetTester tester, int col, int row) {
-  final board = tester.renderObject(find.byType(GomokuBoard)) as RenderBox;
+  final board = tester.renderObject(find.byType(StoneBoard)) as RenderBox;
   // 15 路棋盘（默认规格）：画布宽 = 组件宽 - 两侧内边距
   final paintWidth = board.size.width - 16;
   final cell = paintWidth / 16;
@@ -257,7 +257,7 @@ void main() {
     // 对局视图：黑方先行提示、棋盘与悔棋按钮
     expect(find.text('当前执子'), findsOneWidget);
     expect(find.text('黑方'), findsOneWidget);
-    expect(find.byType(GomokuBoard), findsOneWidget);
+    expect(find.byType(StoneBoard), findsOneWidget);
     expect(find.text('悔棋'), findsOneWidget);
     // 无预选棋子时不显示取消/下棋按钮
     expect(find.text('取消'), findsNothing);
@@ -303,7 +303,7 @@ void main() {
 
     // 执子图标颜色随执子方变化：黑方执子显示黑子色，落子后为白子色
     final turnIcon = tester.widget<Icon>(find.byIcon(Icons.circle_rounded));
-    expect(turnIcon.color, GomokuBoard.whiteStone);
+    expect(turnIcon.color, StoneBoard.whiteStone);
 
     // 白方点击已有棋子位置：不生成预选，确认按钮不出现
     await tester.tapAt(gomokuCell(tester, 7, 7));
@@ -328,7 +328,7 @@ void main() {
     // 空盘时图标恢复黑子色
     expect(
       tester.widget<Icon>(find.byIcon(Icons.circle_rounded)).color,
-      GomokuBoard.blackStone,
+      StoneBoard.blackStone,
     );
     await tester.tap(find.text('悔棋'));
     await tester.pumpAndSettle();
