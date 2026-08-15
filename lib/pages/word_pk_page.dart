@@ -77,31 +77,40 @@ class _WordPkPageState extends State<WordPkPage> {
     });
   }
 
-  /// 退出请求：确认后保存并退出（设置阶段直接返回）
+  /// 退出请求：对局中弹出三选项确认弹窗（保存退出/不保存退出/取消）
   Future<void> _requestExit() async {
     if (!_started) {
       Navigator.of(context).pop();
       return;
     }
-    final confirmed = await showConfirmDialog(
+    final result = await showConfirmDialog(
       context,
       title: '退出对局？',
       message: '保存并退出后，下次进入可从当前进度继续对战',
       confirmLabel: '保存并退出',
+      neutralLabel: '不保存并退出',
     );
-    if (!confirmed || !mounted) return;
+    if (!mounted) return;
 
-    // 持久化完整对局状态后退出
-    await WordPkStorage.save(
-      WordPkGameState(
-        playerCount: _playerCount,
-        currentPlayer: _currentPlayer,
-        entries: List.of(_entries),
-        savedAt: DateTime.now(),
-      ),
-    );
-    if (mounted) {
-      Navigator.of(context).pop();
+    switch (result) {
+      case ConfirmResult.confirm:
+        // 持久化完整对局状态后退出
+        await WordPkStorage.save(
+          WordPkGameState(
+            playerCount: _playerCount,
+            currentPlayer: _currentPlayer,
+            entries: List.of(_entries),
+            savedAt: DateTime.now(),
+          ),
+        );
+        if (mounted) Navigator.of(context).pop();
+      case ConfirmResult.neutral:
+        // 放弃当前对局：清除旧存档，避免下次误提示可继续
+        await WordPkStorage.clear();
+        if (mounted) Navigator.of(context).pop();
+      case ConfirmResult.cancel:
+        // 留在对局
+        break;
     }
   }
 

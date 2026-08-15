@@ -116,11 +116,12 @@ void main() {
     await tester.tap(find.text('提交'));
     await tester.pumpAndSettle();
 
-    // 对局中点击顶栏返回：弹出确认弹窗
+    // 对局中点击顶栏返回：弹出确认弹窗（三选项）
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     expect(find.text('退出对局？'), findsOneWidget);
     expect(find.text('保存并退出'), findsOneWidget);
+    expect(find.text('不保存并退出'), findsOneWidget);
 
     // 取消：留在对局
     await tester.tap(find.text('取消'));
@@ -146,5 +147,29 @@ void main() {
     expect(find.text('apple'), findsOneWidget);
     expect(find.text('当前输入者'), findsOneWidget);
     expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+  });
+
+  testWidgets('单词PK：不保存并退出丢弃对局', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始 PK'));
+    await tester.pumpAndSettle();
+
+    // 输入一个单词后选择「不保存并退出」
+    await tester.enterText(find.byType(TextField), 'apple');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+
+    // 重新进入：存档已清除，不再展示继续入口
+    await tester.tap(find.byType(GameCard).first);
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次对局'), findsNothing);
+    expect(find.text('参与人数'), findsOneWidget);
   });
 }
