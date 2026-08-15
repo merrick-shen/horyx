@@ -6,7 +6,7 @@ import '../models/game_info.dart';
 /// 已上线的游戏使用各自真实数据，未开发的游戏以「开发中」占位
 abstract final class GameData {
   /// 占位卡片数量（开发中的游戏）
-  static const int placeholderCount = 4;
+  static const int placeholderCount = 1;
 
   /// 单词PK
   static const GameInfo wordPk = GameInfo(
