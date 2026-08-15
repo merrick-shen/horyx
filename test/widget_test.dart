@@ -15,8 +15,13 @@ void main() {
 
     // 顶栏展示品牌名
     expect(find.text('Horyx'), findsOneWidget);
-    // 游戏列表已渲染出占位卡片
-    expect(find.text('开发中'), findsWidgets);
+    // 游戏列表已上线的四款游戏
+    expect(find.text('单词PK'), findsOneWidget);
+    expect(find.text('五子棋'), findsOneWidget);
+    expect(find.text('围棋'), findsOneWidget);
+    expect(find.text('计分器'), findsOneWidget);
+    // 开发中占位卡片已移除
+    expect(find.text('开发中'), findsNothing);
     // 底部导航栏包含首页与更多入口
     expect(find.text('首页'), findsOneWidget);
     expect(find.text('更多'), findsOneWidget);

@@ -3,11 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/game_info.dart';
 
 /// 静态游戏数据源
-/// 已上线的游戏使用各自真实数据，未开发的游戏以「开发中」占位
+/// 已上线的游戏使用各自真实数据，规划中的游戏以占位页接入
 abstract final class GameData {
-  /// 占位卡片数量（开发中的游戏）
-  static const int placeholderCount = 1;
-
   /// 单词PK
   static const GameInfo wordPk = GameInfo(
     name: '单词PK',
@@ -41,14 +38,5 @@ abstract final class GameData {
     gomoku,
     weiqi,
     scoreboard,
-    // 其余游戏保持占位展示
-    ...List.generate(
-      placeholderCount,
-      (_) => const GameInfo(
-        name: '开发中',
-        description: '敬请期待',
-        icon: Icons.construction_rounded,
-      ),
-    ),
   ];
 }

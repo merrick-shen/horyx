@@ -41,7 +41,7 @@ class GameGrid extends StatelessWidget {
           itemBuilder: (context, index) => GameCard(
             game: GameData.games[index],
             // 已接入玩法的游戏卡片跳转对应游戏页；
-            // 已规划未开发的游戏进入占位页，其余（开发中卡片）不可点击
+            // 已规划未开发的游戏进入占位页
             onTap: switch (index) {
               0 => () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -68,6 +68,7 @@ class GameGrid extends StatelessWidget {
                       builder: (_) => const ScoreboardPage(),
                     ),
                   ),
+              // 列表仅四个游戏，此处为 switch 穷尽性兜底
               _ => null,
             },
           ),
