@@ -6,7 +6,7 @@ import '../models/game_info.dart';
 /// 已上线的游戏使用各自真实数据，未开发的游戏以「开发中」占位
 abstract final class GameData {
   /// 占位卡片数量（开发中的游戏）
-  static const int placeholderCount = 5;
+  static const int placeholderCount = 4;
 
   /// 单词PK
   static const GameInfo wordPk = GameInfo(
@@ -29,10 +29,18 @@ abstract final class GameData {
     icon: Icons.blur_on_rounded,
   );
 
+  /// 计分器
+  static const GameInfo scoreboard = GameInfo(
+    name: '计分器',
+    description: '运动计分板，支持主流运动项目',
+    icon: Icons.score_rounded,
+  );
+
   static final List<GameInfo> games = [
     wordPk,
     gomoku,
     weiqi,
+    scoreboard,
     // 其余游戏保持占位展示
     ...List.generate(
       placeholderCount,
