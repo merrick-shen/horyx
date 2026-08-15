@@ -206,7 +206,7 @@ class _CurrentPlayerCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: AppColors.brandGradient),
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(20),
         // 品牌色光晕强调「轮到谁」
         boxShadow: [
@@ -236,7 +236,7 @@ class _CurrentPlayerCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 半透明白色小字，叠在渐变底上仍清晰
+              // 半透明白色小字，叠在品牌色底上仍清晰
               Text(
                 '当前输入者',
                 style: TextStyle(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// 品牌渐变主按钮
+/// 品牌主按钮
 /// 全应用通用的强调操作按钮（如「开始 PK」「提交」）
 /// onPressed 为 null 时呈禁用态（灰底、无阴影、不可点击）
 class PrimaryButton extends StatelessWidget {
@@ -28,11 +28,8 @@ class PrimaryButton extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        // 禁用时降级为灰底，正常态使用品牌渐变
-        gradient: enabled
-            ? const LinearGradient(colors: AppColors.brandGradient)
-            : null,
-        color: enabled ? null : AppColors.surfaceHover,
+        // 禁用时降级为灰底，正常态使用品牌纯色
+        color: enabled ? AppColors.primary : AppColors.surfaceHover,
         borderRadius: BorderRadius.circular(14),
         boxShadow: enabled
             ? [

@@ -198,11 +198,8 @@ class _CountOption extends StatelessWidget {
         height: 56,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          // 选中态使用品牌渐变，未选中与卡片底色区分
-          gradient: selected
-              ? const LinearGradient(colors: AppColors.brandGradient)
-              : null,
-          color: selected ? null : AppColors.scaffoldBg,
+          // 选中态使用品牌纯色，未选中与卡片底色区分
+          color: selected ? AppColors.primary : AppColors.scaffoldBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected ? Colors.transparent : AppColors.stroke,

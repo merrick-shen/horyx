@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../models/game_info.dart';
-import '../theme/app_theme.dart';
 
 /// 静态游戏数据源
 /// 已上线的游戏使用各自真实数据，未开发的游戏以「开发中」占位
@@ -14,7 +13,6 @@ abstract final class GameData {
     name: '单词PK',
     description: '轮流拼写英文单词，考验词汇量的回合对决',
     icon: Icons.spellcheck_rounded,
-    gradient: AppColors.brandGradient,
   );
 
   static final List<GameInfo> games = [
@@ -26,7 +24,6 @@ abstract final class GameData {
         name: '开发中',
         description: '敬请期待',
         icon: Icons.construction_rounded,
-        gradient: AppColors.brandGradient,
       ),
     ),
   ];

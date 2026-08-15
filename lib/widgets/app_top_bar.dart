@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 
-/// 应用通用顶栏：居中渐变标题 + 底部描边
+/// 应用通用顶栏：居中标题 + 底部描边
 /// 主页与游戏页共用，保证视觉统一
 class AppTopBar extends StatelessWidget {
   const AppTopBar({super.key, required this.title, this.leading});
@@ -28,19 +28,13 @@ class AppTopBar extends StatelessWidget {
         height: _height,
         child: Stack(
           children: [
-            // 文字渐变需借助 ShaderMask 实现
             Center(
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: AppColors.brandGradient,
-                ).createShader(bounds),
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white, // 会被渐变着色覆盖
-                  ),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
                 ),
               ),
             ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 全局配色：深蓝黑夜色 + 紫青霓虹渐变，营造游戏氛围
+/// 全局配色：深蓝黑夜色 + 品牌紫强调色，营造游戏氛围
 /// 颜色集中定义的目的：多页面共用一套视觉规范，避免色值散落各处导致风格不统一
 class AppColors {
   AppColors._();
@@ -23,12 +23,8 @@ class AppColors {
   /// 次要文字（描述、辅助信息）
   static const Color textSecondary = Color(0xFF94A0C4);
 
-  /// 品牌强调色
+  /// 品牌强调色（UI 统一使用纯色，不使用渐变）
   static const Color primary = Color(0xFF7C5CFF);
-  static const Color accent = Color(0xFF22D3EE);
-
-  /// 品牌渐变（Logo、选中态等共用，保证视觉统一）
-  static const List<Color> brandGradient = [primary, accent];
 }
 
 /// 全局主题配置

@@ -92,7 +92,7 @@ class _ConfirmDialog extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             if (neutralLabel == null)
-              // 两按钮：取消（描边）+ 确认（渐变）横排
+              // 两按钮：取消（描边）+ 确认（品牌色实底）横排
               Row(
                 children: [
                   Expanded(
@@ -106,7 +106,7 @@ class _ConfirmDialog extends StatelessWidget {
                   Expanded(
                     child: _DialogButton(
                       label: confirmLabel,
-                      gradient: true,
+                      filled: true,
                       onPressed: () =>
                           Navigator.of(context).pop(ConfirmResult.confirm),
                     ),
@@ -117,7 +117,7 @@ class _ConfirmDialog extends StatelessWidget {
               // 三按钮垂直布局：主操作最突出，取消弱化为文字按钮
               _DialogButton(
                 label: confirmLabel,
-                gradient: true,
+                filled: true,
                 onPressed: () =>
                     Navigator.of(context).pop(ConfirmResult.confirm),
               ),
@@ -147,17 +147,17 @@ class _ConfirmDialog extends StatelessWidget {
   }
 }
 
-/// 弹窗按钮：默认描边样式，[gradient] 为 true 时使用品牌渐变主按钮样式
+/// 弹窗按钮：默认描边样式，[filled] 为 true 时使用品牌纯色主按钮样式
 class _DialogButton extends StatelessWidget {
   const _DialogButton({
     required this.label,
     required this.onPressed,
-    this.gradient = false,
+    this.filled = false,
   });
 
   final String label;
   final VoidCallback onPressed;
-  final bool gradient;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
@@ -167,15 +167,10 @@ class _DialogButton extends StatelessWidget {
         height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          gradient: gradient
-              ? const LinearGradient(colors: AppColors.brandGradient)
-              : null,
-          color: gradient ? null : AppColors.scaffoldBg,
+          color: filled ? AppColors.primary : AppColors.scaffoldBg,
           borderRadius: BorderRadius.circular(13),
-          border: gradient
-              ? null
-              : Border.all(color: AppColors.stroke),
-          boxShadow: gradient
+          border: filled ? null : Border.all(color: AppColors.stroke),
+          boxShadow: filled
               ? [
                   BoxShadow(
                     color: AppColors.primary.withValues(alpha: 0.35),
@@ -188,7 +183,7 @@ class _DialogButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: gradient ? Colors.white : AppColors.textPrimary,
+            color: filled ? Colors.white : AppColors.textPrimary,
             fontSize: 14.5,
             fontWeight: FontWeight.w700,
           ),

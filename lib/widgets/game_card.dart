@@ -47,15 +47,15 @@ class _GameCardState extends State<GameCard> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   width: 1.2,
-                  // 悬停时描边切换为该游戏的主题色，形成「点亮」效果
+                  // 悬停时描边切换为品牌主色，形成「点亮」效果
                   color: _hovered
-                      ? game.gradient.last.withValues(alpha: 0.8)
+                      ? AppColors.primary.withValues(alpha: 0.8)
                       : AppColors.stroke,
                 ),
                 boxShadow: [
                   if (_hovered)
                     BoxShadow(
-                      color: game.gradient.first.withValues(alpha: 0.35),
+                      color: AppColors.primary.withValues(alpha: 0.35),
                       blurRadius: 22,
                       offset: const Offset(0, 10),
                     ),
@@ -64,17 +64,13 @@ class _GameCardState extends State<GameCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 图标块：游戏专属渐变色，作为卡片视觉锚点
+                  // 图标块：品牌主色，作为卡片视觉锚点
                   Container(
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: game.gradient,
-                      ),
+                      color: AppColors.primary,
                     ),
                     child: Icon(game.icon, color: Colors.white, size: 30),
                   ),
@@ -117,7 +113,7 @@ class _GameCardState extends State<GameCard> {
                         Icons.play_arrow_rounded,
                         size: 20,
                         color: _hovered
-                            ? game.gradient.first
+                            ? AppColors.primary
                             : AppColors.textSecondary,
                       ),
                     ),

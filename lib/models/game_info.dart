@@ -7,7 +7,6 @@ class GameInfo {
     required this.name,
     required this.description,
     required this.icon,
-    required this.gradient,
   });
 
   /// 游戏名称
@@ -18,7 +17,4 @@ class GameInfo {
 
   /// 展示图标
   final IconData icon;
-
-  /// 卡片专属渐变主题色，用于区分不同游戏的视觉标识
-  final List<Color> gradient;
 }
