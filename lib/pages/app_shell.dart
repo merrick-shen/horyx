@@ -46,9 +46,9 @@ class _AppShellState extends State<AppShell> {
                 label: '首页',
               ),
               NavigationDestination(
-                icon: Icon(Icons.settings_outlined),
-                selectedIcon: Icon(Icons.settings_rounded),
-                label: '设置',
+                icon: Icon(Icons.more_horiz_outlined),
+                selectedIcon: Icon(Icons.more_horiz_rounded),
+                label: '更多',
               ),
             ],
           ),

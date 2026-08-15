@@ -25,9 +25,9 @@ void main() {
     expect(find.text('Horyx'), findsOneWidget);
     // 游戏列表已渲染出占位卡片
     expect(find.text('开发中'), findsWidgets);
-    // 底部导航栏包含首页与设置入口
+    // 底部导航栏包含首页与更多入口
     expect(find.text('首页'), findsOneWidget);
-    expect(find.text('设置'), findsOneWidget);
+    expect(find.text('更多'), findsOneWidget);
   });
 
   testWidgets('点击第一张卡片进入单词PK游戏页', (tester) async {
@@ -39,7 +39,7 @@ void main() {
 
     // 进入游戏页：顶栏展示「单词PK」且无底部导航栏
     expect(find.text('单词PK'), findsOneWidget);
-    expect(find.text('设置'), findsNothing);
+    expect(find.text('更多'), findsNothing);
   });
 
   testWidgets('单词PK：人数设置与对局视图切换', (tester) async {
@@ -204,8 +204,8 @@ void main() {
   testWidgets('设置页：主题入口跳转主题设置页', (tester) async {
     await tester.pumpWidget(const MyApp());
 
-    // 切换到底部导航「设置」页
-    await tester.tap(find.text('设置'));
+    // 切换到底部导航「更多」页
+    await tester.tap(find.text('更多'));
     await tester.pumpAndSettle();
 
     // 设置页展示主题设置入口
@@ -221,8 +221,8 @@ void main() {
   testWidgets('设置页：其他模块关于入口', (tester) async {
     await tester.pumpWidget(const MyApp());
 
-    // 切换到设置页，「其他」模块包含关于入口
-    await tester.tap(find.text('设置'));
+    // 切换到「更多」页，「其他」模块包含关于入口
+    await tester.tap(find.text('更多'));
     await tester.pumpAndSettle();
     expect(find.text('其他'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
