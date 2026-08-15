@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/game_data.dart';
 import '../pages/gomoku_page.dart';
 import '../pages/placeholder_page.dart';
+import '../pages/scoreboard_page.dart';
 import '../pages/word_pk_page.dart';
 import 'game_card.dart';
 
@@ -59,6 +60,12 @@ class GameGrid extends StatelessWidget {
                         title: GameData.weiqi.name,
                         icon: GameData.weiqi.icon,
                       ),
+                    ),
+                  ),
+              // 计分器：比分设置 + 横屏计分板
+              3 => () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const ScoreboardPage(),
                     ),
                   ),
               _ => null,

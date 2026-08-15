@@ -501,6 +501,95 @@ void main() {
     expect(find.text('棋盘规格'), findsOneWidget);
   });
 
+  testWidgets('计分器：比分设置与计分板视图切换', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 点击第四张卡片（计分器）进入设置视图
+    await tester.tap(find.byType(GameCard).at(3));
+    await tester.pumpAndSettle();
+
+    // 顶栏标题与三个输入框预填默认值：局数 3 / 胜利分 21 / 分差 2
+    expect(find.text('计分器'), findsOneWidget);
+    expect(find.text('3'), findsOneWidget);
+    expect(find.text('21'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+
+    // 修改赛制为 5 局
+    await tester.enterText(find.byKey(const Key('bestOfInput')), '5');
+    await tester.pumpAndSettle();
+
+    // 开始计分 → 横屏计分板：无顶栏（无返回箭头），红蓝双方展示
+    // 设置内容超出默认测试视口，先滚动到按钮可见
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('红方'), findsOneWidget);
+    expect(find.text('蓝方'), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsNothing);
+    // 中央局分牌展示所选赛制与大比分标签
+    expect(find.text('BO5'), findsOneWidget);
+    expect(find.text('大比分'), findsOneWidget);
+    expect(find.text('第 1 局'), findsOneWidget);
+
+    // 退出计分 → 回到设置视图（顶栏返回箭头恢复）
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
+    expect(find.text('赛制'), findsOneWidget);
+  });
+
+  testWidgets('计分器：数字输入生效、非法拦截与清空回退', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.tap(find.byType(GameCard).at(3));
+    await tester.pumpAndSettle();
+
+    // 赛制输入 9 → 计分板展示 BO9
+    await tester.enterText(find.byKey(const Key('bestOfInput')), '9');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    expect(find.text('BO9'), findsOneWidget);
+
+    // 退出回设置：改为非法值 0（范围 1-31）→ 上次生效值 BO9 保持不变
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('bestOfInput')), '0');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    expect(find.text('BO9'), findsOneWidget);
+
+    // 清空输入 → 回退默认值 BO3（输入框保持空并显示提示文案）
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('bestOfInput')), '');
+    await tester.pumpAndSettle();
+    expect(find.text('输入局数'), findsOneWidget);
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    expect(find.text('BO3'), findsOneWidget);
+
+    // 胜利分与领先分差同样支持输入生效：改值后回退默认不报错
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('winScoreInput')), '30');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('leadInput')), '3');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('leadInput')), '');
+    await tester.pumpAndSettle();
+    expect(find.text('输入分差'), findsOneWidget);
+  });
+
   testWidgets('设置页：主题入口跳转主题设置页', (tester) async {
     await tester.pumpWidget(const MyApp());
 
