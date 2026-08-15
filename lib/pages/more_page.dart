@@ -38,6 +38,7 @@ class MorePage extends StatelessWidget {
                               SettingTile(
                                 icon: Icons.palette_rounded,
                                 title: '主题',
+                                subtitle: '主题模式与色彩定制',
                                 onTap: () {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
