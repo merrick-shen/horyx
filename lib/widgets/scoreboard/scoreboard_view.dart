@@ -4,7 +4,7 @@ import '../../theme/app_theme.dart';
 import '../primary_button.dart';
 
 /// 计分板 - 横屏对战计分视图（红蓝双方）
-/// 两侧大数字为当前局小比分（点击加分，交互待开发），中央为局间大比分
+/// 两侧大数字为当前局小比分（点击对应侧加分），中央为局间大比分
 /// 不含顶栏，全屏沉浸展示
 class ScoreboardView extends StatelessWidget {
   const ScoreboardView({
@@ -14,6 +14,10 @@ class ScoreboardView extends StatelessWidget {
     required this.blueGames,
     required this.redScore,
     required this.blueScore,
+    this.gameOver = false,
+    this.winner,
+    this.onRedTap,
+    this.onBlueTap,
     this.onUndo,
     required this.onExit,
   });
@@ -32,6 +36,18 @@ class ScoreboardView extends StatelessWidget {
 
   /// 蓝方当前局得分（小比分）
   final int blueScore;
+
+  /// 当前局已分出胜负（等待开始下一局）
+  final bool gameOver;
+
+  /// 整场胜方（'红方'/'蓝方'）；null 表示比赛进行中
+  final String? winner;
+
+  /// 点击红方计分区回调；null 时锁定不可点击
+  final VoidCallback? onRedTap;
+
+  /// 点击蓝方计分区回调；null 时锁定不可点击
+  final VoidCallback? onBlueTap;
 
   /// 撤销上一次计分；null 呈禁用态
   final VoidCallback? onUndo;
@@ -56,27 +72,33 @@ class ScoreboardView extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _TeamPanel(
+                      key: const Key('redPanel'),
                       color: redTeam,
                       name: '红方',
                       score: redScore,
+                      onTap: onRedTap,
                     ),
                   ),
                   _GamesPanel(
                     bestOf: bestOf,
                     redGames: redGames,
                     blueGames: blueGames,
+                    gameOver: gameOver,
+                    winner: winner,
                   ),
                   Expanded(
                     child: _TeamPanel(
+                      key: const Key('bluePanel'),
                       color: blueTeam,
                       name: '蓝方',
                       score: blueScore,
+                      onTap: onBlueTap,
                     ),
                   ),
                 ],
               ),
             ),
-            // 底部操作条：撤销（禁用占位）+ 退出计分
+            // 底部操作条：撤销 + 退出计分
             Container(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
               child: Row(
@@ -86,6 +108,7 @@ class ScoreboardView extends StatelessWidget {
                       label: '撤销',
                       icon: Icons.undo_rounded,
                       outlined: true,
+                      // 无计分记录时禁用
                       onPressed: onUndo,
                     ),
                   ),
@@ -109,11 +132,14 @@ class ScoreboardView extends StatelessWidget {
 }
 
 /// 单侧队伍面板：固定红/蓝纯色底 + 白字队伍名 + 当前局大数字
+/// 点击面板为该方加 1 分（onTap 为 null 时锁定无反馈）
 class _TeamPanel extends StatelessWidget {
   const _TeamPanel({
+    super.key,
     required this.color,
     required this.name,
     required this.score,
+    this.onTap,
   });
 
   /// 队伍标识色（红或蓝）
@@ -125,38 +151,47 @@ class _TeamPanel extends StatelessWidget {
   /// 当前局得分
   final int score;
 
+  /// 点击加分回调；null 表示锁定（终局）
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Material(
       color: color,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              name,
-              style: TextStyle(
-                // 半透明白做次级层次，不引入额外色相
-                color: Colors.white.withValues(alpha: 0.85),
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 6,
-              ),
-            ),
-            const SizedBox(height: 4),
-            // FittedBox 防止小尺寸横屏下数字溢出
-            FittedBox(
-              child: Text(
-                '$score',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 92,
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
+      child: InkWell(
+        onTap: onTap,
+        // 纯色底上用白色半透明水波纹，与白字视觉一致
+        splashColor: Colors.white.withValues(alpha: 0.15),
+        highlightColor: Colors.white.withValues(alpha: 0.1),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                name,
+                style: TextStyle(
+                  // 半透明白做次级层次，不引入额外色相
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 6,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 4),
+              // FittedBox 防止小尺寸横屏下数字溢出
+              FittedBox(
+                child: Text(
+                  '$score',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 92,
+                    fontWeight: FontWeight.w900,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -169,11 +204,19 @@ class _GamesPanel extends StatelessWidget {
     required this.bestOf,
     required this.redGames,
     required this.blueGames,
+    required this.gameOver,
+    required this.winner,
   });
 
   final int bestOf;
   final int redGames;
   final int blueGames;
+
+  /// 当前局已分出胜负
+  final bool gameOver;
+
+  /// 整场胜方；null 表示比赛进行中
+  final String? winner;
 
   @override
   Widget build(BuildContext context) {
@@ -247,9 +290,13 @@ class _GamesPanel extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // 当前局数：已结束局数 + 1
+            // 局数提示：终局/本局结束时替换为对应状态文案
             Text(
-              '第 ${redGames + blueGames + 1} 局',
+              winner != null
+                  ? '比赛结束'
+                  : gameOver
+                      ? '本局结束'
+                      : '第 ${redGames + blueGames + 1} 局',
               style: TextStyle(
                 color: palette.textSecondary,
                 fontSize: 13,

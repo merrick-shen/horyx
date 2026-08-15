@@ -590,6 +590,200 @@ void main() {
     expect(find.text('输入分差'), findsOneWidget);
   });
 
+  testWidgets('计分器：点击加分与局胜判定（含领先分差延续）', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.tap(find.byType(GameCard).at(3));
+    await tester.pumpAndSettle();
+
+    // 胜利分 3、领先分差 2（平分后需拉开 2 分）
+    await tester.enterText(find.byKey(const Key('winScoreInput')), '3');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('leadInput')), '2');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+
+    final redPanel = find.byKey(const Key('redPanel'));
+    final bluePanel = find.byKey(const Key('bluePanel'));
+
+    // 红 2 蓝 2 平分
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(redPanel);
+      await tester.pumpAndSettle();
+      await tester.tap(bluePanel);
+      await tester.pumpAndSettle();
+    }
+
+    // 红 +1 → 3:2：到达胜利分但仅领先 1 分，本局不结束
+    await tester.tap(redPanel);
+    await tester.pumpAndSettle();
+    expect(find.text('红方赢下本局！'), findsNothing);
+    expect(find.text('第 1 局'), findsOneWidget);
+
+    // 红 +1 → 4:2：满足领先分差，赢下本局
+    await tester.tap(redPanel);
+    await tester.pumpAndSettle();
+    expect(find.text('红方赢下本局！'), findsOneWidget);
+    expect(find.text('本局结束'), findsOneWidget);
+
+    // 继续查看：留在本局结束画面，中央显示本局结束
+    await tester.tap(find.text('继续查看'));
+    await tester.pumpAndSettle();
+    expect(find.text('本局结束'), findsOneWidget);
+
+    // 点击计分区开始下一局：局分清零、局数推进、大比分 1:0
+    await tester.tap(redPanel);
+    await tester.pumpAndSettle();
+    expect(find.text('第 2 局'), findsOneWidget);
+    expect(find.text('1'), findsOneWidget);
+    expect(find.text('0'), findsNWidgets(3));
+  });
+
+  testWidgets('计分器：整场胜负判定与再来一场', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.tap(find.byType(GameCard).at(3));
+    await tester.pumpAndSettle();
+
+    // 胜利分 3、领先分差 0（到分即胜），BO3 默认
+    await tester.enterText(find.byKey(const Key('winScoreInput')), '3');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('leadInput')), '0');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+
+    final redPanel = find.byKey(const Key('redPanel'));
+
+    // 红方连下两局（BO3 需 2 胜）赢得整场
+    for (var game = 0; game < 2; game++) {
+      for (var i = 0; i < 3; i++) {
+        await tester.tap(redPanel);
+        await tester.pumpAndSettle();
+      }
+      if (game == 0) {
+        // 第一局：局胜弹窗 → 下一局
+        expect(find.text('红方赢下本局！'), findsOneWidget);
+        await tester.tap(find.text('下一局'));
+        await tester.pumpAndSettle();
+      }
+    }
+
+    // 第二局结束即整场胜利：场胜弹窗，中央显示比赛结束
+    expect(find.text('红方获得胜利！'), findsOneWidget);
+    expect(find.text('比赛结束'), findsOneWidget);
+
+    // 再来一场：比分与局数全部重置
+    await tester.tap(find.text('再来一场'));
+    await tester.pumpAndSettle();
+    expect(find.text('第 1 局'), findsOneWidget);
+    expect(find.text('0'), findsNWidgets(4));
+  });
+
+  testWidgets('计分器：撤销恢复上一次比分（含局胜回退）', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.tap(find.byType(GameCard).at(3));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('winScoreInput')), '3');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('leadInput')), '0');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+
+    final redPanel = find.byKey(const Key('redPanel'));
+    final bluePanel = find.byKey(const Key('bluePanel'));
+
+    // 红蓝各得 1 分 → 撤销 → 蓝方分数回退
+    await tester.tap(redPanel);
+    await tester.pumpAndSettle();
+    await tester.tap(bluePanel);
+    await tester.pumpAndSettle();
+    expect(find.text('1'), findsNWidgets(2));
+
+    await tester.tap(find.text('撤销'));
+    await tester.pumpAndSettle();
+    expect(find.text('1'), findsOneWidget);
+
+    // 红方赢下本局后继续查看，撤销回退局胜状态
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(redPanel);
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('红方赢下本局！'), findsOneWidget);
+    await tester.tap(find.text('继续查看'));
+    await tester.pumpAndSettle();
+    expect(find.text('本局结束'), findsOneWidget);
+
+    await tester.tap(find.text('撤销'));
+    await tester.pumpAndSettle();
+    // 回到本局进行中：红 2 蓝 0，仍为第 1 局
+    expect(find.text('第 1 局'), findsOneWidget);
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('本局结束'), findsNothing);
+  });
+
+  testWidgets('计分器：保存退出与恢复比分', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.tap(find.byType(GameCard).at(3));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byKey(const Key('winScoreInput')), '3');
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('leadInput')), '0');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('开始计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始计分'));
+    await tester.pumpAndSettle();
+
+    // 红方得 2 分后退出的，弹出三选项确认
+    final redPanel = find.byKey(const Key('redPanel'));
+    await tester.tap(redPanel);
+    await tester.pumpAndSettle();
+    await tester.tap(redPanel);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    expect(find.text('退出计分？'), findsOneWidget);
+
+    // 保存并退出 → 设置视图展示恢复入口（含当前比分摘要）
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次计分'), findsOneWidget);
+    expect(find.text('BO3 · 大比分 0:0 · 当前局 2:0'), findsOneWidget);
+
+    // 恢复计分：横屏计分板还原比分与局数
+    await tester.tap(find.text('继续上次计分'));
+    await tester.pumpAndSettle();
+    expect(find.text('2'), findsOneWidget);
+    expect(find.text('第 1 局'), findsOneWidget);
+
+    // 撤销栈随存档恢复：可撤销回 1 分
+    await tester.tap(find.text('撤销'));
+    await tester.pumpAndSettle();
+    expect(find.text('1'), findsOneWidget);
+
+    // 不保存并退出 → 存档清除，不再展示恢复入口
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次计分'), findsNothing);
+    expect(find.text('赛制'), findsOneWidget);
+  });
+
   testWidgets('设置页：主题入口跳转主题设置页', (tester) async {
     await tester.pumpWidget(const MyApp());
 
