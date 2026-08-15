@@ -22,7 +22,7 @@ class HomeNavBar extends StatelessWidget {
         child: const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: Alignment.center,
             child: _Logo(),
           ),
         ),
