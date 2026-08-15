@@ -18,7 +18,7 @@ class SettingsPage extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            const AppTopBar(title: '设置'),
+            const AppTopBar(title: '更多'),
             Expanded(
               child: SingleChildScrollView(
                 child: Center(
