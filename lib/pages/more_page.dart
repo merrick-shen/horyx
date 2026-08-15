@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/setting_tile.dart';
 import 'placeholder_page.dart';
+import 'archive_page.dart';
 import 'theme_settings_page.dart';
 
 /// 更多页
@@ -41,6 +42,19 @@ class MorePage extends StatelessWidget {
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
                                       builder: (_) => const ThemeSettingsPage(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              // 存档管理：查看并清除各游戏未完成对局
+                              SettingTile(
+                                icon: Icons.inventory_2_rounded,
+                                title: '存档管理',
+                                subtitle: '查看并清除未完成对局',
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const ArchivePage(),
                                     ),
                                   );
                                 },

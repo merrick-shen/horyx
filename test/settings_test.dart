@@ -6,6 +6,8 @@ import 'package:horyx/theme/app_theme.dart';
 import 'package:horyx/theme/theme_controller.dart';
 import 'package:horyx/main.dart';
 
+import 'helpers/game_navigation.dart';
+import 'helpers/scoreboard_actions.dart';
 import 'helpers/test_app.dart';
 
 /// 设置页与主题功能测试
@@ -213,5 +215,98 @@ void main() {
     await tester.tap(find.text('关于'));
     await tester.pumpAndSettle();
     expect(find.textContaining('功能开发中'), findsOneWidget);
+  });
+
+  testWidgets('存档管理：无存档时展示空状态', (tester) async {
+    await pumpApp(tester);
+
+    // 更多页设置模块展示存档管理入口
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    expect(find.text('存档管理'), findsOneWidget);
+
+    // 进入存档管理页：无存档空状态提示
+    await tester.tap(find.text('存档管理'));
+    await tester.pumpAndSettle();
+    expect(find.text('存档管理'), findsOneWidget);
+    expect(find.text('暂无存档'), findsOneWidget);
+    expect(
+      find.text('游戏中保存并退出后，未完成的对局会出现在这里'),
+      findsOneWidget,
+    );
+
+    // 顶栏返回更多页
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('主题'), findsOneWidget);
+  });
+
+  testWidgets('存档管理：列表展示各游戏未完成存档', (tester) async {
+    await pumpApp(tester);
+
+    // 通过计分器「保存并退出」造一个未完成存档
+    await startScoreboard(tester, winScore: '3', lead: '0');
+    await tapPanel(tester, true, 2);
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+
+    // 返回主页 → 更多 → 存档管理
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('存档管理'));
+    await tester.pumpAndSettle();
+
+    // 列表展示计分器存档条目：游戏名 + 进度摘要 + 保存时间
+    expect(find.text('暂无存档'), findsNothing);
+    expect(find.text('计分器'), findsOneWidget);
+    expect(find.text('BO3 · 大比分 0:0 · 当前局 2:0'), findsOneWidget);
+    expect(find.textContaining('保存于'), findsOneWidget);
+  });
+
+  testWidgets('存档管理：删除存档需确认且联动清除游戏存档', (tester) async {
+    await pumpApp(tester);
+
+    // 通过计分器「保存并退出」造一个未完成存档
+    await startScoreboard(tester, winScore: '3', lead: '0');
+    await tapPanel(tester, true, 2);
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+    // 返回主页 → 更多 → 存档管理
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('存档管理'));
+    await tester.pumpAndSettle();
+
+    // 点击删除：弹确认弹窗，取消后存档保留
+    await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('删除存档？'), findsOneWidget);
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.text('计分器'), findsOneWidget);
+
+    // 确认删除：条目消失，列表切换为空状态
+    await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('删除'));
+    await tester.pumpAndSettle();
+    expect(find.text('暂无存档'), findsOneWidget);
+    expect(find.text('计分器'), findsNothing);
+
+    // 返回主页进入计分器：恢复入口已联动清除
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('首页'));
+    await tester.pumpAndSettle();
+    await openScoreboard(tester);
+    expect(find.text('继续上次计分'), findsNothing);
   });
 }
