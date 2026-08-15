@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
+import '../pages/word_pk_page.dart';
 import 'game_card.dart';
 
 /// 游戏列表区域：根据可用宽度自动切换列数（响应式布局）
@@ -34,8 +35,17 @@ class GameGrid extends StatelessWidget {
             mainAxisExtent: 212,
           ),
           itemCount: GameData.games.length,
-          itemBuilder: (context, index) =>
-              GameCard(game: GameData.games[index]),
+          itemBuilder: (context, index) => GameCard(
+            game: GameData.games[index],
+            // 当前仅第一张卡片接入「单词PK」游戏页，其余仍为占位
+            onTap: index == 0
+                ? () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const WordPkPage(),
+                      ),
+                    )
+                : null,
+          ),
         );
       },
     );
