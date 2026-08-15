@@ -27,6 +27,8 @@ class SettingTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -41,10 +43,10 @@ class SettingTile extends StatelessWidget {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.15),
+                  color: palette.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
+                child: Icon(icon, color: palette.primary, size: 20),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -53,8 +55,8 @@ class SettingTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: palette.textPrimary,
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -63,8 +65,8 @@ class SettingTile extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         subtitle!,
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: palette.textSecondary,
                           fontSize: 12,
                         ),
                       ),
@@ -72,9 +74,9 @@ class SettingTile extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: AppColors.textSecondary,
+                color: palette.textSecondary,
               ),
             ],
           ),

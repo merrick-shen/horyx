@@ -15,7 +15,7 @@ enum ConfirmResult {
 }
 
 /// 通用确认弹窗
-/// 自定义深色风格，与整体 UI 统一
+/// 自定义风格，与整体 UI 统一（配色随当前主题）
 /// 默认两按钮（取消/确认）横排；传入 [neutralLabel] 时为垂直三按钮布局
 Future<ConfirmResult> showConfirmDialog(
   BuildContext context, {
@@ -57,15 +57,17 @@ class _ConfirmDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 40),
       child: Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
-          color: AppColors.surfaceBg,
+          color: palette.surfaceBg,
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.stroke),
+          border: Border.all(color: palette.stroke),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -74,8 +76,8 @@ class _ConfirmDialog extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: palette.textPrimary,
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
               ),
@@ -84,8 +86,8 @@ class _ConfirmDialog extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: palette.textSecondary,
                 fontSize: 13.5,
                 height: 1.5,
               ),
@@ -133,8 +135,8 @@ class _ConfirmDialog extends StatelessWidget {
                     Navigator.of(context).pop(ConfirmResult.cancel),
                 child: Text(
                   cancelLabel,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: palette.textSecondary,
                     fontSize: 14,
                   ),
                 ),
@@ -161,19 +163,21 @@ class _DialogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return GestureDetector(
       onTap: onPressed,
       child: Container(
         height: 44,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: filled ? AppColors.primary : AppColors.scaffoldBg,
+          color: filled ? palette.primary : palette.scaffoldBg,
           borderRadius: BorderRadius.circular(13),
-          border: filled ? null : Border.all(color: AppColors.stroke),
+          border: filled ? null : Border.all(color: palette.stroke),
           boxShadow: filled
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
+                    color: palette.primary.withValues(alpha: 0.35),
                     blurRadius: 14,
                     offset: const Offset(0, 5),
                   ),
@@ -183,7 +187,7 @@ class _DialogButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: filled ? Colors.white : AppColors.textPrimary,
+            color: filled ? Colors.white : palette.textPrimary,
             fontSize: 14.5,
             fontWeight: FontWeight.w700,
           ),

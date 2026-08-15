@@ -97,9 +97,9 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceBg,
+        color: context.palette.surfaceBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.stroke),
+        border: Border.all(color: context.palette.stroke),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,8 +108,8 @@ class _SectionCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
             child: Text(
               header,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: context.palette.textSecondary,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
               ),

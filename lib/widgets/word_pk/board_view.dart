@@ -55,6 +55,8 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return SizedBox.expand(
       child: Center(
         // 平板/桌面端限制内容宽度，居中展示
@@ -87,25 +89,25 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                         textInputAction: TextInputAction.done,
                         decoration: InputDecoration(
                           hintText: '输入英文单词',
-                          hintStyle: const TextStyle(
-                            color: AppColors.textSecondary,
+                          hintStyle: TextStyle(
+                            color: palette.textSecondary,
                           ),
                           filled: true,
-                          fillColor: AppColors.surfaceBg,
+                          fillColor: palette.surfaceBg,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 14,
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: AppColors.stroke,
+                            borderSide: BorderSide(
+                              color: palette.stroke,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                              color: AppColors.primary,
+                            borderSide: BorderSide(
+                              color: palette.primary,
                               width: 1.4,
                             ),
                           ),
@@ -126,19 +128,19 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                   child: Container(
                     padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceBg,
+                      color: palette.surfaceBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.stroke),
+                      border: Border.all(color: palette.stroke),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               '已验证单词',
                               style: TextStyle(
-                                color: AppColors.textPrimary,
+                                color: palette.textPrimary,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -151,14 +153,14 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: AppColors.scaffoldBg,
+                                color: palette.scaffoldBg,
                                 borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: AppColors.stroke),
+                                border: Border.all(color: palette.stroke),
                               ),
                               child: Text(
                                 '${widget.entries.length} 个',
-                                style: const TextStyle(
-                                  color: AppColors.textSecondary,
+                                style: TextStyle(
+                                  color: palette.textSecondary,
                                   fontSize: 11,
                                 ),
                               ),
@@ -203,15 +205,17 @@ class _CurrentPlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: palette.primary,
         borderRadius: BorderRadius.circular(20),
         // 品牌色光晕强调「轮到谁」
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.35),
+            color: palette.primary.withValues(alpha: 0.35),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -278,6 +282,8 @@ class _PlayerSequence extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -290,19 +296,18 @@ class _PlayerSequence extends StatelessWidget {
               // 当前输入者以描边 + 品牌色文字点亮
               borderRadius: BorderRadius.circular(999),
               color: i == currentIndex
-                  ? AppColors.primary.withValues(alpha: 0.15)
-                  : AppColors.surfaceBg,
+                  ? palette.primary.withValues(alpha: 0.15)
+                  : palette.surfaceBg,
               border: Border.all(
-                color:
-                    i == currentIndex ? AppColors.primary : AppColors.stroke,
+                color: i == currentIndex ? palette.primary : palette.stroke,
               ),
             ),
             child: Text(
               '玩家 $i',
               style: TextStyle(
                 color: i == currentIndex
-                    ? AppColors.primary
-                    : AppColors.textSecondary,
+                    ? palette.primary
+                    : palette.textSecondary,
                 fontSize: 12.5,
                 fontWeight:
                     i == currentIndex ? FontWeight.w700 : FontWeight.w500,
@@ -320,20 +325,23 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.emoji_events_outlined,
-            color: AppColors.textSecondary,
+            color: context.palette.textSecondary,
             size: 30,
           ),
-          SizedBox(height: 10),
+          const SizedBox(height: 10),
           Text(
             '还没有验证通过的单词\n输入第一个单词开启 PK 吧',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: TextStyle(
+              color: context.palette.textSecondary,
+              fontSize: 13,
+            ),
           ),
         ],
       ),
@@ -350,12 +358,14 @@ class _WordChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: AppColors.scaffoldBg,
+        color: palette.scaffoldBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.stroke),
+        border: Border.all(color: palette.stroke),
       ),
       child: Row(
         children: [
@@ -363,8 +373,8 @@ class _WordChip extends StatelessWidget {
           Container(
             width: 6,
             height: 6,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: palette.primary,
               shape: BoxShape.circle,
             ),
           ),
@@ -372,8 +382,8 @@ class _WordChip extends StatelessWidget {
           Expanded(
             child: Text(
               word,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: palette.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -381,8 +391,8 @@ class _WordChip extends StatelessWidget {
           ),
           Text(
             '玩家 $playerIndex',
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              color: palette.textSecondary,
               fontSize: 11.5,
             ),
           ),

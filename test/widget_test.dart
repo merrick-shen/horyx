@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:horyx/main.dart';
+import 'package:horyx/services/theme_storage.dart';
 import 'package:horyx/services/word_validator.dart';
+import 'package:horyx/theme/app_theme.dart';
 import 'package:horyx/widgets/game_card.dart';
 
 void main() {
@@ -211,11 +213,95 @@ void main() {
     // 设置页展示主题设置入口
     expect(find.text('主题'), findsOneWidget);
 
-    // 点击进入主题设置页（当前为占位）
+    // 点击进入主题设置页：展示主题模式三选项，不再是占位页
     await tester.tap(find.text('主题'));
     await tester.pumpAndSettle();
     expect(find.text('主题设置'), findsOneWidget);
-    expect(find.textContaining('功能开发中'), findsOneWidget);
+    expect(find.text('主题模式'), findsOneWidget);
+    expect(find.text('跟随系统'), findsOneWidget);
+    expect(find.text('深色'), findsOneWidget);
+    expect(find.text('浅色'), findsOneWidget);
+    expect(find.textContaining('功能开发中'), findsNothing);
+  });
+
+  testWidgets('主题设置：切换主题模式即时生效并持久化', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 进入主题设置页
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('主题'));
+    await tester.pumpAndSettle();
+
+    // 默认选中「跟随系统」：其单选标记为实心勾选
+    final systemCheck = find.descendant(
+      of: find.ancestor(of: find.text('跟随系统'), matching: find.byType(GestureDetector)),
+      matching: find.byIcon(Icons.check_circle_rounded),
+    );
+    expect(systemCheck, findsOneWidget);
+
+    // 切换到浅色：themeMode 即时变化，选择已持久化
+    await tester.tap(find.text('浅色'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.light,
+    );
+    expect(await ThemeStorage.load(), ThemeMode.light);
+
+    // 切换到深色：themeMode 即时变化，选择已持久化
+    await tester.tap(find.text('深色'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.dark,
+    );
+    expect(await ThemeStorage.load(), ThemeMode.dark);
+
+    // 深色下返回（此前停留在「更多」标签），切回首页后：
+    // 卡片标题应使用深色调色板主文字色
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('首页'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('单词PK').first).style?.color,
+      AppPalette.dark.textPrimary,
+    );
+
+    // 切回跟随系统：恢复自动模式
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('主题'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('跟随系统'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.system,
+    );
+  });
+
+  testWidgets('主题设置：跟随系统时随系统深浅色自动切换', (tester) async {
+    // 系统处于深色模式（通过平台分发器模拟系统深浅色设置）
+    tester.binding.platformDispatcher.platformBrightnessTestValue =
+        Brightness.dark;
+    await tester.pumpWidget(const MyApp());
+
+    // 自动模式 + 系统深色：主页卡片标题使用深色调色板
+    expect(
+      tester.widget<Text>(find.text('单词PK').first).style?.color,
+      AppPalette.dark.textPrimary,
+    );
+
+    // 系统切换到浅色：自动跟随为浅色调色板
+    tester.binding.platformDispatcher.platformBrightnessTestValue =
+        Brightness.light;
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Text>(find.text('单词PK').first).style?.color,
+      AppPalette.light.textPrimary,
+    );
   });
 
   testWidgets('设置页：其他模块关于入口', (tester) async {

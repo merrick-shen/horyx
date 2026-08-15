@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/word_entry.dart';
 import '../models/word_pk_game_state.dart';
@@ -14,6 +13,7 @@ import '../widgets/word_pk/setup_view.dart';
 /// 单词PK游戏页
 /// 持有对局状态（人数、当前输入者、单词列表），统一负责：
 /// 提交校验、退出确认弹窗、对局存档与恢复
+/// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class WordPkPage extends StatefulWidget {
   const WordPkPage({super.key});
 
@@ -182,53 +182,49 @@ class _WordPkPageState extends State<WordPkPage> {
 
   @override
   Widget build(BuildContext context) {
-    // push 进入的页面不在 AppShell 树内，需自行处理状态栏样式
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: PopScope(
-        // 对局中拦截系统返回（走保存确认弹窗），设置阶段允许直接返回
-        canPop: !_started,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) _requestExit();
-        },
-        child: Scaffold(
-          body: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                AppTopBar(
-                  title: '单词PK',
-                  leading: IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.textPrimary,
-                      size: 20,
-                    ),
-                    onPressed: _requestExit,
+    return PopScope(
+      // 对局中拦截系统返回（走保存确认弹窗），设置阶段允许直接返回
+      canPop: !_started,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _requestExit();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              AppTopBar(
+                title: '单词PK',
+                leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: context.palette.textPrimary,
+                    size: 20,
                   ),
+                  onPressed: _requestExit,
                 ),
-                Expanded(
-                  // 阶段切换动画：设置视图 <-> 对局视图淡入淡出
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: _started
-                        ? WordPkBoardView(
-                            key: const ValueKey('board'),
-                            playerCount: _playerCount,
-                            currentPlayer: _currentPlayer,
-                            entries: _entries,
-                            onSubmit: _submitWord,
-                          )
-                        : WordPkSetupView(
-                            key: const ValueKey('setup'),
-                            onStart: _onStart,
-                            savedState: _savedState,
-                            onResume: _resumeSaved,
-                          ),
-                  ),
+              ),
+              Expanded(
+                // 阶段切换动画：设置视图 <-> 对局视图淡入淡出
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _started
+                      ? WordPkBoardView(
+                          key: const ValueKey('board'),
+                          playerCount: _playerCount,
+                          currentPlayer: _currentPlayer,
+                          entries: _entries,
+                          onSubmit: _submitWord,
+                        )
+                      : WordPkSetupView(
+                          key: const ValueKey('setup'),
+                          onStart: _onStart,
+                          savedState: _savedState,
+                          onResume: _resumeSaved,
+                        ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

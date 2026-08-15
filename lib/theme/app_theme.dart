@@ -1,56 +1,134 @@
 import 'package:flutter/material.dart';
 
-/// 全局配色：深蓝黑夜色 + 品牌紫强调色，营造游戏氛围
-/// 颜色集中定义的目的：多页面共用一套视觉规范，避免色值散落各处导致风格不统一
-class AppColors {
-  AppColors._();
+/// 全局调色板：随主题（深/浅）变化的语义化颜色集合
+/// 通过 ThemeExtension 注入 ThemeData，组件统一经 context.palette 取用，
+/// 同一套组件代码即可在两种主题下自动适配，避免色值散落与硬编码
+class AppPalette extends ThemeExtension<AppPalette> {
+  const AppPalette({
+    required this.scaffoldBg,
+    required this.surfaceBg,
+    required this.surfaceHover,
+    required this.stroke,
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.primary,
+  });
 
   /// 页面背景
-  static const Color scaffoldBg = Color(0xFF0B1020);
+  final Color scaffoldBg;
 
   /// 卡片 / 容器背景
-  static const Color surfaceBg = Color(0xFF141C33);
+  final Color surfaceBg;
 
   /// 悬停态容器背景（比默认背景略亮，强化反馈）
-  static const Color surfaceHover = Color(0xFF1A2442);
+  final Color surfaceHover;
 
   /// 描边 / 分隔线
-  static const Color stroke = Color(0xFF263253);
+  final Color stroke;
 
   /// 主文字
-  static const Color textPrimary = Color(0xFFF3F6FF);
+  final Color textPrimary;
 
   /// 次要文字（描述、辅助信息）
-  static const Color textSecondary = Color(0xFF94A0C4);
+  final Color textSecondary;
 
-  /// 品牌强调色（UI 统一使用纯色，不使用渐变）
-  static const Color primary = Color(0xFF7C5CFF);
+  /// 品牌强调色（UI 统一使用纯色，不使用渐变；深浅主题共用同一品牌紫）
+  final Color primary;
+
+  /// 深色调色板：深蓝黑夜色，营造游戏氛围
+  static const AppPalette dark = AppPalette(
+    scaffoldBg: Color(0xFF0B1020),
+    surfaceBg: Color(0xFF141C33),
+    surfaceHover: Color(0xFF1A2442),
+    stroke: Color(0xFF263253),
+    textPrimary: Color(0xFFF3F6FF),
+    textSecondary: Color(0xFF94A0C4),
+    primary: Color(0xFF7C5CFF),
+  );
+
+  /// 浅色调色板：冷白底 + 淡紫灰层次，保持品牌紫强调色
+  static const AppPalette light = AppPalette(
+    scaffoldBg: Color(0xFFF4F5FA),
+    surfaceBg: Color(0xFFFFFFFF),
+    surfaceHover: Color(0xFFEDEFF7),
+    stroke: Color(0xFFE2E5F0),
+    textPrimary: Color(0xFF1B2136),
+    textSecondary: Color(0xFF5C6684),
+    primary: Color(0xFF7C5CFF),
+  );
+
+  @override
+  AppPalette copyWith({
+    Color? scaffoldBg,
+    Color? surfaceBg,
+    Color? surfaceHover,
+    Color? stroke,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? primary,
+  }) {
+    return AppPalette(
+      scaffoldBg: scaffoldBg ?? this.scaffoldBg,
+      surfaceBg: surfaceBg ?? this.surfaceBg,
+      surfaceHover: surfaceHover ?? this.surfaceHover,
+      stroke: stroke ?? this.stroke,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      primary: primary ?? this.primary,
+    );
+  }
+
+  /// 主题切换动画期间由框架调用，对两组调色板做颜色插值
+  @override
+  AppPalette lerp(covariant ThemeExtension<AppPalette>? other, double t) {
+    if (other is! AppPalette) return this;
+    return AppPalette(
+      scaffoldBg: Color.lerp(scaffoldBg, other.scaffoldBg, t)!,
+      surfaceBg: Color.lerp(surfaceBg, other.surfaceBg, t)!,
+      surfaceHover: Color.lerp(surfaceHover, other.surfaceHover, t)!,
+      stroke: Color.lerp(stroke, other.stroke, t)!,
+      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
+      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      primary: Color.lerp(primary, other.primary, t)!,
+    );
+  }
 }
 
-/// 全局主题配置
+/// 便捷取色扩展：任意 build 上下文中通过 context.palette 拿到当前主题调色板
+extension AppPaletteContext on BuildContext {
+  AppPalette get palette => Theme.of(this).extension<AppPalette>()!;
+}
+
+/// 全局主题配置：深浅两套主题共用一套构建逻辑，仅调色板与亮度不同
 abstract final class AppTheme {
-  static ThemeData get dark => ThemeData(
+  static ThemeData get dark => _build(Brightness.dark, AppPalette.dark);
+  static ThemeData get light => _build(Brightness.light, AppPalette.light);
+
+  static ThemeData _build(Brightness brightness, AppPalette palette) =>
+      ThemeData(
         useMaterial3: true,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.scaffoldBg,
+        brightness: brightness,
+        scaffoldBackgroundColor: palette.scaffoldBg,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.primary,
-          brightness: Brightness.dark,
+          seedColor: palette.primary,
+          brightness: brightness,
         ),
+        // 注入调色板，组件侧经 context.palette 读取
+        extensions: [palette],
         // 底部导航栏配色与主页统一：
         // M3 默认背景取 colorScheme.surfaceContainer（偏灰），需覆盖为页面背景色
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: AppColors.scaffoldBg,
+          backgroundColor: palette.scaffoldBg,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
-          indicatorColor: AppColors.primary.withValues(alpha: 0.25),
+          indicatorColor: palette.primary.withValues(alpha: 0.25),
           height: 68,
           iconTheme: WidgetStateProperty.resolveWith((states) {
             final selected = states.contains(WidgetState.selected);
             return IconThemeData(
               size: 24,
               // 选中用品牌紫，未选中用次要文字色
-              color: selected ? AppColors.primary : AppColors.textSecondary,
+              color: selected ? palette.primary : palette.textSecondary,
             );
           }),
           labelTextStyle: WidgetStateProperty.resolveWith((states) {
@@ -58,7 +136,7 @@ abstract final class AppTheme {
             return TextStyle(
               fontSize: 11.5,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+              color: selected ? palette.textPrimary : palette.textSecondary,
             );
           }),
         ),

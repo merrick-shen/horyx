@@ -37,6 +37,8 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
   @override
   Widget build(BuildContext context) {
     final saved = widget.savedState;
+    final palette = context.palette;
+
     return SizedBox.expand(
       child: Center(
         // 平板/桌面端限制内容宽度，居中展示
@@ -57,26 +59,26 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceBg,
+                    color: palette.surfaceBg,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: AppColors.stroke),
+                    border: Border.all(color: palette.stroke),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         '参与人数',
                         style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: palette.textPrimary,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         '选择参与 PK 的人数（至少 2 人），玩家将按顺序轮流输入单词',
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: palette.textSecondary,
                           fontSize: 13,
                         ),
                       ),
@@ -122,23 +124,25 @@ class _ResumeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           // 品牌色淡底 + 描边，与普通卡片区分，突出「可继续」
-          color: AppColors.primary.withValues(alpha: 0.12),
+          color: palette.primary.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.5),
+            color: palette.primary.withValues(alpha: 0.5),
           ),
         ),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.play_circle_fill_rounded,
-              color: AppColors.primary,
+              color: palette.primary,
               size: 34,
             ),
             const SizedBox(width: 12),
@@ -146,10 +150,10 @@ class _ResumeCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '继续上次对局',
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: palette.textPrimary,
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
@@ -157,17 +161,17 @@ class _ResumeCard extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${state.playerCount} 人对局 · 已验证 ${state.entries.length} 个单词',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: palette.textSecondary,
                       fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
+              color: palette.textSecondary,
             ),
           ],
         ),
@@ -190,6 +194,8 @@ class _CountOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -199,15 +205,15 @@ class _CountOption extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           // 选中态使用品牌纯色，未选中与卡片底色区分
-          color: selected ? AppColors.primary : AppColors.scaffoldBg,
+          color: selected ? palette.primary : palette.scaffoldBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? Colors.transparent : AppColors.stroke,
+            color: selected ? Colors.transparent : palette.stroke,
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.35),
+                    color: palette.primary.withValues(alpha: 0.35),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -217,7 +223,7 @@ class _CountOption extends StatelessWidget {
         child: Text(
           '$value',
           style: TextStyle(
-            color: selected ? Colors.white : AppColors.textPrimary,
+            color: selected ? Colors.white : palette.textPrimary,
             fontSize: 17,
             fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
           ),

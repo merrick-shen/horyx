@@ -24,6 +24,7 @@ class _GameCardState extends State<GameCard> {
   @override
   Widget build(BuildContext context) {
     final game = widget.game;
+    final palette = context.palette;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -34,7 +35,7 @@ class _GameCardState extends State<GameCard> {
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
         child: Material(
-          color: _hovered ? AppColors.surfaceHover : AppColors.surfaceBg,
+          color: _hovered ? palette.surfaceHover : palette.surfaceBg,
           borderRadius: BorderRadius.circular(20),
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
@@ -49,13 +50,13 @@ class _GameCardState extends State<GameCard> {
                   width: 1.2,
                   // 悬停时描边切换为品牌主色，形成「点亮」效果
                   color: _hovered
-                      ? AppColors.primary.withValues(alpha: 0.8)
-                      : AppColors.stroke,
+                      ? palette.primary.withValues(alpha: 0.8)
+                      : palette.stroke,
                 ),
                 boxShadow: [
                   if (_hovered)
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.35),
+                      color: palette.primary.withValues(alpha: 0.35),
                       blurRadius: 22,
                       offset: const Offset(0, 10),
                     ),
@@ -70,7 +71,7 @@ class _GameCardState extends State<GameCard> {
                     height: 56,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(16),
-                      color: AppColors.primary,
+                      color: palette.primary,
                     ),
                     child: Icon(game.icon, color: Colors.white, size: 30),
                   ),
@@ -79,8 +80,8 @@ class _GameCardState extends State<GameCard> {
                     game.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: palette.textPrimary,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                     ),
@@ -90,8 +91,8 @@ class _GameCardState extends State<GameCard> {
                     game.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: palette.textSecondary,
                       fontSize: 12.5,
                       height: 1.45,
                     ),
@@ -106,15 +107,15 @@ class _GameCardState extends State<GameCard> {
                       height: 34,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color:
-                            _hovered ? Colors.white : AppColors.stroke,
+                        // 浅色主题下悬停白底对比不足，改用品牌淡底
+                        color: _hovered
+                            ? palette.primary.withValues(alpha: 0.18)
+                            : palette.stroke,
                       ),
                       child: Icon(
                         Icons.play_arrow_rounded,
                         size: 20,
-                        color: _hovered
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
+                        color: _hovered ? palette.primary : palette.textSecondary,
                       ),
                     ),
                   ),

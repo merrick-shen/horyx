@@ -19,10 +19,10 @@ class AppTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.scaffoldBg,
+      decoration: BoxDecoration(
+        color: context.palette.scaffoldBg,
         // 底部描边让顶栏与内容区分层
-        border: Border(bottom: BorderSide(color: AppColors.stroke)),
+        border: Border(bottom: BorderSide(color: context.palette.stroke)),
       ),
       child: SizedBox(
         height: _height,
@@ -31,10 +31,10 @@ class AppTopBar extends StatelessWidget {
             Center(
               child: Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 19,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+                  color: context.palette.primary,
                 ),
               ),
             ),

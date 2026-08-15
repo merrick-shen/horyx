@@ -25,17 +25,18 @@ class PrimaryButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null;
+    final palette = context.palette;
 
     return DecoratedBox(
       decoration: BoxDecoration(
         // 禁用时降级为灰底，正常态使用品牌纯色
-        color: enabled ? AppColors.primary : AppColors.surfaceHover,
+        color: enabled ? palette.primary : palette.surfaceHover,
         borderRadius: BorderRadius.circular(14),
         boxShadow: enabled
             ? [
                 // 品牌色光晕投影，与游戏卡片悬停效果呼应
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
+                  color: palette.primary.withValues(alpha: 0.35),
                   blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),
@@ -57,6 +58,7 @@ class PrimaryButton extends StatelessWidget {
                   Icon(icon, color: Colors.white, size: 18),
                   const SizedBox(width: 8),
                 ],
+                // 品牌紫底上白字，深浅主题下对比度一致
                 Text(
                   label,
                   style: const TextStyle(
