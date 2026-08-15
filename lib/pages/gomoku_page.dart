@@ -273,34 +273,37 @@ class _BoardView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // 落子确认操作：仅预选棋子存在时显示
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 180),
-                  child: hasPending
-                      ? Row(
-                          key: const ValueKey('confirm_row'),
-                          children: [
-                            Expanded(
-                              child: PrimaryButton(
-                                label: '取消',
-                                outlined: true,
-                                onPressed: onCancelMove,
+                // 固定高度占位：确认按钮显隐时不挤压棋盘布局
+                SizedBox(
+                  height: 48,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: hasPending
+                        ? Row(
+                            key: const ValueKey('confirm_row'),
+                            children: [
+                              Expanded(
+                                child: PrimaryButton(
+                                  label: '取消',
+                                  outlined: true,
+                                  onPressed: onCancelMove,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: PrimaryButton(
-                                label: '下棋',
-                                onPressed: onConfirmMove,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: PrimaryButton(
+                                  label: '下棋',
+                                  onPressed: onConfirmMove,
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      : const SizedBox.shrink(
-                          key: ValueKey('confirm_row_hidden'),
-                        ),
+                            ],
+                          )
+                        : const SizedBox.shrink(
+                            key: ValueKey('confirm_row_hidden'),
+                          ),
+                  ),
                 ),
-                SizedBox(height: hasPending ? 12 : 0),
+                const SizedBox(height: 12),
                 // 无棋子可悔时按钮禁用（灰底不可点击）
                 PrimaryButton(
                   label: '悔棋',
