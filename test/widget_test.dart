@@ -217,4 +217,19 @@ void main() {
     expect(find.text('主题设置'), findsOneWidget);
     expect(find.textContaining('功能开发中'), findsOneWidget);
   });
+
+  testWidgets('设置页：其他模块关于入口', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 切换到设置页，「其他」模块包含关于入口
+    await tester.tap(find.text('设置'));
+    await tester.pumpAndSettle();
+    expect(find.text('其他'), findsOneWidget);
+    expect(find.text('关于'), findsOneWidget);
+
+    // 点击进入关于页（当前为占位）
+    await tester.tap(find.text('关于'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('功能开发中'), findsOneWidget);
+  });
 }
