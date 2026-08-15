@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/gomoku_game_state.dart';
+import '../services/gomoku_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/confirm_dialog.dart';
@@ -11,7 +13,7 @@ import '../widgets/turn_card.dart';
 
 /// 五子棋游戏页
 /// 持有对局状态（落子序列、预选、胜负），统一负责：
-/// 落子确认、五连判定、胜利弹窗与重开/返回设置
+/// 落子确认、五连判定、胜利弹窗、退出确认与对局存档恢复
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class GomokuPage extends StatefulWidget {
   const GomokuPage({super.key});
@@ -35,6 +37,23 @@ class _GomokuPageState extends State<GomokuPage> {
 
   /// 胜方（'黑方'/'白方'）；null 表示对局进行中
   String? _winner;
+
+  /// 进入时检测到的未完成存档；恢复或开始新对局后清空展示
+  GomokuGameState? _savedState;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedState();
+  }
+
+  /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
+  Future<void> _loadSavedState() async {
+    final state = await GomokuStorage.load();
+    if (state != null && mounted) {
+      setState(() => _savedState = state);
+    }
+  }
 
   /// 点击棋盘交叉点：终局或已有棋子的点不可选，其余更新预选
   void _onCellTap(int col, int row) {
@@ -150,68 +169,133 @@ class _GomokuPageState extends State<GomokuPage> {
   }
 
   void _onStart() {
-    setState(() => _started = true);
+    setState(() {
+      _started = true;
+      // 开启新对局后不再展示旧存档入口
+      _savedState = null;
+    });
+  }
+
+  /// 恢复未完成对局：从存档还原棋盘规格与落子序列
+  void _resumeSaved() {
+    final saved = _savedState;
+    if (saved == null) return;
+    setState(() {
+      _boardSize = saved.boardSize;
+      _moves
+        ..clear()
+        ..addAll(saved.moves);
+      _started = true;
+      _savedState = null;
+    });
+  }
+
+  /// 退出请求：对局中弹出三选项确认弹窗（保存退出/不保存退出/取消）
+  /// 终局查看棋型阶段无进行中对局，直接退出
+  Future<void> _requestExit() async {
+    if (!_started || _winner != null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final result = await showConfirmDialog(
+      context,
+      title: '退出对局？',
+      message: '保存并退出后，下次进入可从当前进度继续对弈',
+      confirmLabel: '保存并退出',
+      neutralLabel: '不保存并退出',
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case ConfirmResult.confirm:
+        // 持久化完整对局状态后退出
+        await GomokuStorage.save(
+          GomokuGameState(
+            boardSize: _boardSize,
+            moves: List.of(_moves),
+            savedAt: DateTime.now(),
+          ),
+        );
+        if (mounted) Navigator.of(context).pop();
+      case ConfirmResult.neutral:
+        // 放弃当前对局：清除旧存档，避免下次误提示可继续
+        await GomokuStorage.clear();
+        if (mounted) Navigator.of(context).pop();
+      case ConfirmResult.cancel:
+        // 留在对局
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            AppTopBar(
-              title: '五子棋',
-              // 静态阶段无对局状态，直接返回；玩法接入后再加退出确认
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: context.palette.textPrimary,
-                  size: 20,
+    return PopScope(
+      // 对局中拦截系统返回（走保存确认弹窗），设置阶段允许直接返回
+      canPop: !_started || _winner != null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _requestExit();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              AppTopBar(
+                title: '五子棋',
+                leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: context.palette.textPrimary,
+                    size: 20,
+                  ),
+                  onPressed: _requestExit,
                 ),
-                onPressed: () => Navigator.of(context).pop(),
               ),
-            ),
-            Expanded(
-              // 阶段切换动画：设置视图 <-> 对局视图淡入淡出
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: _started
-                    ? _BoardView(
-                        key: const ValueKey('board'),
-                        boardSize: _boardSize,
-                        moves: _moves,
-                        pending: _pending,
-                        winner: _winner,
-                        onCellTap: _onCellTap,
-                        onCancelMove: _cancelMove,
-                        onConfirmMove: _confirmMove,
-                        onUndo: _undo,
-                        onRestart: _restartMatch,
-                      )
-                    : _SetupView(
-                        key: const ValueKey('setup'),
-                        boardSize: _boardSize,
-                        onSelect: (size) =>
-                            setState(() => _boardSize = size),
-                        onStart: _onStart,
-                      ),
+              Expanded(
+                // 阶段切换动画：设置视图 <-> 对局视图淡入淡出
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _started
+                      ? _BoardView(
+                          key: const ValueKey('board'),
+                          boardSize: _boardSize,
+                          moves: _moves,
+                          pending: _pending,
+                          winner: _winner,
+                          onCellTap: _onCellTap,
+                          onCancelMove: _cancelMove,
+                          onConfirmMove: _confirmMove,
+                          onUndo: _undo,
+                          onRestart: _restartMatch,
+                        )
+                      : _SetupView(
+                          key: const ValueKey('setup'),
+                          boardSize: _boardSize,
+                          onSelect: (size) =>
+                              setState(() => _boardSize = size),
+                          onStart: _onStart,
+                          savedState: _savedState,
+                          onResume: _resumeSaved,
+                        ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// 规格设置视图：棋盘规格选择 + 开始按钮
+/// 规格设置视图：恢复入口（存在存档时）+ 棋盘规格选择 + 开始按钮
 class _SetupView extends StatelessWidget {
   const _SetupView({
     super.key,
     required this.boardSize,
     required this.onSelect,
     required this.onStart,
+    this.savedState,
+    this.onResume,
   });
 
   /// 当前选中路数
@@ -223,6 +307,12 @@ class _SetupView extends StatelessWidget {
   /// 点击「开始对局」回调
   final VoidCallback onStart;
 
+  /// 未完成对局的存档；null 时不显示恢复入口
+  final GomokuGameState? savedState;
+
+  /// 点击「继续上次对局」回调
+  final VoidCallback? onResume;
+
   /// 可选规格：15 路标准盘 / 19 路大盘
   static const List<(int, String)> _options = [
     (15, '15×15'),
@@ -232,6 +322,7 @@ class _SetupView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final saved = savedState;
 
     return SizedBox.expand(
       child: Center(
@@ -244,6 +335,11 @@ class _SetupView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 存在未完成对局时展示恢复入口
+                if (saved != null) ...[
+                  _ResumeCard(state: saved, onTap: onResume),
+                  const SizedBox(height: 16),
+                ],
                 PanelCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,6 +523,71 @@ class _BoardView extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 继续上次对局入口卡片（样式与单词PK恢复入口一致）
+class _ResumeCard extends StatelessWidget {
+  const _ResumeCard({required this.state, required this.onTap});
+
+  final GomokuGameState state;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          // 品牌色淡底 + 描边，与普通卡片区分，突出「可继续」
+          color: palette.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: palette.primary.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.play_circle_fill_rounded,
+              color: palette.primary,
+              size: 34,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '继续上次对局',
+                    style: TextStyle(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${state.boardSize}×${state.boardSize} 对局 · 已落子 ${state.moves.length} 手',
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: palette.textSecondary,
+            ),
+          ],
         ),
       ),
     );

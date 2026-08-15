@@ -415,6 +415,75 @@ void main() {
     expect(find.text('开始对局'), findsOneWidget);
   });
 
+  testWidgets('五子棋：退出弹窗与保存恢复流程', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+
+    // 黑白各落一子
+    await placeGomokuStone(tester, 7, 7);
+    await placeGomokuStone(tester, 8, 8);
+
+    // 对局中点击顶栏返回：弹出三选项确认弹窗
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('退出对局？'), findsOneWidget);
+    expect(find.text('保存并退出'), findsOneWidget);
+    expect(find.text('不保存并退出'), findsOneWidget);
+
+    // 取消：留在对局
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前执子'), findsOneWidget);
+
+    // 再次返回并保存退出：回到主页
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+    expect(find.text('棋盘规格'), findsNothing);
+
+    // 重新进入游戏页：展示恢复入口（含棋盘规格与手数）
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次对局'), findsOneWidget);
+    expect(find.text('15×15 对局 · 已落子 2 手'), findsOneWidget);
+
+    // 点击继续：恢复对局进度（2 手后轮到黑方，已落子处不可再选）
+    await tester.tap(find.text('继续上次对局'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前执子'), findsOneWidget);
+    expect(find.text('黑方'), findsOneWidget);
+    await tester.tapAt(gomokuCell(tester, 7, 7));
+    await tester.pumpAndSettle();
+    expect(find.text('下棋'), findsNothing);
+  });
+
+  testWidgets('五子棋：不保存并退出丢弃对局', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+
+    // 落一子后选择「不保存并退出」
+    await placeGomokuStone(tester, 7, 7);
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+
+    // 重新进入：存档已清除，不再展示继续入口
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次对局'), findsNothing);
+    expect(find.text('棋盘规格'), findsOneWidget);
+  });
+
   testWidgets('设置页：主题入口跳转主题设置页', (tester) async {
     await tester.pumpWidget(const MyApp());
 
