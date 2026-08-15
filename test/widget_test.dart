@@ -172,4 +172,30 @@ void main() {
     expect(find.text('继续上次对局'), findsNothing);
     expect(find.text('参与人数'), findsOneWidget);
   });
+
+  testWidgets('单词PK：错误提示未关闭时退出不残留到主页', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始 PK'));
+    await tester.pumpAndSettle();
+
+    // 触发错误提示（重复单词）且不关闭
+    await tester.enterText(find.byType(TextField), 'apple');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'apple');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+    expect(find.text('单词已重复'), findsOneWidget);
+
+    // 提示未关闭时保存并退出：提示不应残留到主页
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+    expect(find.text('单词已重复'), findsNothing);
+    expect(find.text('知道了'), findsNothing);
+  });
 }

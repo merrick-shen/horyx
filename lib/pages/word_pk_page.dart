@@ -103,15 +103,23 @@ class _WordPkPageState extends State<WordPkPage> {
             savedAt: DateTime.now(),
           ),
         );
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) _exitPage();
       case ConfirmResult.neutral:
         // 放弃当前对局：清除旧存档，避免下次误提示可继续
         await WordPkStorage.clear();
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) _exitPage();
       case ConfirmResult.cancel:
         // 留在对局
         break;
     }
+  }
+
+  /// 退出游戏页：先移除未关闭的错误提示再返回
+  /// SnackBar 挂在应用级 ScaffoldMessenger 上，不随页面销毁，
+  /// 不主动移除会残留到主页，且其回调引用已销毁页面导致无法关闭
+  void _exitPage() {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    Navigator.of(context).pop();
   }
 
   /// 提交校验：格式 → 重复 → 真实性；通过则入列并轮换，返回是否通过
@@ -150,14 +158,20 @@ class _WordPkPageState extends State<WordPkPage> {
   /// 展示错误/引导提示
   /// 错误提示不自动消失（需手动关闭），避免玩家漏看
   void _showHint(String message) {
-    ScaffoldMessenger.of(context)
+    // 捕获 messenger state 而非在回调里依赖页面 context：
+    // 提示可能比页面存活更久，引用已销毁 context 会导致「知道了」失效
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(message),
           duration: const Duration(days: 1),
           behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(label: '知道了', onPressed: _hideHint),
+          action: SnackBarAction(
+            label: '知道了',
+            onPressed: () => messenger.hideCurrentSnackBar(),
+          ),
         ),
       );
   }
