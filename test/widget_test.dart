@@ -129,11 +129,13 @@ void main() {
     expect(find.text('当前输入者'), findsOneWidget);
 
     // 再次返回并确认保存：退出游戏页回到主页
+    // （主页第一张卡片名称也是「单词PK」，故以对局元素消失判断退出成功）
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     await tester.tap(find.text('保存并退出'));
     await tester.pumpAndSettle();
-    expect(find.text('单词PK'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
+    expect(find.text('当前输入者'), findsNothing);
     expect(find.text('Horyx'), findsOneWidget);
 
     // 重新进入游戏页：展示「继续上次对局」入口

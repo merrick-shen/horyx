@@ -3,19 +3,31 @@ import 'package:flutter/material.dart';
 import '../models/game_info.dart';
 import '../theme/app_theme.dart';
 
-/// 静态游戏数据源（占位展示）
-/// 当前所有卡片统一为「开发中」占位样式；接入真实游戏时替换为各自数据
+/// 静态游戏数据源
+/// 已上线的游戏使用各自真实数据，未开发的游戏以「开发中」占位
 abstract final class GameData {
-  /// 占位卡片数量
-  static const int placeholderCount = 8;
+  /// 占位卡片数量（开发中的游戏）
+  static const int placeholderCount = 7;
 
-  static final List<GameInfo> games = List.generate(
-    placeholderCount,
-    (_) => const GameInfo(
-      name: '开发中',
-      description: '敬请期待',
-      icon: Icons.construction_rounded,
-      gradient: AppColors.brandGradient,
-    ),
+  /// 单词PK：首位已上线游戏
+  static const GameInfo wordPk = GameInfo(
+    name: '单词PK',
+    description: '轮流拼写英文单词，考验词汇量的回合对决',
+    icon: Icons.spellcheck_rounded,
+    gradient: AppColors.brandGradient,
   );
+
+  static final List<GameInfo> games = [
+    wordPk,
+    // 其余游戏保持占位展示
+    ...List.generate(
+      placeholderCount,
+      (_) => const GameInfo(
+        name: '开发中',
+        description: '敬请期待',
+        icon: Icons.construction_rounded,
+        gradient: AppColors.brandGradient,
+      ),
+    ),
+  ];
 }
