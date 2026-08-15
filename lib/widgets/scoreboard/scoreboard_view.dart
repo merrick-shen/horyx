@@ -61,10 +61,20 @@ class ScoreboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 横屏系统栏（状态栏/挖孔）仅出现在一侧，直接用 SafeArea 会造成
+    // 红蓝计分区不等宽；取左右避让的最大值对称应用，保证两侧等宽
+    final media = MediaQuery.of(context).padding;
+    final horizontal = media.left > media.right ? media.left : media.right;
+
     // 横屏纵向空间紧凑：计分区占满剩余高度，底部固定操作条
     return Scaffold(
-      // 横屏左右刘海/挖孔通过 SafeArea 避让
-      body: SafeArea(
+      body: Padding(
+        padding: EdgeInsets.only(
+          left: horizontal,
+          right: horizontal,
+          top: media.top,
+          bottom: media.bottom,
+        ),
         child: Column(
           children: [
             Expanded(
