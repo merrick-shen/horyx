@@ -227,6 +227,23 @@ void main() {
     expect(find.text('知道了'), findsNothing);
   });
 
+  testWidgets('点击第三张卡片进入围棋占位页', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 点击游戏列表第三张卡片（围棋，玩法待开发）
+    await tester.tap(find.byType(GameCard).at(2));
+    await tester.pumpAndSettle();
+
+    // 占位页：顶栏展示游戏名 + 开发中提示
+    expect(find.byIcon(Icons.blur_on_rounded), findsWidgets);
+    expect(find.text('功能开发中，敬请期待'), findsOneWidget);
+
+    // 顶栏返回回主页
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+  });
+
   testWidgets('五子棋：点击第二张卡片进入游戏页并选择规格', (tester) async {
     await tester.pumpWidget(const MyApp());
 

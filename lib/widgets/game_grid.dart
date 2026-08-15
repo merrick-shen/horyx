@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
 import '../pages/gomoku_page.dart';
+import '../pages/placeholder_page.dart';
 import '../pages/word_pk_page.dart';
 import 'game_card.dart';
 
@@ -38,7 +39,8 @@ class GameGrid extends StatelessWidget {
           itemCount: GameData.games.length,
           itemBuilder: (context, index) => GameCard(
             game: GameData.games[index],
-            // 已接入玩法的游戏卡片跳转对应游戏页，其余仍为占位
+            // 已接入玩法的游戏卡片跳转对应游戏页；
+            // 已规划未开发的游戏进入占位页，其余（开发中卡片）不可点击
             onTap: switch (index) {
               0 => () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -48,6 +50,15 @@ class GameGrid extends StatelessWidget {
               1 => () => Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => const GomokuPage(),
+                    ),
+                  ),
+              2 => () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      // 标题与图标复用游戏卡片数据，保持两处一致
+                      builder: (_) => PlaceholderPage(
+                        title: GameData.weiqi.name,
+                        icon: GameData.weiqi.icon,
+                      ),
                     ),
                   ),
               _ => null,
