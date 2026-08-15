@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
+import '../pages/gomoku_page.dart';
 import '../pages/word_pk_page.dart';
 import 'game_card.dart';
 
@@ -37,14 +38,20 @@ class GameGrid extends StatelessWidget {
           itemCount: GameData.games.length,
           itemBuilder: (context, index) => GameCard(
             game: GameData.games[index],
-            // 当前仅第一张卡片接入「单词PK」游戏页，其余仍为占位
-            onTap: index == 0
-                ? () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const WordPkPage(),
-                      ),
-                    )
-                : null,
+            // 已接入玩法的游戏卡片跳转对应游戏页，其余仍为占位
+            onTap: switch (index) {
+              0 => () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const WordPkPage(),
+                    ),
+                  ),
+              1 => () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const GomokuPage(),
+                    ),
+                  ),
+              _ => null,
+            },
           ),
         );
       },

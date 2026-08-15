@@ -8,6 +8,7 @@ import 'package:horyx/services/word_validator.dart';
 import 'package:horyx/theme/app_theme.dart';
 import 'package:horyx/theme/theme_controller.dart';
 import 'package:horyx/widgets/game_card.dart';
+import 'package:horyx/widgets/gomoku/gomoku_board.dart';
 
 void main() {
   // 测试直接 pumpWidget 不经过 main()，需手动预加载单词词表
@@ -202,6 +203,44 @@ void main() {
     expect(find.text('Horyx'), findsOneWidget);
     expect(find.text('单词已重复'), findsNothing);
     expect(find.text('知道了'), findsNothing);
+  });
+
+  testWidgets('五子棋：点击第二张卡片进入游戏页并选择规格', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    // 点击游戏列表第二张卡片（五子棋）
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+
+    // 进入游戏页：顶栏展示「五子棋」，设置视图含规格选择
+    expect(find.text('五子棋'), findsOneWidget);
+    expect(find.text('棋盘规格'), findsOneWidget);
+    expect(find.text('15×15'), findsOneWidget);
+    expect(find.text('19×19'), findsOneWidget);
+    expect(find.text('开始对局'), findsOneWidget);
+    expect(find.text('更多'), findsNothing);
+  });
+
+  testWidgets('五子棋：开始对局切换到对局视图', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+
+    // 选择 19 路大盘并开始对局
+    await tester.tap(find.text('19×19'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+
+    // 对局视图：黑方先行提示、棋盘、落子确认与悔棋按钮
+    expect(find.text('当前执子'), findsOneWidget);
+    expect(find.text('黑方'), findsOneWidget);
+    expect(find.byType(GomokuBoard), findsOneWidget);
+    expect(find.text('取消'), findsOneWidget);
+    expect(find.text('下棋'), findsOneWidget);
+    expect(find.text('悔棋'), findsOneWidget);
+    // 设置视图已隐藏
+    expect(find.text('棋盘规格'), findsNothing);
   });
 
   testWidgets('设置页：主题入口跳转主题设置页', (tester) async {

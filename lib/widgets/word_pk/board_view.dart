@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/word_entry.dart';
 import '../../theme/app_theme.dart';
 import '../primary_button.dart';
+import '../turn_card.dart';
 
 /// 单词PK - 对局视图
 /// 受控组件：对局状态（当前输入者、单词列表）由父级 WordPkPage 持有，
@@ -67,7 +68,13 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _CurrentPlayerCard(playerIndex: widget.currentPlayer),
+                // 当前输入者卡片（通用回合卡组件）
+                TurnCard(
+                  icon: Icons.keyboard_rounded,
+                  subtitle: '当前输入者',
+                  title: '玩家 ${widget.currentPlayer}',
+                  titleKey: ValueKey(widget.currentPlayer),
+                ),
                 const SizedBox(height: 16),
                 _PlayerSequence(
                   playerCount: widget.playerCount,
@@ -191,80 +198,6 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/// 当前输入者卡片
-class _CurrentPlayerCard extends StatelessWidget {
-  const _CurrentPlayerCard({required this.playerIndex});
-
-  /// 当前输入者序号（从 1 开始）
-  final int playerIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: palette.primary,
-        borderRadius: BorderRadius.circular(20),
-        // 品牌色光晕强调「轮到谁」
-        boxShadow: [
-          BoxShadow(
-            color: palette.primary.withValues(alpha: 0.35),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.keyboard_rounded,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 半透明白色小字，叠在品牌色底上仍清晰
-              Text(
-                '当前输入者',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 12,
-                ),
-              ),
-              const SizedBox(height: 2),
-              // 玩家切换时淡入淡出，强化轮换感知
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Text(
-                  '玩家 $playerIndex',
-                  key: ValueKey(playerIndex),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
