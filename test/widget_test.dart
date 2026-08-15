@@ -10,6 +10,20 @@ import 'package:horyx/theme/theme_controller.dart';
 import 'package:horyx/widgets/game_card.dart';
 import 'package:horyx/widgets/gomoku/gomoku_board.dart';
 
+/// 计算五子棋棋盘交叉点的屏幕坐标（用于 tapAt 模拟点击棋盘）
+/// 棋盘结构：Container 内边距 8 + 画布区域，交叉点 = 边距(1格) + col*cell
+Offset gomokuCell(WidgetTester tester, int col, int row) {
+  final board = tester.renderObject(find.byType(GomokuBoard)) as RenderBox;
+  // 15 路棋盘（默认规格）：画布宽 = 组件宽 - 两侧内边距
+  final paintWidth = board.size.width - 16;
+  final cell = paintWidth / 16;
+  final local = Offset(
+    8 + cell * (col + 1),
+    8 + cell * (row + 1),
+  );
+  return board.localToGlobal(local);
+}
+
 void main() {
   // 测试直接 pumpWidget 不经过 main()，需手动预加载单词词表
   setUpAll(() async {
@@ -232,15 +246,76 @@ void main() {
     await tester.tap(find.text('开始对局'));
     await tester.pumpAndSettle();
 
-    // 对局视图：黑方先行提示、棋盘、落子确认与悔棋按钮
+    // 对局视图：黑方先行提示、棋盘与悔棋按钮
     expect(find.text('当前执子'), findsOneWidget);
     expect(find.text('黑方'), findsOneWidget);
     expect(find.byType(GomokuBoard), findsOneWidget);
-    expect(find.text('取消'), findsOneWidget);
-    expect(find.text('下棋'), findsOneWidget);
     expect(find.text('悔棋'), findsOneWidget);
+    // 无预选棋子时不显示取消/下棋按钮
+    expect(find.text('取消'), findsNothing);
+    expect(find.text('下棋'), findsNothing);
     // 设置视图已隐藏
     expect(find.text('棋盘规格'), findsNothing);
+  });
+
+  testWidgets('五子棋：点选棋盘出现预选与确认按钮，取消后消失', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+
+    // 点击棋盘天元位置：预选棋子出现，确认按钮随之显示
+    await tester.tapAt(gomokuCell(tester, 7, 7));
+    await tester.pumpAndSettle();
+    expect(find.text('取消'), findsOneWidget);
+    expect(find.text('下棋'), findsOneWidget);
+
+    // 点击取消：预选消失，按钮隐藏，仍未落子（黑方执子）
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.text('取消'), findsNothing);
+    expect(find.text('下棋'), findsNothing);
+    expect(find.text('黑方'), findsOneWidget);
+  });
+
+  testWidgets('五子棋：确认落子轮换执子方并支持悔棋', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+
+    // 黑方落子天元
+    await tester.tapAt(gomokuCell(tester, 7, 7));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('下棋'));
+    await tester.pumpAndSettle();
+    expect(find.text('白方'), findsOneWidget);
+
+    // 白方点击已有棋子位置：不生成预选，确认按钮不出现
+    await tester.tapAt(gomokuCell(tester, 7, 7));
+    await tester.pumpAndSettle();
+    expect(find.text('下棋'), findsNothing);
+
+    await tester.tapAt(gomokuCell(tester, 8, 8));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('下棋'));
+    await tester.pumpAndSettle();
+    expect(find.text('黑方'), findsOneWidget);
+
+    // 悔棋撤回白子：回到白方执子
+    await tester.tap(find.text('悔棋'));
+    await tester.pumpAndSettle();
+    expect(find.text('白方'), findsOneWidget);
+
+    // 再悔棋撤回黑子；无子可悔后按钮禁用，执子方不再变化
+    await tester.tap(find.text('悔棋'));
+    await tester.pumpAndSettle();
+    expect(find.text('黑方'), findsOneWidget);
+    await tester.tap(find.text('悔棋'));
+    await tester.pumpAndSettle();
+    expect(find.text('黑方'), findsOneWidget);
   });
 
   testWidgets('设置页：主题入口跳转主题设置页', (tester) async {

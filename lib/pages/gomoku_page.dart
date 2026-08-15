@@ -25,6 +25,42 @@ class _GomokuPageState extends State<GomokuPage> {
   /// 棋盘路数（15 标准盘 / 19 大盘）
   int _boardSize = 15;
 
+  /// 已确认落子序列（索引奇偶决定黑白：0=黑 1=白）
+  final List<(int, int)> _moves = [];
+
+  /// 预选落子位置；null 表示无预选
+  (int, int)? _pending;
+
+  /// 点击棋盘交叉点：已有棋子的点不可选，其余更新预选
+  void _onCellTap(int col, int row) {
+    if (_moves.contains((col, row))) return;
+    setState(() => _pending = (col, row));
+  }
+
+  /// 取消预选：预选棋子消失
+  void _cancelMove() {
+    setState(() => _pending = null);
+  }
+
+  /// 确认落子：预选棋子转正式，执子方轮换
+  void _confirmMove() {
+    final selected = _pending;
+    if (selected == null) return;
+    setState(() {
+      _moves.add(selected);
+      _pending = null;
+    });
+  }
+
+  /// 悔棋：撤回最后一颗确认棋子，执子方回退
+  void _undo() {
+    if (_moves.isEmpty) return;
+    setState(() {
+      _moves.removeLast();
+      _pending = null;
+    });
+  }
+
   void _onStart() {
     setState(() => _started = true);
   }
@@ -56,9 +92,12 @@ class _GomokuPageState extends State<GomokuPage> {
                     ? _BoardView(
                         key: const ValueKey('board'),
                         boardSize: _boardSize,
-                        onCancelMove: () {},
-                        onConfirmMove: () {},
-                        onUndo: () {},
+                        moves: _moves,
+                        pending: _pending,
+                        onCellTap: _onCellTap,
+                        onCancelMove: _cancelMove,
+                        onConfirmMove: _confirmMove,
+                        onUndo: _undo,
                       )
                     : _SetupView(
                         key: const ValueKey('setup'),
@@ -166,11 +205,14 @@ class _SetupView extends StatelessWidget {
   }
 }
 
-/// 对局视图（静态）：当前执子提示 + 棋盘 + 操作按钮
+/// 对局视图：当前执子提示 + 棋盘 + 操作按钮
 class _BoardView extends StatelessWidget {
   const _BoardView({
     super.key,
     required this.boardSize,
+    required this.moves,
+    required this.pending,
+    required this.onCellTap,
     required this.onCancelMove,
     required this.onConfirmMove,
     required this.onUndo,
@@ -179,17 +221,29 @@ class _BoardView extends StatelessWidget {
   /// 棋盘路数
   final int boardSize;
 
-  /// 点击「取消」回调：清除落子预选（玩法接入后生效）
+  /// 已确认落子序列
+  final List<(int, int)> moves;
+
+  /// 预选落子位置；null 表示无预选
+  final (int, int)? pending;
+
+  /// 点击棋盘交叉点回调
+  final void Function(int col, int row) onCellTap;
+
+  /// 点击「取消」回调：清除落子预选
   final VoidCallback onCancelMove;
 
-  /// 点击「下棋」回调：确认落子（玩法接入后生效）
+  /// 点击「下棋」回调：确认落子
   final VoidCallback onConfirmMove;
 
-  /// 点击「悔棋」回调（玩法接入后生效）
+  /// 点击「悔棋」回调
   final VoidCallback onUndo;
 
   @override
   Widget build(BuildContext context) {
+    // 落子确认按钮仅在棋盘上有预选棋子时出现
+    final hasPending = pending != null;
+
     return SizedBox.expand(
       child: Center(
         child: ConstrainedBox(
@@ -199,45 +253,59 @@ class _BoardView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 黑方先行：当前执子提示卡
-                const TurnCard(
+                // 执子方轮换时淡入淡出提示
+                TurnCard(
                   icon: Icons.circle_rounded,
                   subtitle: '当前执子',
-                  title: '黑方',
-                  titleKey: ValueKey('黑方'),
+                  title: moves.length.isEven ? '黑方' : '白方',
+                  titleKey: ValueKey(moves.length.isEven ? '黑方' : '白方'),
                 ),
                 const SizedBox(height: 16),
                 // 棋盘占据剩余空间，正方形自适应宽高较小者
                 Expanded(
                   child: Center(
-                    child: GomokuBoard(size: boardSize),
+                    child: GomokuBoard(
+                      size: boardSize,
+                      stones: moves,
+                      pending: pending,
+                      onCellTap: onCellTap,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                // 落子确认操作：点选棋盘位置后「下棋」确认、「取消」清除预选
-                Row(
-                  children: [
-                    Expanded(
-                      child: PrimaryButton(
-                        label: '取消',
-                        outlined: true,
-                        onPressed: onCancelMove,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: PrimaryButton(
-                        label: '下棋',
-                        onPressed: onConfirmMove,
-                      ),
-                    ),
-                  ],
+                // 落子确认操作：仅预选棋子存在时显示
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  child: hasPending
+                      ? Row(
+                          key: const ValueKey('confirm_row'),
+                          children: [
+                            Expanded(
+                              child: PrimaryButton(
+                                label: '取消',
+                                outlined: true,
+                                onPressed: onCancelMove,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: PrimaryButton(
+                                label: '下棋',
+                                onPressed: onConfirmMove,
+                              ),
+                            ),
+                          ],
+                        )
+                      : const SizedBox.shrink(
+                          key: ValueKey('confirm_row_hidden'),
+                        ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: hasPending ? 12 : 0),
+                // 无棋子可悔时按钮禁用（灰底不可点击）
                 PrimaryButton(
                   label: '悔棋',
                   icon: Icons.undo_rounded,
-                  onPressed: onUndo,
+                  onPressed: moves.isEmpty ? null : onUndo,
                 ),
               ],
             ),
