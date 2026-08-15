@@ -1,0 +1,151 @@
+import 'package:flutter/material.dart';
+
+import '../primary_button.dart';
+import '../../theme/app_theme.dart';
+
+/// 单词PK - 人数设置视图
+/// 展示 PK 人数选择（2~8 人）与「开始 PK」入口
+/// 当前为静态 UI 阶段：仅高亮切换交互，人数暂不参与流程逻辑
+class WordPkSetupView extends StatefulWidget {
+  const WordPkSetupView({super.key, required this.onStart});
+
+  /// 点击「开始 PK」回调，参数为所选人数
+  final ValueChanged<int> onStart;
+
+  /// 可选人数范围
+  static const int minPlayers = 2;
+  static const int maxPlayers = 8;
+
+  @override
+  State<WordPkSetupView> createState() => _WordPkSetupViewState();
+}
+
+class _WordPkSetupViewState extends State<WordPkSetupView> {
+  int _selected = WordPkSetupView.minPlayers;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: Center(
+        // 平板/桌面端限制内容宽度，居中展示
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 人数选择卡片
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceBg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppColors.stroke),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '参与人数',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        '选择参与 PK 的人数（至少 2 人），玩家将按顺序轮流输入单词',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          for (int n = WordPkSetupView.minPlayers;
+                              n <= WordPkSetupView.maxPlayers;
+                              n++)
+                            _CountOption(
+                              value: n,
+                              selected: n == _selected,
+                              onTap: () => setState(() => _selected = n),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                PrimaryButton(
+                  label: '开始 PK',
+                  icon: Icons.local_fire_department_rounded,
+                  onPressed: () => widget.onStart(_selected),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 人数选项块
+class _CountOption extends StatelessWidget {
+  const _CountOption({
+    required this.value,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final int value;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        width: 56,
+        height: 56,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          // 选中态使用品牌渐变，未选中与卡片底色区分
+          gradient: selected
+              ? const LinearGradient(colors: AppColors.brandGradient)
+              : null,
+          color: selected ? null : AppColors.scaffoldBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected ? Colors.transparent : AppColors.stroke,
+          ),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
+        ),
+        child: Text(
+          '$value',
+          style: TextStyle(
+            color: selected ? Colors.white : AppColors.textPrimary,
+            fontSize: 17,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
