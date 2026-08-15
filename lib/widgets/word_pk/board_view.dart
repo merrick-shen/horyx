@@ -1,17 +1,32 @@
 import 'package:flutter/material.dart';
 
 import '../../models/word_entry.dart';
-import '../../services/word_validator.dart';
 import '../../theme/app_theme.dart';
 import '../primary_button.dart';
 
 /// 单词PK - 对局视图
-/// 完整提交流程：空值/格式检查 → 重复检测 → 真实性验证 → 入列并轮换输入者
+/// 受控组件：对局状态（当前输入者、单词列表）由父级 WordPkPage 持有，
+/// 本组件负责展示与输入，提交经 [onSubmit] 交由父级校验处理
 class WordPkBoardView extends StatefulWidget {
-  const WordPkBoardView({super.key, required this.playerCount});
+  const WordPkBoardView({
+    super.key,
+    required this.playerCount,
+    required this.currentPlayer,
+    required this.entries,
+    required this.onSubmit,
+  });
 
-  /// 参与人数（由设置视图传入）
+  /// 参与人数
   final int playerCount;
+
+  /// 当前输入者序号（从 1 开始）
+  final int currentPlayer;
+
+  /// 已验证通过的单词列表（最新置顶）
+  final List<WordEntry> entries;
+
+  /// 提交输入单词；返回 true 表示校验通过（组件据此清空输入框）
+  final bool Function(String word) onSubmit;
 
   @override
   State<WordPkBoardView> createState() => _WordPkBoardViewState();
@@ -21,12 +36,6 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
   final _inputController = TextEditingController();
   final _focusNode = FocusNode();
 
-  /// 已验证通过的单词列表
-  final List<WordEntry> _entries = [];
-
-  /// 当前输入者序号（从 1 开始）
-  int _currentPlayer = 1;
-
   @override
   void dispose() {
     _inputController.dispose();
@@ -34,63 +43,14 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
     super.dispose();
   }
 
-  /// 提交输入：按「格式 → 重复 → 真实性」顺序校验
+  /// 提交输入：交由父级校验，通过后清空输入框并保持焦点
   void _submit() {
-    final raw = _inputController.text.trim();
-
     // 提交后保持焦点，便于下一位玩家直接输入
     _focusNode.requestFocus();
-
-    if (raw.isEmpty) {
-      _showHint('请输入英文单词');
-      return;
+    final accepted = widget.onSubmit(_inputController.text);
+    if (accepted) {
+      _inputController.clear();
     }
-    // 仅允许纯英文字母，提前拦截中文、数字、空格等输入
-    if (!RegExp(r'^[A-Za-z]+$').hasMatch(raw)) {
-      _showHint('单词只能由英文字母组成');
-      return;
-    }
-    // 统一小写后参与重复比较，忽略大小写差异
-    final word = raw.toLowerCase();
-    if (_entries.any((e) => e.word == word)) {
-      _showHint('单词已重复');
-      return;
-    }
-    if (!WordValidator.isValid(word)) {
-      _showHint('不是有效的英文单词');
-      return;
-    }
-
-    // 全部校验通过：插入列表头部（最新置顶）并轮换至下一位输入者
-    setState(() {
-      _entries.insert(0, WordEntry(word: word, playerIndex: _currentPlayer));
-      _currentPlayer = _currentPlayer % widget.playerCount + 1;
-    });
-    _inputController.clear();
-    // 新输入成功时清除遗留的错误提示，避免信息干扰
-    _hideHint();
-  }
-
-  /// 展示错误/引导提示
-  /// 按需求需手动关闭（不自动消失），避免玩家漏看提示
-  void _showHint(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(days: 1),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: '知道了',
-            onPressed: _hideHint,
-          ),
-        ),
-      );
-  }
-
-  void _hideHint() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
   }
 
   @override
@@ -105,11 +65,11 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _CurrentPlayerCard(playerIndex: _currentPlayer),
+                _CurrentPlayerCard(playerIndex: widget.currentPlayer),
                 const SizedBox(height: 16),
                 _PlayerSequence(
                   playerCount: widget.playerCount,
-                  currentIndex: _currentPlayer,
+                  currentIndex: widget.currentPlayer,
                 ),
                 const SizedBox(height: 16),
                 // 单词输入行：输入框 + 提交按钮
@@ -196,7 +156,7 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                                 border: Border.all(color: AppColors.stroke),
                               ),
                               child: Text(
-                                '${_entries.length} 个',
+                                '${widget.entries.length} 个',
                                 style: const TextStyle(
                                   color: AppColors.textSecondary,
                                   fontSize: 11,
@@ -207,16 +167,17 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                         ),
                         const SizedBox(height: 12),
                         Expanded(
-                          child: _entries.isEmpty
+                          child: widget.entries.isEmpty
                               ? const _EmptyState()
                               : ListView.separated(
                                   padding: EdgeInsets.zero,
-                                  itemCount: _entries.length,
+                                  itemCount: widget.entries.length,
                                   separatorBuilder: (_, _) =>
                                       const SizedBox(height: 10),
                                   itemBuilder: (context, index) => _WordChip(
-                                    word: _entries[index].word,
-                                    playerIndex: _entries[index].playerIndex,
+                                    word: widget.entries[index].word,
+                                    playerIndex:
+                                        widget.entries[index].playerIndex,
                                   ),
                                 ),
                         ),

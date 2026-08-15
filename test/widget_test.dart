@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:horyx/main.dart';
 import 'package:horyx/services/word_validator.dart';
@@ -10,6 +11,11 @@ void main() {
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
     await WordValidator.load();
+  });
+
+  // 每个测试使用独立的模拟本地存储
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
   });
 
   testWidgets('主页静态 UI 冒烟测试', (tester) async {
@@ -96,5 +102,49 @@ void main() {
     await tester.tap(find.text('提交'));
     await tester.pumpAndSettle();
     expect(find.text('单词只能由英文字母组成'), findsOneWidget);
+  });
+
+  testWidgets('单词PK：退出弹窗与保存恢复流程', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始 PK'));
+    await tester.pumpAndSettle();
+
+    // 玩家1 输入单词后轮换至玩家2
+    await tester.enterText(find.byType(TextField), 'apple');
+    await tester.tap(find.text('提交'));
+    await tester.pumpAndSettle();
+
+    // 对局中点击顶栏返回：弹出确认弹窗
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('退出对局？'), findsOneWidget);
+    expect(find.text('保存并退出'), findsOneWidget);
+
+    // 取消：留在对局
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前输入者'), findsOneWidget);
+
+    // 再次返回并确认保存：退出游戏页回到主页
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('单词PK'), findsNothing);
+    expect(find.text('Horyx'), findsOneWidget);
+
+    // 重新进入游戏页：展示「继续上次对局」入口
+    await tester.tap(find.byType(GameCard).first);
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次对局'), findsOneWidget);
+
+    // 点击继续：恢复对局进度（单词与当前输入者玩家2）
+    await tester.tap(find.text('继续上次对局'));
+    await tester.pumpAndSettle();
+    expect(find.text('apple'), findsOneWidget);
+    expect(find.text('当前输入者'), findsOneWidget);
+    expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
   });
 }
