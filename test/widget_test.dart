@@ -10,6 +10,14 @@ import 'package:horyx/theme/theme_controller.dart';
 import 'package:horyx/widgets/game_card.dart';
 import 'package:horyx/widgets/gomoku/gomoku_board.dart';
 
+/// 在五子棋棋盘指定交叉点完成「点选 → 确认」完整落子
+Future<void> placeGomokuStone(WidgetTester tester, int col, int row) async {
+  await tester.tapAt(gomokuCell(tester, col, row));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('下棋'));
+  await tester.pumpAndSettle();
+}
+
 /// 计算五子棋棋盘交叉点的屏幕坐标（用于 tapAt 模拟点击棋盘）
 /// 棋盘结构：Container 内边距 8 + 画布区域，交叉点 = 边距(1格) + col*cell
 Offset gomokuCell(WidgetTester tester, int col, int row) {
@@ -325,6 +333,86 @@ void main() {
     await tester.tap(find.text('悔棋'));
     await tester.pumpAndSettle();
     expect(find.text('黑方'), findsOneWidget);
+  });
+
+  testWidgets('五子棋：五连胜利弹窗、终局锁定与再来一局', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+
+    // 黑方横向五连（白方在另一行干扰位落子）
+    for (final (black, white) in [
+      ((3, 7), (3, 8)),
+      ((4, 7), (4, 8)),
+      ((5, 7), (5, 8)),
+      ((6, 7), (6, 8)),
+    ]) {
+      final (bc, br) = black;
+      final (wc, wr) = white;
+      await placeGomokuStone(tester, bc, br);
+      await placeGomokuStone(tester, wc, wr);
+    }
+    // 黑方第 5 子连成五连
+    await placeGomokuStone(tester, 7, 7);
+
+    // 胜利弹窗：胜方标题与三个操作
+    // （终局时底部也会出现「再来一局」，同名按钮需限定在弹窗内查找）
+    final dialogRestart = find.descendant(
+      of: find.byType(Dialog),
+      matching: find.text('再来一局'),
+    );
+    expect(find.text('黑方胜利！'), findsOneWidget);
+    expect(dialogRestart, findsOneWidget);
+    expect(find.text('返回设置'), findsOneWidget);
+
+    // 关闭弹窗查看棋盘：终局提示 + 棋盘锁定（点击不再生成预选）
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.text('对局结束'), findsOneWidget);
+    expect(find.text('黑方胜利'), findsOneWidget);
+    expect(find.text('悔棋'), findsNothing);
+    await tester.tapAt(gomokuCell(tester, 10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('下棋'), findsNothing);
+
+    // 底部再来一局：清盘回到黑方执子
+    await tester.tap(find.text('再来一局'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前执子'), findsOneWidget);
+    expect(find.text('黑方'), findsOneWidget);
+    expect(find.text('悔棋'), findsOneWidget);
+  });
+
+  testWidgets('五子棋：胜利弹窗返回设置视图', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.tap(find.byType(GameCard).at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+
+    // 竖向五连（黑方 row 3..7，白方在旁列落子）
+    for (final (black, white) in [
+      ((7, 3), (8, 3)),
+      ((7, 4), (8, 4)),
+      ((7, 5), (8, 5)),
+      ((7, 6), (8, 6)),
+    ]) {
+      final (bc, br) = black;
+      final (wc, wr) = white;
+      await placeGomokuStone(tester, bc, br);
+      await placeGomokuStone(tester, wc, wr);
+    }
+    await placeGomokuStone(tester, 7, 7);
+
+    expect(find.text('黑方胜利！'), findsOneWidget);
+
+    // 选择返回设置：回到规格选择视图
+    await tester.tap(find.text('返回设置'));
+    await tester.pumpAndSettle();
+    expect(find.text('棋盘规格'), findsOneWidget);
+    expect(find.text('开始对局'), findsOneWidget);
   });
 
   testWidgets('设置页：主题入口跳转主题设置页', (tester) async {

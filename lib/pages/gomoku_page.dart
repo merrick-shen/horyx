@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/gomoku/gomoku_board.dart';
 import '../widgets/option_block.dart';
 import '../widgets/panel_card.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/turn_card.dart';
 
-/// 五子棋游戏页（静态阶段）
-/// 当前仅含规格选择与对局界面布局，落子与胜负玩法待开发
+/// 五子棋游戏页
+/// 持有对局状态（落子序列、预选、胜负），统一负责：
+/// 落子确认、五连判定、胜利弹窗与重开/返回设置
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class GomokuPage extends StatefulWidget {
   const GomokuPage({super.key});
@@ -31,8 +33,12 @@ class _GomokuPageState extends State<GomokuPage> {
   /// 预选落子位置；null 表示无预选
   (int, int)? _pending;
 
-  /// 点击棋盘交叉点：已有棋子的点不可选，其余更新预选
+  /// 胜方（'黑方'/'白方'）；null 表示对局进行中
+  String? _winner;
+
+  /// 点击棋盘交叉点：终局或已有棋子的点不可选，其余更新预选
   void _onCellTap(int col, int row) {
+    if (_winner != null) return;
     if (_moves.contains((col, row))) return;
     setState(() => _pending = (col, row));
   }
@@ -42,13 +48,95 @@ class _GomokuPageState extends State<GomokuPage> {
     setState(() => _pending = null);
   }
 
-  /// 确认落子：预选棋子转正式，执子方轮换
+  /// 确认落子：预选棋子转正式，执子方轮换；胜利时弹出结果弹窗
   void _confirmMove() {
     final selected = _pending;
     if (selected == null) return;
+    final (col, row) = selected;
     setState(() {
       _moves.add(selected);
       _pending = null;
+    });
+
+    // 刚落子的一方：落子后序列长度奇偶判断（黑先）
+    final blackMoved = _moves.length.isOdd;
+    if (_hasFiveInRow(col, row, blackMoved)) {
+      setState(() => _winner = blackMoved ? '黑方' : '白方');
+      _showWinDialog();
+    }
+  }
+
+  /// 五连判定：以落子点为中心，沿四个方向数连续同色棋子
+  bool _hasFiveInRow(int col, int row, bool black) {
+    const dirs = [(1, 0), (0, 1), (1, 1), (1, -1)];
+    for (final (dx, dy) in dirs) {
+      var count = 1;
+      // 沿正负两个方向延伸计数
+      for (final sign in [1, -1]) {
+        var c = col + dx * sign;
+        var r = row + dy * sign;
+        while (_isSameStone(c, r, black)) {
+          count++;
+          c += dx * sign;
+          r += dy * sign;
+        }
+      }
+      if (count >= 5) return true;
+    }
+    return false;
+  }
+
+  /// 指定位置是否为指定颜色的已落棋子（越界视为无子）
+  bool _isSameStone(int col, int row, bool black) {
+    if (col < 0 || col >= _boardSize || row < 0 || row >= _boardSize) {
+      return false;
+    }
+    final index = _moves.indexOf((col, row));
+    // record 结构相等可直接 indexOf；索引奇偶即棋子颜色
+    return index >= 0 && index.isEven == black;
+  }
+
+  /// 胜利弹窗：再来一局 / 返回设置 / 查看棋盘
+  Future<void> _showWinDialog() async {
+    final winner = _winner;
+    if (winner == null) return;
+
+    final result = await showConfirmDialog(
+      context,
+      title: '$winner胜利！',
+      message: '五子连珠，$winner赢得本局',
+      confirmLabel: '再来一局',
+      neutralLabel: '返回设置',
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case ConfirmResult.confirm:
+        _restartMatch();
+      case ConfirmResult.neutral:
+        _backToSetup();
+      case ConfirmResult.cancel:
+        // 留在终局棋盘查看棋型
+        break;
+    }
+  }
+
+  /// 再来一局：清盘并回到黑方执子（保持当前棋盘规格）
+  void _restartMatch() {
+    setState(() {
+      _moves.clear();
+      _pending = null;
+      _winner = null;
+    });
+  }
+
+  /// 返回设置视图：清盘后重新选择规格
+  void _backToSetup() {
+    setState(() {
+      _moves.clear();
+      _pending = null;
+      _winner = null;
+      _started = false;
     });
   }
 
@@ -94,10 +182,12 @@ class _GomokuPageState extends State<GomokuPage> {
                         boardSize: _boardSize,
                         moves: _moves,
                         pending: _pending,
+                        winner: _winner,
                         onCellTap: _onCellTap,
                         onCancelMove: _cancelMove,
                         onConfirmMove: _confirmMove,
                         onUndo: _undo,
+                        onRestart: _restartMatch,
                       )
                     : _SetupView(
                         key: const ValueKey('setup'),
@@ -212,10 +302,12 @@ class _BoardView extends StatelessWidget {
     required this.boardSize,
     required this.moves,
     required this.pending,
+    required this.winner,
     required this.onCellTap,
     required this.onCancelMove,
     required this.onConfirmMove,
     required this.onUndo,
+    required this.onRestart,
   });
 
   /// 棋盘路数
@@ -226,6 +318,9 @@ class _BoardView extends StatelessWidget {
 
   /// 预选落子位置；null 表示无预选
   final (int, int)? pending;
+
+  /// 胜方；null 表示对局进行中
+  final String? winner;
 
   /// 点击棋盘交叉点回调
   final void Function(int col, int row) onCellTap;
@@ -239,10 +334,16 @@ class _BoardView extends StatelessWidget {
   /// 点击「悔棋」回调
   final VoidCallback onUndo;
 
+  /// 终局后点击「再来一局」回调：清盘重开
+  final VoidCallback onRestart;
+
   @override
   Widget build(BuildContext context) {
     // 落子确认按钮仅在棋盘上有预选棋子时出现
     final hasPending = pending != null;
+    // 终局后无预选、无子可悔
+    final isOver = winner != null;
+    final blackTurn = moves.length.isEven;
 
     return SizedBox.expand(
       child: Center(
@@ -253,15 +354,17 @@ class _BoardView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 执子方轮换时淡入淡出提示，图标颜色对应执子方棋子
+                // 对局中提示执子方（图标颜色对应棋子）；终局提示胜方
                 TurnCard(
                   icon: Icons.circle_rounded,
-                  iconColor: moves.length.isEven
+                  iconColor: (isOver ? !blackTurn : blackTurn)
                       ? GomokuBoard.blackStone
                       : GomokuBoard.whiteStone,
-                  subtitle: '当前执子',
-                  title: moves.length.isEven ? '黑方' : '白方',
-                  titleKey: ValueKey(moves.length.isEven ? '黑方' : '白方'),
+                  subtitle: isOver ? '对局结束' : '当前执子',
+                  title: isOver ? '$winner胜利' : (blackTurn ? '黑方' : '白方'),
+                  titleKey: ValueKey(
+                    isOver ? '$winner胜利' : (blackTurn ? '黑方' : '白方'),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 // 棋盘占据剩余空间，正方形自适应宽高较小者
@@ -307,12 +410,20 @@ class _BoardView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // 无棋子可悔时按钮禁用（灰底不可点击）
-                PrimaryButton(
-                  label: '悔棋',
-                  icon: Icons.undo_rounded,
-                  onPressed: moves.isEmpty ? null : onUndo,
-                ),
+                if (isOver)
+                  // 终局：悔棋替换为再来一局，方便查看棋型后重开
+                  PrimaryButton(
+                    label: '再来一局',
+                    icon: Icons.refresh_rounded,
+                    onPressed: onRestart,
+                  )
+                else
+                  // 对局中：无子可悔时按钮禁用（灰底不可点击）
+                  PrimaryButton(
+                    label: '悔棋',
+                    icon: Icons.undo_rounded,
+                    onPressed: moves.isEmpty ? null : onUndo,
+                  ),
               ],
             ),
           ),
