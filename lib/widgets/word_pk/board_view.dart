@@ -20,7 +20,6 @@ class WordPkBoardView extends StatefulWidget {
 class _WordPkBoardViewState extends State<WordPkBoardView> {
   final _inputController = TextEditingController();
   final _focusNode = FocusNode();
-  final _scrollController = ScrollController();
 
   /// 已验证通过的单词列表
   final List<WordEntry> _entries = [];
@@ -32,7 +31,6 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
   void dispose() {
     _inputController.dispose();
     _focusNode.dispose();
-    _scrollController.dispose();
     super.dispose();
   }
 
@@ -63,15 +61,14 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
       return;
     }
 
-    // 全部校验通过：入列并轮换至下一位输入者
+    // 全部校验通过：插入列表头部（最新置顶）并轮换至下一位输入者
     setState(() {
-      _entries.add(WordEntry(word: word, playerIndex: _currentPlayer));
+      _entries.insert(0, WordEntry(word: word, playerIndex: _currentPlayer));
       _currentPlayer = _currentPlayer % widget.playerCount + 1;
     });
     _inputController.clear();
     // 新输入成功时清除遗留的错误提示，避免信息干扰
     _hideHint();
-    _scrollToLatest();
   }
 
   /// 展示错误/引导提示
@@ -94,18 +91,6 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
 
   void _hideHint() {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-  }
-
-  /// 新单词入列后滚动到列表底部，保证最新单词可见
-  void _scrollToLatest() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOut,
-      );
-    });
   }
 
   @override
@@ -225,7 +210,6 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                           child: _entries.isEmpty
                               ? const _EmptyState()
                               : ListView.separated(
-                                  controller: _scrollController,
                                   padding: EdgeInsets.zero,
                                   itemCount: _entries.length,
                                   separatorBuilder: (_, _) =>
