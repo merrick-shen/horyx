@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../data/game_data.dart';
 import '../pages/gomoku_page.dart';
-import '../pages/placeholder_page.dart';
 import '../pages/scoreboard_page.dart';
+import '../pages/weiqi_page.dart';
 import '../pages/word_pk_page.dart';
 import 'game_card.dart';
 
@@ -40,8 +40,7 @@ class GameGrid extends StatelessWidget {
           itemCount: GameData.games.length,
           itemBuilder: (context, index) => GameCard(
             game: GameData.games[index],
-            // 已接入玩法的游戏卡片跳转对应游戏页；
-            // 已规划未开发的游戏进入占位页
+            // 各游戏卡片跳转对应游戏页（围棋当前为静态骨架，规则待开发）
             onTap: switch (index) {
               0 => () => Navigator.of(context).push(
                     MaterialPageRoute(
@@ -55,11 +54,7 @@ class GameGrid extends StatelessWidget {
                   ),
               2 => () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      // 标题与图标复用游戏卡片数据，保持两处一致
-                      builder: (_) => PlaceholderPage(
-                        title: GameData.weiqi.name,
-                        icon: GameData.weiqi.icon,
-                      ),
+                      builder: (_) => const WeiqiPage(),
                     ),
                   ),
               // 计分器：比分设置 + 横屏计分板

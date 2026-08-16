@@ -5,7 +5,7 @@ import 'helpers/game_navigation.dart';
 import 'helpers/test_app.dart';
 
 /// 主页与导航测试
-/// 各游戏功能测试见 word_pk_test / gomoku_test / scoreboard_test，
+/// 各游戏功能测试见 word_pk_test / gomoku_test / weiqi_test / scoreboard_test，
 /// 设置与主题测试见 settings_test
 void main() {
   setUpTestEnv();
@@ -36,17 +36,20 @@ void main() {
     expect(find.text('更多'), findsNothing);
   });
 
-  testWidgets('点击第三张卡片进入围棋占位页', (tester) async {
+  testWidgets('点击第三张卡片进入围棋设置页', (tester) async {
     await pumpApp(tester);
 
-    // 点击游戏列表第三张卡片（围棋，玩法待开发）
+    // 点击游戏列表第三张卡片（围棋）
     await openGame(tester, 2);
 
-    // 占位页：顶栏展示游戏名 + 开发中提示
-    expect(find.byIcon(Icons.blur_on_rounded), findsWidgets);
-    expect(find.text('功能开发中，敬请期待'), findsOneWidget);
+    // 设置页：顶栏游戏名 + 三档规格 + 开始按钮
+    expect(find.text('围棋'), findsOneWidget);
+    expect(find.text('9×9'), findsOneWidget);
+    expect(find.text('13×13'), findsOneWidget);
+    expect(find.text('19×19'), findsOneWidget);
+    expect(find.text('开始对局'), findsOneWidget);
 
-    // 顶栏返回回主页
+    // 顶栏返回回主页（设置阶段直接返回，无确认弹窗）
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     expect(find.text('Horyx'), findsOneWidget);
