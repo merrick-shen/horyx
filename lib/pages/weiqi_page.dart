@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../services/weiqi_rules.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/option_block.dart';
 import '../widgets/panel_card.dart';
 import '../widgets/primary_button.dart';
@@ -10,9 +12,10 @@ import '../widgets/turn_card.dart';
 
 /// 围棋游戏页
 /// 持有对局状态（着手序列、预选、执子方），统一负责：
-/// 落子确认、虚手轮换、悔棋回退与页面退出
-/// 当前阶段为静态 UI 骨架：不含气/提子/打劫等规则判定与终局数子，
-/// 也不含存档功能（含退出确认弹窗），均留待后续阶段接入
+/// 落子校验（自杀/打劫）、提子、虚手轮换、悔棋回退、终局数子与退出
+/// 棋盘/提子数/执子方/局面历史均由着手序列重放派生（单一数据源，
+/// 悔棋与重开免费回退，规则判定经 WeiqiRules 引擎执行）
+/// 当前阶段不含存档功能（含退出确认弹窗），留待后续阶段接入
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class WeiqiPage extends StatefulWidget {
   const WeiqiPage({super.key});
@@ -32,29 +35,63 @@ class _WeiqiPageState extends State<WeiqiPage> {
   /// 棋盘路数（9 小盘 / 13 中盘 / 19 标准盘）
   int _boardSize = 9;
 
-  /// 已完成的着手序列（落子与虚手按发生顺序记录）
+  /// 已完成的着手序列（落子与虚手按发生顺序记录，唯一数据源）
   final List<_Move> _moves = [];
 
   /// 预选落子位置；null 表示无预选
   (int, int)? _pending;
 
+  // ---- 以下均为着手序列的派生状态（_recompute 统一重算） ----
+
+  /// 当前局面（一维棋盘：0 空 / 1 黑 / 2 白）
+  List<int> _board = const [];
+
+  /// 历史局面集合（禁全同判定用，含当前局面）
+  Set<String> _positionHistory = {};
+
+  /// 当前棋子集合（通用棋盘组件绘制用）
+  List<Stone> _stones = const [];
+
   /// 当前执黑方（黑先；落子与虚手后均轮换）
-  /// 不能按落子数奇偶推导：虚手轮换执子但不增加落子数
   bool _blackToMove = true;
 
-  /// 黑方提子数（吃掉的白子）；静态阶段无提子规则恒为 0，提子逻辑接入后更新
-  final int _blackCaptures = 0;
+  /// 黑方提子数（黑吃掉的白子数）
+  int _blackCaptures = 0;
 
-  /// 白方提子数（吃掉的黑子）；静态阶段无提子规则恒为 0
-  final int _whiteCaptures = 0;
+  /// 白方提子数（白吃掉的黑子数）
+  int _whiteCaptures = 0;
 
-  /// 点击棋盘交叉点：已有棋子的点不可选，其余更新预选
+  /// 是否终局（连续双虚手触发）；终局后棋盘锁定
+  bool _gameOver = false;
+
+  /// 胜方（'黑方'/'白方'）；终局时由数子结果得出
+  String? _winner;
+
+  /// 终局数子结果（弹窗展示用）
+  int _scoreBlack = 0;
+  int _scoreWhite = 0;
+
+  /// 点击棋盘交叉点：先经引擎校验合法性，非法时提示且不进入预选
   void _onCellTap(int col, int row) {
-    final occupied = _moves.any(
-      (m) => !m.pass && m.col == col && m.row == row,
+    if (_gameOver) return;
+    final (result, _, _) = WeiqiRules.tryPlace(
+      _board,
+      _boardSize,
+      col,
+      row,
+      _blackToMove,
+      _positionHistory,
     );
-    if (occupied) return;
-    setState(() => _pending = (col, row));
+    switch (result) {
+      case WeiqiPlaceResult.occupied:
+        break; // 已有棋子静默忽略（与五子棋一致）
+      case WeiqiPlaceResult.suicide:
+        _showHint('此处不能落子（自杀手）');
+      case WeiqiPlaceResult.repetition:
+        _showHint('打劫：不能立即回提');
+      case WeiqiPlaceResult.ok:
+        setState(() => _pending = (col, row));
+    }
   }
 
   /// 取消预选：预选棋子消失
@@ -62,46 +99,185 @@ class _WeiqiPageState extends State<WeiqiPage> {
     setState(() => _pending = null);
   }
 
-  /// 确认落子：预选棋子转正式，执子方轮换
-  /// 静态阶段无规则校验（气/提子/禁着点判定在后续阶段接入）
+  /// 确认落子：预选点已在校验时确认合法，直接入列并重算派生状态
   void _confirmMove() {
     final selected = _pending;
     if (selected == null) return;
     final (col, row) = selected;
-    setState(() {
-      _moves.add((col: col, row: row, black: _blackToMove, pass: false));
-      _pending = null;
-      _blackToMove = !_blackToMove;
-    });
+    _moves.add((col: col, row: row, black: _blackToMove, pass: false));
+    _pending = null;
+    _recompute();
+    // 合法落子生效后清除遗留的非法提示，避免误导
+    _hideHint();
   }
 
   /// 虚手（停一手）：不落子仅轮换执子方，记入着手序列供悔棋回退
-  /// 连续两次虚手终局的判定在终局阶段接入
   void _pass() {
-    setState(() {
-      _moves.add((col: -1, row: -1, black: _blackToMove, pass: true));
-      _pending = null;
-      _blackToMove = !_blackToMove;
-    });
+    _moves.add((col: -1, row: -1, black: _blackToMove, pass: true));
+    _pending = null;
+    _recompute();
+    // 连续两手虚手 → 终局数子
+    final n = _moves.length;
+    if (n >= 2 && _moves[n - 1].pass && _moves[n - 2].pass) {
+      _finishGame();
+    }
   }
 
-  /// 悔棋：撤回最后一步着手（落子或虚手），执子方同步回退
+  /// 悔棋：撤回最后一步着手（落子或虚手），执子方与棋盘同步回退
   void _undo() {
     if (_moves.isEmpty) return;
+    _moves.removeLast();
+    _pending = null;
     setState(() {
-      _moves.removeLast();
-      _pending = null;
-      _blackToMove = !_blackToMove;
+      _gameOver = false;
+      _winner = null;
     });
+    _recompute();
+  }
+
+  /// 终局：数子判定胜负，弹出结果弹窗（在 setState 之后调用，避免构建期间弹窗）
+  void _finishGame() {
+    final (black, white) = WeiqiRules.score(_board, _boardSize);
+    setState(() {
+      _scoreBlack = black;
+      _scoreWhite = white;
+      // 黑贴 7.5：盘面点差超过贴目则黑胜；0.5 尾数保证不会平局
+      _winner = black - white - WeiqiRules.komi > 0 ? '黑方' : '白方';
+      _gameOver = true;
+    });
+    _showResultDialog();
+  }
+
+  /// 终局结果弹窗：再来一局 / 返回设置 / 留在棋盘复盘
+  Future<void> _showResultDialog() async {
+    final winner = _winner;
+    if (winner == null) return;
+    final margin = (_scoreBlack - _scoreWhite - WeiqiRules.komi).abs();
+    final result = await showConfirmDialog(
+      context,
+      title: '$winner胜利！',
+      message: '数子结果 黑 $_scoreBlack 子 · 白 $_scoreWhite 子，'
+          '贴 ${WeiqiRules.komi} 后$winner以 $margin 子优势获胜',
+      confirmLabel: '再来一局',
+      neutralLabel: '返回设置',
+    );
+    if (!mounted) return;
+    switch (result) {
+      case ConfirmResult.confirm:
+        _restartMatch();
+      case ConfirmResult.neutral:
+        _backToSetup();
+      case ConfirmResult.cancel:
+        break; // 留在终局棋盘复盘
+    }
+  }
+
+  /// 再来一局：清盘重开，保持当前规格（黑先）
+  void _restartMatch() {
+    _moves.clear();
+    _pending = null;
+    setState(() {
+      _gameOver = false;
+      _winner = null;
+    });
+    _recompute();
+  }
+
+  /// 返回设置页：清盘并回到规格选择
+  void _backToSetup() {
+    _moves.clear();
+    _pending = null;
+    setState(() {
+      _gameOver = false;
+      _winner = null;
+      _started = false;
+    });
+    _recompute();
   }
 
   void _onStart() {
     setState(() => _started = true);
+    _recompute(); // 初始化空盘派生状态（局面历史含初始空盘）
+  }
+
+  /// 重放着手序列，重算全部派生状态（棋盘/棋子/提子数/执子方/局面历史）
+  /// 重放中每手必合法：落子入口已校验，非法着手不会进入序列
+  void _recompute() {
+    final total = _boardSize * _boardSize;
+    var board = List<int>.filled(total, 0);
+    var blackToMove = true;
+    var blackCaptures = 0;
+    var whiteCaptures = 0;
+    final history = <String>{WeiqiRules.serialize(board)};
+    final stones = <Stone>[];
+
+    for (final m in _moves) {
+      if (m.pass) {
+        blackToMove = !blackToMove;
+        continue;
+      }
+      final (_, next, captured) = WeiqiRules.tryPlace(
+        board,
+        _boardSize,
+        m.col,
+        m.row,
+        m.black,
+        history,
+      );
+      board = next;
+      history.add(WeiqiRules.serialize(board));
+      if (m.black) {
+        blackCaptures += captured;
+      } else {
+        whiteCaptures += captured;
+      }
+      blackToMove = !blackToMove;
+    }
+
+    // 一维棋盘转棋子集合（供通用棋盘组件绘制）
+    for (var i = 0; i < total; i++) {
+      if (board[i] == 0) continue;
+      stones.add((i % _boardSize, i ~/ _boardSize, board[i] == 1));
+    }
+
+    setState(() {
+      _board = board;
+      _positionHistory = history;
+      _stones = stones;
+      _blackToMove = blackToMove;
+      _blackCaptures = blackCaptures;
+      _whiteCaptures = whiteCaptures;
+    });
+  }
+
+  /// 展示非法落子提示：不自动消失，需手动关闭（错误提示项目惯例）
+  void _showHint(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(days: 1),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: '知道了',
+            onPressed: () => messenger.hideCurrentSnackBar(),
+          ),
+        ),
+      );
+  }
+
+  /// 隐藏当前提示（合法操作生效后清除遗留提示）
+  void _hideHint() {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
   }
 
   /// 退出请求：直接返回主页
+  /// SnackBar 挂在应用级 ScaffoldMessenger，不随页面销毁，需主动清理
   /// 对局中退出的确认弹窗随存档功能一起在后续阶段引入
   void _requestExit() {
+    ScaffoldMessenger.of(context).removeCurrentSnackBar();
     Navigator.of(context).pop();
   }
 
@@ -131,16 +307,20 @@ class _WeiqiPageState extends State<WeiqiPage> {
                     ? _BoardView(
                         key: const ValueKey('board'),
                         boardSize: _boardSize,
-                        moves: _moves,
+                        stones: _stones,
                         pending: _pending,
                         blackToMove: _blackToMove,
+                        gameOver: _gameOver,
+                        winner: _winner,
                         blackCaptures: _blackCaptures,
                         whiteCaptures: _whiteCaptures,
+                        canUndo: _moves.isNotEmpty,
                         onCellTap: _onCellTap,
                         onCancelMove: _cancelMove,
                         onConfirmMove: _confirmMove,
                         onUndo: _undo,
                         onPass: _pass,
+                        onRestart: _restartMatch,
                       )
                     : _SetupView(
                         key: const ValueKey('setup'),
@@ -254,35 +434,48 @@ class _BoardView extends StatelessWidget {
   const _BoardView({
     super.key,
     required this.boardSize,
-    required this.moves,
+    required this.stones,
     required this.pending,
     required this.blackToMove,
+    required this.gameOver,
+    required this.winner,
     required this.blackCaptures,
     required this.whiteCaptures,
+    required this.canUndo,
     required this.onCellTap,
     required this.onCancelMove,
     required this.onConfirmMove,
     required this.onUndo,
     required this.onPass,
+    required this.onRestart,
   });
 
   /// 棋盘路数
   final int boardSize;
 
-  /// 已完成的着手序列（含虚手记录）
-  final List<_Move> moves;
+  /// 当前棋子集合（提子后的实时盘面）
+  final List<Stone> stones;
 
   /// 预选落子位置；null 表示无预选
   final (int, int)? pending;
 
-  /// 当前执黑方
+  /// 当前执黑方（终局后无意义）
   final bool blackToMove;
+
+  /// 是否终局
+  final bool gameOver;
+
+  /// 胜方（'黑方'/'白方'）；未终局为 null
+  final String? winner;
 
   /// 黑方提子数
   final int blackCaptures;
 
   /// 白方提子数
   final int whiteCaptures;
+
+  /// 是否有着手可悔
+  final bool canUndo;
 
   /// 点击棋盘交叉点回调
   final void Function(int col, int row) onCellTap;
@@ -299,9 +492,12 @@ class _BoardView extends StatelessWidget {
   /// 点击「虚手」回调：停一手轮换执子
   final VoidCallback onPass;
 
+  /// 点击「再来一局」回调（终局后）
+  final VoidCallback onRestart;
+
   @override
   Widget build(BuildContext context) {
-    // 落子确认按钮仅在棋盘上有预选棋子时出现
+    // 落子确认按钮仅在棋盘上有预选棋子时出现（终局后不会产生预选）
     final hasPending = pending != null;
 
     return SizedBox.expand(
@@ -313,18 +509,20 @@ class _BoardView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 对局中提示执子方（图标颜色对应棋子）
+                // 对局中提示执子方，终局显示胜方（图标颜色对应棋子）
                 TurnCard(
                   icon: Icons.circle_rounded,
-                  iconColor: blackToMove
+                  iconColor: (gameOver ? winner == '黑方' : blackToMove)
                       ? StoneBoard.blackStone
                       : StoneBoard.whiteStone,
-                  subtitle: '当前执子',
-                  title: blackToMove ? '黑方' : '白方',
-                  titleKey: ValueKey(blackToMove ? '黑方' : '白方'),
+                  subtitle: gameOver ? '对局结束' : '当前执子',
+                  title: gameOver ? '$winner胜利' : (blackToMove ? '黑方' : '白方'),
+                  titleKey: ValueKey(
+                    gameOver ? '$winner胜利' : (blackToMove ? '黑方' : '白方'),
+                  ),
                 ),
                 const SizedBox(height: 12),
-                // 双方提子数面板（围棋特色信息，静态阶段恒为 0）
+                // 双方提子数面板（提子生效后实时更新）
                 Row(
                   children: [
                     Expanded(
@@ -348,13 +546,9 @@ class _BoardView extends StatelessWidget {
                 // 棋盘占据剩余空间，正方形自适应宽高较小者
                 Expanded(
                   child: Center(
-                    // 虚手记录无棋子，过滤后仅落子参与绘制
                     child: StoneBoard(
                       size: boardSize,
-                      stones: [
-                        for (final m in moves)
-                          if (!m.pass) (m.col, m.row, m.black),
-                      ],
+                      stones: stones,
                       pending: pending == null
                           ? null
                           : (pending!.$1, pending!.$2, blackToMove),
@@ -394,27 +588,33 @@ class _BoardView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                // 对局操作：虚手（停一手）+ 悔棋；无着手可悔时悔棋禁用
-                Row(
-                  children: [
-                    Expanded(
-                      child: PrimaryButton(
-                        label: '虚手',
-                        icon: Icons.hourglass_bottom_rounded,
-                        outlined: true,
-                        onPressed: onPass,
+                // 对局操作：虚手（停一手）+ 悔棋；终局后换为再来一局
+                gameOver
+                    ? PrimaryButton(
+                        label: '再来一局',
+                        icon: Icons.refresh_rounded,
+                        onPressed: onRestart,
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: PrimaryButton(
+                              label: '虚手',
+                              icon: Icons.hourglass_bottom_rounded,
+                              outlined: true,
+                              onPressed: onPass,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: PrimaryButton(
+                              label: '悔棋',
+                              icon: Icons.undo_rounded,
+                              onPressed: canUndo ? onUndo : null,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: PrimaryButton(
-                        label: '悔棋',
-                        icon: Icons.undo_rounded,
-                        onPressed: moves.isEmpty ? null : onUndo,
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -432,7 +632,7 @@ class _CaptureCard extends StatelessWidget {
     required this.stoneColor,
   });
 
-  /// 方名（如「黑方提子」）
+  /// 方名（如「黑方提子」，同时作为数字 Key 供测试定位）
   final String label;
 
   /// 提子数
@@ -476,6 +676,7 @@ class _CaptureCard extends StatelessWidget {
           const Spacer(),
           Text(
             '$count',
+            key: ValueKey(label),
             style: TextStyle(
               color: palette.textPrimary,
               fontSize: 16,

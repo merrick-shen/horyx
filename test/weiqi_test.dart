@@ -77,4 +77,90 @@ void main() {
     expect(find.text('Horyx'), findsOneWidget);
     expect(find.text('开始对局'), findsNothing);
   });
+
+  testWidgets('围棋：提子生效并更新提子数', (tester) async {
+    await pumpApp(tester);
+    await startWeiqiGame(tester);
+
+    // 角部提子：黑(1,0) 白(0,0) 黑(0,1) 后角上白子无气被提
+    await placeWeiqiStone(tester, boardSize: 9, col: 1, row: 0);
+    await placeWeiqiStone(tester, boardSize: 9, col: 0, row: 0);
+    await placeWeiqiStone(tester, boardSize: 9, col: 0, row: 1);
+
+    // 黑方提子数更新为 1
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('黑方提子'))).data,
+      '1',
+    );
+  });
+
+  testWidgets('围棋：自杀手禁止落子', (tester) async {
+    await pumpApp(tester);
+    await startWeiqiGame(tester);
+
+    // 白先围住角点：白(1,0)、白(0,1) 后黑落 (0,0) 无气且提不到子
+    await placeWeiqiStone(tester, boardSize: 9, col: 2, row: 2);
+    await placeWeiqiStone(tester, boardSize: 9, col: 1, row: 0);
+    await placeWeiqiStone(tester, boardSize: 9, col: 3, row: 3);
+    await placeWeiqiStone(tester, boardSize: 9, col: 0, row: 1);
+
+    // 黑点 (0,0)：自杀手 → 提示且不进入预选
+    await tester.tapAt(weiqiCell(tester, 0, 0, 9));
+    await tester.pumpAndSettle();
+    expect(find.text('此处不能落子（自杀手）'), findsOneWidget);
+    expect(find.text('下棋'), findsNothing);
+  });
+
+  testWidgets('围棋：打劫不能立即回提', (tester) async {
+    await pumpApp(tester);
+    await startWeiqiGame(tester);
+
+    // 构造劫争：黑(1,0)(0,1)(1,2)(5,5) 白(2,0)(1,1)(3,1)(2,2)
+    final sequence = [
+      (1, 0), (2, 0), (0, 1), (1, 1), (1, 2), (3, 1), (5, 5), (2, 2),
+    ];
+    for (final (col, row) in sequence) {
+      await placeWeiqiStone(tester, boardSize: 9, col: col, row: row);
+    }
+
+    // 黑提劫：黑(2,1) 提掉白(1,1)，黑方提子数为 1
+    await placeWeiqiStone(tester, boardSize: 9, col: 2, row: 1);
+    expect(
+      tester.widget<Text>(find.byKey(const ValueKey('黑方提子'))).data,
+      '1',
+    );
+
+    // 白立即回提 (1,1) 重现历史局面 → 打劫被拒
+    await tester.tapAt(weiqiCell(tester, 1, 1, 9));
+    await tester.pumpAndSettle();
+    expect(find.text('打劫：不能立即回提'), findsOneWidget);
+    expect(find.text('下棋'), findsNothing);
+  });
+
+  testWidgets('围棋：双虚手终局与数子结果', (tester) async {
+    await pumpApp(tester);
+    await startWeiqiGame(tester);
+
+    // 首次虚手仅轮换执子方，不触发终局
+    await tester.tap(find.text('虚手'));
+    await tester.pumpAndSettle();
+    expect(find.text('白方'), findsOneWidget);
+    expect(find.text('对局结束'), findsNothing);
+
+    // 第二次连续虚手 → 终局：空盘数子黑 0 白 0，贴 7.5 后白胜
+    await tester.tap(find.text('虚手'));
+    await tester.pumpAndSettle();
+    expect(find.text('白方胜利！'), findsOneWidget);
+    expect(find.textContaining('黑 0 子'), findsOneWidget);
+    expect(find.textContaining('白 0 子'), findsOneWidget);
+
+    // 点击弹窗内「再来一局」：清盘回到黑先执子
+    await tester.tap(find.descendant(
+      of: find.byType(Dialog),
+      matching: find.text('再来一局'),
+    ));
+    await tester.pumpAndSettle();
+    expect(find.text('黑方'), findsOneWidget);
+    expect(find.text('再来一局'), findsNothing);
+  });
 }
