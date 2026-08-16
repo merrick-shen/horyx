@@ -35,6 +35,8 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.5
+  # 读取应用版本号（关于页展示，与 pubspec version 保持同步）
+  package_info_plus: ^8.3.0
 
 dev_dependencies:
   flutter_test:

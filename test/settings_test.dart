@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:horyx/services/theme_storage.dart';
 import 'package:horyx/theme/app_theme.dart';
@@ -202,7 +203,15 @@ void main() {
     );
   });
 
-  testWidgets('设置页：其他模块关于入口', (tester) async {
+  testWidgets('关于页：展示应用名称与版本号', (tester) async {
+    // 测试环境无平台插件，需预注入模拟版本信息
+    PackageInfo.setMockInitialValues(
+      appName: 'horyx',
+      packageName: 'com.example.horyx',
+      version: '1.0.0',
+      buildNumber: '1',
+      buildSignature: '',
+    );
     await pumpApp(tester);
 
     // 切换到「更多」页，「其他」模块包含关于入口
@@ -211,10 +220,19 @@ void main() {
     expect(find.text('其他'), findsOneWidget);
     expect(find.text('关于'), findsOneWidget);
 
-    // 点击进入关于页（当前为占位）
+    // 进入关于页：应用名 + 简介 + 版本号，不再是占位页
     await tester.tap(find.text('关于'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('功能开发中'), findsOneWidget);
+    expect(find.text('关于'), findsOneWidget);
+    expect(find.text('Horyx'), findsOneWidget);
+    expect(find.text('游戏合集，随时开局的掌上游戏厅'), findsOneWidget);
+    expect(find.text('v1.0.0'), findsOneWidget);
+    expect(find.textContaining('功能开发中'), findsNothing);
+
+    // 顶栏返回更多页
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('存档管理'), findsOneWidget);
   });
 
   testWidgets('存档管理：无存档时展示空状态', (tester) async {

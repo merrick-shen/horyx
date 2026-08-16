@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/setting_tile.dart';
-import 'placeholder_page.dart';
+import 'about_page.dart';
 import 'archive_page.dart';
 import 'theme_settings_page.dart';
 
@@ -70,14 +70,11 @@ class MorePage extends StatelessWidget {
                               SettingTile(
                                 icon: Icons.info_outline_rounded,
                                 title: '关于',
+                                subtitle: '应用信息与版本号',
                                 onTap: () {
-                                  // 关于页内容待开发，先复用通用占位页
                                   Navigator.of(context).push(
                                     MaterialPageRoute(
-                                      builder: (_) => const PlaceholderPage(
-                                        title: '关于',
-                                        icon: Icons.info_outline_rounded,
-                                      ),
+                                      builder: (_) => const AboutPage(),
                                     ),
                                   );
                                 },
