@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../theme/app_theme.dart';
@@ -61,16 +62,16 @@ class _AboutPageState extends State<AboutPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 应用标识：品牌色圆形容器 + 手柄图标
-                      // （项目无图片资源约束，用 Material 图标代替 Logo）
+                      // 应用标识：白色圆角矩形卡片 + 主题色 Logo
+                      // （SVG 源文件为黑色填充，经 colorFilter 重着色，
+                      //   颜色实时跟随用户选择的主题色）
                       Container(
-                        width: 92,
-                        height: 92,
+                        width: 100,
+                        height: 100,
                         decoration: BoxDecoration(
-                          color: palette.primary,
-                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(25),
                           boxShadow: [
-                            // 品牌色光晕投影，与游戏卡片悬停效果呼应
                             BoxShadow(
                               color: palette.primary.withValues(alpha: 0.35),
                               blurRadius: 24,
@@ -78,10 +79,14 @@ class _AboutPageState extends State<AboutPage> {
                             ),
                           ],
                         ),
-                        child: const Icon(
-                          Icons.sports_esports_rounded,
-                          color: Colors.white,
-                          size: 44,
+                        child: SvgPicture.asset(
+                          'assets/icon/logo.svg',
+                          width: 90,
+                          height: 90,
+                          colorFilter: ColorFilter.mode(
+                            palette.primary,
+                            BlendMode.srcIn,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),

@@ -37,6 +37,7 @@ dependencies:
   shared_preferences: ^2.5.5
   # 读取应用版本号（关于页展示，与 pubspec version 保持同步）
   package_info_plus: ^8.3.0
+  flutter_svg: ^2.3.0
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +49,18 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  # 应用图标生成工具（执行 dart run flutter_launcher_icons 生成各分辨率图标）
+  flutter_launcher_icons: ^0.14.4
+
+# 应用图标配置：白色背景 + 品牌色 Logo
+flutter_launcher_icons:
+  android: true
+  ios: false
+  # 传统位图图标（低版本 Android 回退使用）
+  image_path: "assets/icon/app_icon.png"
+  # 自适应图标（Android 8+）：白色背景 + 透明底品牌色 Logo 前景
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -67,6 +80,8 @@ flutter:
   assets:
     # 单词PK 本地词表（google-10000 常用英文词表）
     - assets/words/
+    # 应用 Logo（关于页展示，颜色跟随主题色动态着色）
+    - assets/icon/logo.svg
     # 更新日志（关于页内展示，内容与根目录 CHANGELOG.md 文件保持一致）
     - CHANGELOG.md
 
