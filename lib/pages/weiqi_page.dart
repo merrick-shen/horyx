@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../models/weiqi_game_state.dart';
 import '../services/weiqi_rules.dart';
+import '../services/weiqi_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/confirm_dialog.dart';
@@ -12,10 +14,10 @@ import '../widgets/turn_card.dart';
 
 /// 围棋游戏页
 /// 持有对局状态（着手序列、预选、执子方），统一负责：
-/// 落子校验（自杀/打劫）、提子、虚手轮换、悔棋回退、终局数子与退出
+/// 落子校验（自杀/打劫）、提子、虚手轮换、悔棋回退、终局数子、
+/// 退出确认与对局存档恢复
 /// 棋盘/提子数/执子方/局面历史均由着手序列重放派生（单一数据源，
 /// 悔棋与重开免费回退，规则判定经 WeiqiRules 引擎执行）
-/// 当前阶段不含存档功能（含退出确认弹窗），留待后续阶段接入
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class WeiqiPage extends StatefulWidget {
   const WeiqiPage({super.key});
@@ -70,6 +72,23 @@ class _WeiqiPageState extends State<WeiqiPage> {
   /// 终局数子结果（弹窗展示用）
   int _scoreBlack = 0;
   int _scoreWhite = 0;
+
+  /// 进入时检测到的未完成存档；恢复或开始新对局后清空展示
+  WeiqiGameState? _savedState;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedState();
+  }
+
+  /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
+  Future<void> _loadSavedState() async {
+    final state = await WeiqiStorage.load();
+    if (state != null && mounted) {
+      setState(() => _savedState = state);
+    }
+  }
 
   /// 点击棋盘交叉点：先经引擎校验合法性，非法时提示且不进入预选
   void _onCellTap(int col, int row) {
@@ -145,6 +164,8 @@ class _WeiqiPageState extends State<WeiqiPage> {
       _winner = black - white - WeiqiRules.komi > 0 ? '黑方' : '白方';
       _gameOver = true;
     });
+    // 对局已结束，未完成存档随之失效（避免下次误入已终局的棋局）
+    WeiqiStorage.clear();
     _showResultDialog();
   }
 
@@ -156,7 +177,8 @@ class _WeiqiPageState extends State<WeiqiPage> {
     final result = await showConfirmDialog(
       context,
       title: '$winner胜利！',
-      message: '数子结果 黑 $_scoreBlack 子 · 白 $_scoreWhite 子，'
+      message:
+          '数子结果 黑 $_scoreBlack 子 · 白 $_scoreWhite 子，'
           '贴 ${WeiqiRules.komi} 后$winner以 $margin 子优势获胜',
       confirmLabel: '再来一局',
       neutralLabel: '返回设置',
@@ -196,8 +218,28 @@ class _WeiqiPageState extends State<WeiqiPage> {
   }
 
   void _onStart() {
-    setState(() => _started = true);
+    setState(() {
+      _started = true;
+      // 开启新对局后不再展示旧存档入口
+      _savedState = null;
+    });
     _recompute(); // 初始化空盘派生状态（局面历史含初始空盘）
+  }
+
+  /// 恢复未完成对局：从存档还原棋盘规格与着手序列，重放派生状态
+  void _resumeSaved() {
+    final saved = _savedState;
+    if (saved == null) return;
+    _boardSize = saved.boardSize;
+    _moves
+      ..clear()
+      ..addAll(saved.moves);
+    _pending = null;
+    setState(() {
+      _started = true;
+      _savedState = null;
+    });
+    _recompute();
   }
 
   /// 重放着手序列，重算全部派生状态（棋盘/棋子/提子数/执子方/局面历史）
@@ -273,78 +315,119 @@ class _WeiqiPageState extends State<WeiqiPage> {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
   }
 
-  /// 退出请求：直接返回主页
-  /// SnackBar 挂在应用级 ScaffoldMessenger，不随页面销毁，需主动清理
-  /// 对局中退出的确认弹窗随存档功能一起在后续阶段引入
-  void _requestExit() {
+  /// 退出请求：对局中弹出三选项确认弹窗（保存退出/不保存退出/取消）
+  /// 设置阶段与终局复盘阶段无进行中对局，直接退出
+  Future<void> _requestExit() async {
+    // SnackBar 挂在应用级 ScaffoldMessenger，不随页面销毁，需主动清理
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    Navigator.of(context).pop();
+    if (!_started || _gameOver) {
+      Navigator.of(context).pop();
+      return;
+    }
+    final result = await showConfirmDialog(
+      context,
+      title: '退出对局？',
+      message: '保存并退出后，下次进入可从当前进度继续对弈',
+      confirmLabel: '保存并退出',
+      neutralLabel: '不保存并退出',
+    );
+    if (!mounted) return;
+
+    switch (result) {
+      case ConfirmResult.confirm:
+        // 持久化完整着手序列后退出（重放架构下恢复即完整还原盘面）
+        await WeiqiStorage.save(
+          WeiqiGameState(
+            boardSize: _boardSize,
+            moves: List.of(_moves),
+            savedAt: DateTime.now(),
+          ),
+        );
+        if (mounted) Navigator.of(context).pop();
+      case ConfirmResult.neutral:
+        // 放弃当前对局：清除旧存档，避免下次误提示可继续
+        await WeiqiStorage.clear();
+        if (mounted) Navigator.of(context).pop();
+      case ConfirmResult.cancel:
+        // 留在对局
+        break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            AppTopBar(
-              title: '围棋',
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: context.palette.textPrimary,
-                  size: 20,
+    return PopScope(
+      // 对局中拦截系统返回（走保存确认弹窗），设置/终局阶段允许直接返回
+      canPop: !_started || _gameOver,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _requestExit();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              AppTopBar(
+                title: '围棋',
+                leading: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: context.palette.textPrimary,
+                    size: 20,
+                  ),
+                  onPressed: _requestExit,
                 ),
-                onPressed: _requestExit,
               ),
-            ),
-            Expanded(
-              // 阶段切换动画：设置视图 <-> 对局视图淡入淡出
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 250),
-                child: _started
-                    ? _BoardView(
-                        key: const ValueKey('board'),
-                        boardSize: _boardSize,
-                        stones: _stones,
-                        pending: _pending,
-                        blackToMove: _blackToMove,
-                        gameOver: _gameOver,
-                        winner: _winner,
-                        blackCaptures: _blackCaptures,
-                        whiteCaptures: _whiteCaptures,
-                        canUndo: _moves.isNotEmpty,
-                        onCellTap: _onCellTap,
-                        onCancelMove: _cancelMove,
-                        onConfirmMove: _confirmMove,
-                        onUndo: _undo,
-                        onPass: _pass,
-                        onRestart: _restartMatch,
-                      )
-                    : _SetupView(
-                        key: const ValueKey('setup'),
-                        boardSize: _boardSize,
-                        onSelect: (size) =>
-                            setState(() => _boardSize = size),
-                        onStart: _onStart,
-                      ),
+              Expanded(
+                // 阶段切换动画：设置视图 <-> 对局视图淡入淡出
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _started
+                      ? _BoardView(
+                          key: const ValueKey('board'),
+                          boardSize: _boardSize,
+                          stones: _stones,
+                          pending: _pending,
+                          blackToMove: _blackToMove,
+                          gameOver: _gameOver,
+                          winner: _winner,
+                          blackCaptures: _blackCaptures,
+                          whiteCaptures: _whiteCaptures,
+                          canUndo: _moves.isNotEmpty,
+                          onCellTap: _onCellTap,
+                          onCancelMove: _cancelMove,
+                          onConfirmMove: _confirmMove,
+                          onUndo: _undo,
+                          onPass: _pass,
+                          onRestart: _restartMatch,
+                        )
+                      : _SetupView(
+                          key: const ValueKey('setup'),
+                          boardSize: _boardSize,
+                          onSelect: (size) => setState(() => _boardSize = size),
+                          onStart: _onStart,
+                          savedState: _savedState,
+                          onResume: _resumeSaved,
+                        ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// 规格设置视图：棋盘规格选择 + 开始按钮
+/// 规格设置视图：恢复入口（存在存档时）+ 棋盘规格选择 + 开始按钮
 class _SetupView extends StatelessWidget {
   const _SetupView({
     super.key,
     required this.boardSize,
     required this.onSelect,
     required this.onStart,
+    this.savedState,
+    this.onResume,
   });
 
   /// 当前选中路数
@@ -356,6 +439,12 @@ class _SetupView extends StatelessWidget {
   /// 点击「开始对局」回调
   final VoidCallback onStart;
 
+  /// 未完成对局的存档；null 时不显示恢复入口
+  final WeiqiGameState? savedState;
+
+  /// 点击「继续上次对局」回调
+  final VoidCallback? onResume;
+
   /// 可选规格：9 路小盘 / 13 路中盘 / 19 路标准盘
   static const List<(int, String)> _options = [
     (9, '9×9'),
@@ -366,6 +455,7 @@ class _SetupView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final saved = savedState;
 
     return SizedBox.expand(
       child: Center(
@@ -378,6 +468,11 @@ class _SetupView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 存在未完成对局时展示恢复入口
+                if (saved != null) ...[
+                  _ResumeCard(state: saved, onTap: onResume),
+                  const SizedBox(height: 16),
+                ],
                 PanelCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,10 +763,7 @@ class _CaptureCard extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 12.5,
-            ),
+            style: TextStyle(color: palette.textSecondary, fontSize: 12.5),
           ),
           const Spacer(),
           Text(
@@ -684,6 +776,68 @@ class _CaptureCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 继续上次对局入口卡片（样式与五子棋/单词PK恢复入口一致）
+class _ResumeCard extends StatelessWidget {
+  const _ResumeCard({required this.state, required this.onTap});
+
+  final WeiqiGameState state;
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          // 品牌色淡底 + 描边，与普通卡片区分，突出「可继续」
+          color: palette.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: palette.primary.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.play_circle_fill_rounded,
+              color: palette.primary,
+              size: 34,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '继续上次对局',
+                    style: TextStyle(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${state.boardSize}×${state.boardSize} 对局 · '
+                    '已下 ${state.moves.length} 手',
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right_rounded, color: palette.textSecondary),
+          ],
+        ),
       ),
     );
   }

@@ -7,8 +7,8 @@ import 'helpers/test_app.dart';
 import 'helpers/weiqi_actions.dart';
 
 /// 围棋页面测试
-/// 当前阶段为静态 UI 骨架：规格选择、基础落子轮换、悔棋与虚手、退出确认
-/// 规则逻辑（提子/打劫/终局数子）接入后在此扩展对应用例
+/// 覆盖：规格选择、落子轮换、悔棋与虚手、提子/自杀/打劫规则、
+/// 终局数子、退出确认与对局存档恢复
 void main() {
   setUpTestEnv();
 
@@ -57,7 +57,7 @@ void main() {
     expect(tester.widget<PrimaryButton>(undoButton).onPressed, isNull);
   });
 
-  testWidgets('围棋：虚手轮换与对局中直接退出', (tester) async {
+  testWidgets('围棋：虚手轮换与对局中退出确认', (tester) async {
     await pumpApp(tester);
     await startWeiqiGame(tester);
 
@@ -71,8 +71,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('黑方'), findsOneWidget);
 
-    // 对局中点返回：直接返回主页（退出确认弹窗随存档功能后续引入）
+    // 对局中点返回：弹出三选项退出确认弹窗
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('退出对局？'), findsOneWidget);
+
+    // 取消：留在对局
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    expect(find.text('当前执子'), findsOneWidget);
+
+    // 不保存并退出：直接回主页
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('不保存并退出'));
     await tester.pumpAndSettle();
     expect(find.text('Horyx'), findsOneWidget);
     expect(find.text('开始对局'), findsNothing);
@@ -162,5 +174,77 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('黑方'), findsOneWidget);
     expect(find.text('再来一局'), findsNothing);
+  });
+
+  testWidgets('围棋：保存退出与恢复对局', (tester) async {
+    await pumpApp(tester);
+    await startWeiqiGame(tester);
+
+    // 黑方落一子后保存退出
+    await placeWeiqiStone(tester, boardSize: 9, col: 4, row: 4);
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+
+    // 重进：设置视图展示恢复入口与进度摘要
+    await openWeiqi(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次对局'), findsOneWidget);
+    expect(find.text('9×9 对局 · 已下 1 手'), findsOneWidget);
+
+    // 恢复对局：黑已下 1 手，轮到白方执子
+    await tester.tap(find.text('继续上次对局'));
+    await tester.pumpAndSettle();
+    expect(find.text('白方'), findsOneWidget);
+
+    // 恢复后可继续对弈：白方落子后轮黑
+    await placeWeiqiStone(tester, boardSize: 9, col: 5, row: 5);
+    expect(find.text('黑方'), findsOneWidget);
+  });
+
+  testWidgets('围棋：终局后存档随之失效', (tester) async {
+    await pumpApp(tester);
+    await startWeiqiGame(tester);
+
+    // 造一个存档：黑白各落一子（数子 1:1，恢复后双虚手可判定胜负）
+    await placeWeiqiStone(tester, boardSize: 9, col: 4, row: 4);
+    await placeWeiqiStone(tester, boardSize: 9, col: 5, row: 5);
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+
+    // 重进并恢复对局：已下 2 手，轮到黑方
+    await openWeiqi(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('9×9 对局 · 已下 2 手'), findsOneWidget);
+    await tester.tap(find.text('继续上次对局'));
+    await tester.pumpAndSettle();
+    expect(find.text('黑方'), findsOneWidget);
+
+    // 双虚手终局：盘面黑 1 子白 1 子（空域互为公气不计），
+    // 贴 7.5 后白胜 → 弹窗选择返回设置
+    await tester.tap(find.text('虚手'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('虚手'));
+    await tester.pumpAndSettle();
+    expect(find.text('白方胜利！'), findsOneWidget);
+    await tester.tap(find.descendant(
+      of: find.byType(Dialog),
+      matching: find.text('返回设置'),
+    ));
+    await tester.pumpAndSettle();
+
+    // 设置阶段无进行中对局，直接退出页面
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+
+    // 重进：存档已随终局清除，不再展示恢复入口
+    await openWeiqi(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次对局'), findsNothing);
+    expect(find.text('开始对局'), findsOneWidget);
   });
 }

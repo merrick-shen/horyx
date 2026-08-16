@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/gomoku_storage.dart';
 import '../services/scoreboard_storage.dart';
+import '../services/weiqi_storage.dart';
 import '../services/word_pk_storage.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
@@ -30,12 +31,13 @@ class _ArchivePageState extends State<ArchivePage> {
     _loadArchives();
   }
 
-  /// 读取三个游戏的未完成存档并组装展示条目
+  /// 读取各游戏的未完成存档并组装展示条目
   /// 单个游戏存档损坏不影响其余展示（各 load 内部已容错返回 null）
   Future<void> _loadArchives() async {
     // 本地存储读取极快，顺序读取即可（混合类型不宜用 Future.wait）
     final wordPk = await WordPkStorage.load();
     final gomoku = await GomokuStorage.load();
+    final weiqi = await WeiqiStorage.load();
     final scoreboard = await ScoreboardStorage.load();
 
     // 摘要文案与各游戏设置页「继续上次对局」卡片保持一致；
@@ -58,6 +60,15 @@ class _ArchivePageState extends State<ArchivePage> {
               '已落子 ${gomoku.moves.length} 手',
           savedAt: gomoku.savedAt,
           clear: GomokuStorage.clear,
+        ),
+      if (weiqi != null)
+        _ArchiveEntry(
+          name: '围棋',
+          icon: Icons.blur_on_rounded,
+          summary: '${weiqi.boardSize}×${weiqi.boardSize} 对局 · '
+              '已下 ${weiqi.moves.length} 手',
+          savedAt: weiqi.savedAt,
+          clear: WeiqiStorage.clear,
         ),
       if (scoreboard != null)
         _ArchiveEntry(
