@@ -67,6 +67,8 @@ flutter:
   assets:
     # 单词PK 本地词表（google-10000 常用英文词表）
     - assets/words/
+    # 更新日志（关于页内展示，内容与根目录 CHANGELOG.md 文件保持一致）
+    - CHANGELOG.md
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
