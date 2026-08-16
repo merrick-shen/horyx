@@ -54,4 +54,37 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Horyx'), findsOneWidget);
   });
+
+  testWidgets('左滑切换到更多页，右滑切回首页', (tester) async {
+    await pumpApp(tester);
+
+    // 左滑（手势向左）切换到更多页，底部导航联动选中「更多」
+    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text('存档管理'), findsOneWidget);
+    expect(find.text('Horyx'), findsNothing);
+
+    // 右滑切回首页
+    await tester.fling(find.byType(PageView), const Offset(400, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+  });
+
+  testWidgets('滑动距离不足时回弹到原页面，导航点击平滑切换', (tester) async {
+    await pumpApp(tester);
+
+    // 小距离拖动后松手：未过切换阈值，页面回弹停留在首页
+    final gesture = await tester.startGesture(const Offset(300, 400));
+    await gesture.moveBy(const Offset(-80, 0));
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+    expect(find.text('存档管理'), findsNothing);
+
+    // 点击底部导航「更多」：经动画平滑切换
+    await tester.tap(find.text('更多'));
+    await tester.pumpAndSettle();
+    expect(find.text('存档管理'), findsOneWidget);
+  });
 }
