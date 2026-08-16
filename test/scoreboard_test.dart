@@ -208,4 +208,35 @@ void main() {
     expect(find.text('继续上次计分'), findsNothing);
     expect(find.text('赛制'), findsOneWidget);
   });
+
+  testWidgets('计分器：整场终局后清除存档', (tester) async {
+    await pumpApp(tester);
+    await startScoreboard(tester, bestOf: '3', winScore: '2', lead: '0');
+
+    // 造档：红方 1:0 后保存退出
+    await tapPanel(tester, true, 1);
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次计分'), findsOneWidget);
+
+    // 恢复并打完整场：红方连赢两局（2 分封顶制）
+    await tester.tap(find.text('继续上次计分'));
+    await tester.pumpAndSettle();
+    await tapPanel(tester, true, 1); // 2:0 赢下第一局
+    await tester.tap(find.text('下一局'));
+    await tester.pumpAndSettle();
+    await tapPanel(tester, true, 2); // 第二局 2:0，整场胜利
+    await tester.pumpAndSettle();
+    expect(find.text('红方获得胜利！'), findsOneWidget);
+
+    // 取消弹窗留在终局画面，退出后不应再出现恢复入口（存档已随终局清除）
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('退出计分'));
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次计分'), findsNothing);
+    expect(find.text('赛制'), findsOneWidget);
+  });
 }

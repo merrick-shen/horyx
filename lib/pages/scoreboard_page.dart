@@ -172,6 +172,9 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
 
     // 弹窗在 setState 之后调用，避免构建期间弹 showDialog
     if (matchWon) {
+      // 整场已分胜负，立即清除存档：无论后续选哪条路径（再来一场/返回设置/查看比分），
+      // 都不能让已结束的比分被当作进行中对局恢复（与围棋终局处理一致）
+      ScoreboardStorage.clear();
       _showMatchWinDialog();
     } else if (gameWon) {
       _showGameWinDialog(red);

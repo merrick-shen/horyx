@@ -248,4 +248,43 @@ void main() {
     expect(find.text('棋盘规格'), findsOneWidget);
     expect(find.text('Horyx'), findsNothing);
   });
+
+  testWidgets('五子棋：终局后清除存档', (tester) async {
+    await pumpApp(tester);
+    await startGomokuGame(tester);
+
+    // 造档：落一子后保存退出
+    await placeGomokuStone(tester, 7, 7);
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('保存并退出'));
+    await tester.pumpAndSettle();
+
+    // 恢复对局（1 手黑 7,7，轮白），下到黑方对角五连
+    await openGomoku(tester);
+    await tester.tap(find.text('继续上次对局'));
+    await tester.pumpAndSettle();
+    await placeGomokuStone(tester, 0, 0); // 白
+    await placeGomokuStone(tester, 8, 8); // 黑
+    await placeGomokuStone(tester, 0, 1); // 白
+    await placeGomokuStone(tester, 9, 9); // 黑
+    await placeGomokuStone(tester, 0, 2); // 白
+    await placeGomokuStone(tester, 10, 10); // 黑
+    await placeGomokuStone(tester, 0, 3); // 白
+    await placeGomokuStone(tester, 11, 11); // 黑五连
+    await tester.pumpAndSettle();
+    expect(find.text('黑方胜利！'), findsOneWidget);
+
+    // 取消弹窗留在棋盘复盘，退出后重进：存档已随终局清除
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Horyx'), findsOneWidget);
+
+    await openGomoku(tester);
+    await tester.pumpAndSettle();
+    expect(find.text('继续上次对局'), findsNothing);
+    expect(find.text('棋盘规格'), findsOneWidget);
+  });
 }
