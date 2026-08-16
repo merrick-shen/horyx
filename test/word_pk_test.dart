@@ -115,6 +115,16 @@ void main() {
     expect(find.text('参与人数'), findsOneWidget);
   });
 
+  testWidgets('单词PK：开局未提交返回直接回设置页', (tester) async {
+    await pumpApp(tester);
+    await startWordPk(tester);
+
+    // 尚无提交记录：无进行中内容，返回不打扰，直接回到设置视图
+    await tapWordPkBack(tester);
+    expect(find.text('参与人数'), findsOneWidget);
+    expect(find.text('Horyx'), findsNothing);
+  });
+
   testWidgets('单词PK：错误提示未关闭时退出不残留到主页', (tester) async {
     await pumpApp(tester);
     await startWordPk(tester);

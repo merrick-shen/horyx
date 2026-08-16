@@ -237,4 +237,15 @@ void main() {
     expect(find.text('继续上次对局'), findsNothing);
     expect(find.text('棋盘规格'), findsOneWidget);
   });
+
+  testWidgets('五子棋：开局未落子返回直接回设置页', (tester) async {
+    await pumpApp(tester);
+    await startGomokuGame(tester);
+
+    // 尚无落子：无进行中内容，返回不打扰，直接回到设置视图
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('棋盘规格'), findsOneWidget);
+    expect(find.text('Horyx'), findsNothing);
+  });
 }

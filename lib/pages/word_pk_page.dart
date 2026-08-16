@@ -78,9 +78,16 @@ class _WordPkPageState extends State<WordPkPage> {
   }
 
   /// 退出请求：对局中弹出三选项确认弹窗（保存退出/不保存退出/取消）
+  /// 对局中尚无提交记录时无进行中内容，直接返回设置视图（与计分器未计分退出一致）
+  /// 设置阶段直接退出页面
   Future<void> _requestExit() async {
     if (!_started) {
       Navigator.of(context).pop();
+      return;
+    }
+    // 开局后还没提交任何单词：不打扰，直接回设置
+    if (_entries.isEmpty) {
+      setState(() => _started = false);
       return;
     }
     final result = await showConfirmDialog(

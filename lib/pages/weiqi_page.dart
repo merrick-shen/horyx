@@ -317,12 +317,18 @@ class _WeiqiPageState extends State<WeiqiPage> {
   }
 
   /// 退出请求：对局中弹出三选项确认弹窗（保存退出/不保存退出/取消）
-  /// 设置阶段与终局复盘阶段无进行中对局，直接退出
+  /// 对局中尚无着手时无进行中内容，直接返回设置视图（与计分器未计分退出一致）
+  /// 设置阶段与终局复盘阶段无进行中对局，直接退出页面
   Future<void> _requestExit() async {
     // SnackBar 挂在应用级 ScaffoldMessenger，不随页面销毁，需主动清理
     ScaffoldMessenger.of(context).removeCurrentSnackBar();
     if (!_started || _gameOver) {
       Navigator.of(context).pop();
+      return;
+    }
+    // 开局后还没下任何一手（含虚手）：不打扰，直接回设置
+    if (_moves.isEmpty) {
+      _backToSetup();
       return;
     }
     final result = await showConfirmDialog(

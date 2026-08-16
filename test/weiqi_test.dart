@@ -71,7 +71,17 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('黑方'), findsOneWidget);
 
-    // 对局中点返回：弹出三选项退出确认弹窗
+    // 悔棋后无着手：返回不打扰，直接回到设置视图
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('开始对局'), findsOneWidget);
+    expect(find.text('Horyx'), findsNothing);
+
+    // 重新开局并虚一手（有进行中内容）：返回弹出三选项确认弹窗
+    await tester.tap(find.text('开始对局'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('虚手'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
     await tester.pumpAndSettle();
     expect(find.text('退出对局？'), findsOneWidget);

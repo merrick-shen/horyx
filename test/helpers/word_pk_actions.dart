@@ -18,7 +18,7 @@ Future<void> submitWord(WidgetTester tester, String word) async {
   await tester.pumpAndSettle();
 }
 
-/// 对局中点击顶栏返回（触发退出确认弹窗）
+/// 对局中点击顶栏返回（有提交记录时触发退出确认弹窗）
 Future<void> tapWordPkBack(WidgetTester tester) async {
   await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
   await tester.pumpAndSettle();
