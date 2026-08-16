@@ -1,5 +1,5 @@
 name: horyx
-description: "A new Flutter project."
+description: "Horyx 随时开局的掌上游戏厅"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,9 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
   shared_preferences: ^2.5.5
   # 读取应用版本号（关于页展示，与 pubspec version 保持同步）
   package_info_plus: ^8.3.0
