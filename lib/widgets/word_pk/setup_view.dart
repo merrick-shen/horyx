@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../option_block.dart';
 import '../panel_card.dart';
 import '../primary_button.dart';
+import '../resume_card.dart';
 
 /// 单词PK - 人数设置视图
 /// 顶部展示未完成对局的恢复入口（存在存档时），下方为人数选择与开始按钮
@@ -54,7 +55,12 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
               children: [
                 // 存在未完成对局时展示恢复入口
                 if (saved != null) ...[
-                  _ResumeCard(state: saved, onTap: widget.onResume),
+                  ResumeCard(
+                    summary:
+                        '${saved.playerCount} 人对局 · '
+                        '已验证 ${saved.entries.length} 个单词',
+                    onTap: widget.onResume,
+                  ),
                   const SizedBox(height: 16),
                 ],
                 // 人数选择面板
@@ -107,71 +113,6 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 继续上次对局入口卡片
-class _ResumeCard extends StatelessWidget {
-  const _ResumeCard({required this.state, required this.onTap});
-
-  final WordPkGameState state;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          // 品牌色淡底 + 描边，与普通卡片区分，突出「可继续」
-          color: palette.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: palette.primary.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.play_circle_fill_rounded,
-              color: palette.primary,
-              size: 34,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '继续上次对局',
-                    style: TextStyle(
-                      color: palette.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${state.playerCount} 人对局 · 已验证 ${state.entries.length} 个单词',
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: palette.textSecondary,
-            ),
-          ],
         ),
       ),
     );

@@ -8,6 +8,7 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/option_block.dart';
 import '../widgets/panel_card.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/resume_card.dart';
 import '../widgets/stone_board.dart';
 import '../widgets/turn_card.dart';
 
@@ -337,7 +338,12 @@ class _SetupView extends StatelessWidget {
               children: [
                 // 存在未完成对局时展示恢复入口
                 if (saved != null) ...[
-                  _ResumeCard(state: saved, onTap: onResume),
+                  ResumeCard(
+                    summary:
+                        '${saved.boardSize}×${saved.boardSize} 对局 · '
+                        '已落子 ${saved.moves.length} 手',
+                    onTap: onResume,
+                  ),
                   const SizedBox(height: 16),
                 ],
                 PanelCard(
@@ -534,71 +540,6 @@ class _BoardView extends StatelessWidget {
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 继续上次对局入口卡片（样式与单词PK恢复入口一致）
-class _ResumeCard extends StatelessWidget {
-  const _ResumeCard({required this.state, required this.onTap});
-
-  final GomokuGameState state;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          // 品牌色淡底 + 描边，与普通卡片区分，突出「可继续」
-          color: palette.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: palette.primary.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.play_circle_fill_rounded,
-              color: palette.primary,
-              size: 34,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '继续上次对局',
-                    style: TextStyle(
-                      color: palette.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${state.boardSize}×${state.boardSize} 对局 · 已落子 ${state.moves.length} 手',
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: palette.textSecondary,
-            ),
-          ],
         ),
       ),
     );

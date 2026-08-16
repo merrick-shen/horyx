@@ -9,6 +9,7 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/option_block.dart';
 import '../widgets/panel_card.dart';
 import '../widgets/primary_button.dart';
+import '../widgets/resume_card.dart';
 import '../widgets/scoreboard/scoreboard_view.dart';
 
 /// 计分器页面
@@ -416,8 +417,12 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
                       children: [
                         // 存在未完成计分时展示恢复入口
                         if (_savedState != null) ...[
-                          _ResumeCard(
-                            state: _savedState!,
+                          ResumeCard(
+                            title: '继续上次计分',
+                            summary:
+                                'BO${_savedState!.bestOf} · '
+                                '大比分 ${_savedState!.redGames}:${_savedState!.blueGames}'
+                                ' · 当前局 ${_savedState!.redScore}:${_savedState!.blueScore}',
                             onTap: _resumeSaved,
                           ),
                           const SizedBox(height: 16),
@@ -518,72 +523,6 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
           const SizedBox(height: 18),
           child,
         ],
-      ),
-    );
-  }
-}
-
-/// 继续上次计分入口卡片（样式与五子棋恢复入口一致）
-class _ResumeCard extends StatelessWidget {
-  const _ResumeCard({required this.state, required this.onTap});
-
-  final ScoreboardGameState state;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          // 品牌色淡底 + 描边，与普通卡片区分，突出「可继续」
-          color: palette.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: palette.primary.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.play_circle_fill_rounded,
-              color: palette.primary,
-              size: 34,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '继续上次计分',
-                    style: TextStyle(
-                      color: palette.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'BO${state.bestOf} · 大比分 ${state.redGames}:${state.blueGames}'
-                    ' · 当前局 ${state.redScore}:${state.blueScore}',
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: palette.textSecondary,
-            ),
-          ],
-        ),
       ),
     );
   }
