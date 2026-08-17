@@ -62,31 +62,16 @@ class _AboutPageState extends State<AboutPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 应用标识：白色圆角矩形卡片 + 主题色 Logo
+                      // 应用标识：主题色 Logo
                       // （SVG 源文件为黑色填充，经 colorFilter 重着色，
                       //   颜色实时跟随用户选择的主题色）
-                      Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: palette.primary.withValues(alpha: 0.35),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: SvgPicture.asset(
-                          'assets/icon/logo.svg',
-                          width: 90,
-                          height: 90,
-                          colorFilter: ColorFilter.mode(
-                            palette.primary,
-                            BlendMode.srcIn,
-                          ),
+                      SvgPicture.asset(
+                        'assets/icon/logo.svg',
+                        width: 90,
+                        height: 90,
+                        colorFilter: ColorFilter.mode(
+                          palette.primary,
+                          BlendMode.srcIn,
                         ),
                       ),
                       const SizedBox(height: 20),
