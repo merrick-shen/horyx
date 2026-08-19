@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- 局域网联机对战：
+  - 底部导航新增「联机」页：自动发现同一 Wi-Fi 下好友创建的房间，点击即可加入
+  - 有人中途退出自动跳过其回合；房主解散、全员离开或连接中断时，对局自动结束并给出提示
+- 单词PK新增「局域网」模式：创建房间，满员后自动开局，各设备轮流拼写、实时同步
+
 ## [0.1.0] - 2026-08-18
 
 ### Added
