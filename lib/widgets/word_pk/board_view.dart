@@ -6,8 +6,9 @@ import '../primary_button.dart';
 import '../turn_card.dart';
 
 /// 单词PK - 对局视图
-/// 受控组件：对局状态（当前输入者、单词列表）由父级 WordPkPage 持有，
+/// 受控组件：对局状态（当前输入者、单词列表）由父级持有，
 /// 本组件负责展示与输入，提交经 [onSubmit] 交由父级校验处理
+/// 本地对局与联机对局共用（联机通过 [inputEnabled] 控制非本人回合禁输）
 class WordPkBoardView extends StatefulWidget {
   const WordPkBoardView({
     super.key,
@@ -15,6 +16,8 @@ class WordPkBoardView extends StatefulWidget {
     required this.currentPlayer,
     required this.entries,
     required this.onSubmit,
+    this.inputEnabled = true,
+    this.selfSeat,
   });
 
   /// 参与人数
@@ -28,6 +31,12 @@ class WordPkBoardView extends StatefulWidget {
 
   /// 提交输入单词；返回 true 表示校验通过（组件据此清空输入框）
   final bool Function(String word) onSubmit;
+
+  /// 是否允许输入（联机对局中非本人回合禁输；本地对局恒为 true）
+  final bool inputEnabled;
+
+  /// 自己的座位号（联机对局传入；当前输入者是自己时回合卡展示「你」）
+  final int? selfSeat;
 
   @override
   State<WordPkBoardView> createState() => _WordPkBoardViewState();
@@ -68,11 +77,13 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 当前输入者卡片（通用回合卡组件）
+                // 当前输入者卡片（通用回合卡组件；联机时输入者是自己展示「你」）
                 TurnCard(
                   icon: Icons.keyboard_rounded,
                   subtitle: '当前输入者',
-                  title: '玩家 ${widget.currentPlayer}',
+                  title: widget.currentPlayer == widget.selfSeat
+                      ? '你'
+                      : '玩家 ${widget.currentPlayer}',
                   titleKey: ValueKey(widget.currentPlayer),
                 ),
                 const SizedBox(height: 16),
@@ -88,6 +99,8 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                       child: TextField(
                         controller: _inputController,
                         focusNode: _focusNode,
+                        // 非本人回合禁输（联机对局），禁用态提示等待对象
+                        enabled: widget.inputEnabled,
                         // 键盘「完成」同样触发提交
                         onSubmitted: (_) => _submit(),
                         // 英文单词输入场景关闭联想与自动纠正
@@ -95,7 +108,9 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                         enableSuggestions: false,
                         textInputAction: TextInputAction.done,
                         decoration: InputDecoration(
-                          hintText: '输入英文单词',
+                          hintText: widget.inputEnabled
+                              ? '输入英文单词'
+                              : '等待玩家 ${widget.currentPlayer} 输入…',
                           hintStyle: TextStyle(
                             color: palette.textSecondary,
                           ),
@@ -125,7 +140,8 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                     PrimaryButton(
                       label: '提交',
                       icon: Icons.send_rounded,
-                      onPressed: _submit,
+                      // 非本人回合禁用提交（联机对局）
+                      onPressed: widget.inputEnabled ? _submit : null,
                     ),
                   ],
                 ),

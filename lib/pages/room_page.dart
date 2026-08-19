@@ -10,24 +10,39 @@ import '../widgets/panel_card.dart';
 import '../widgets/primary_button.dart';
 
 /// 局域网房间等待页（所有游戏通用）
-/// 房主模式：由各游戏的设置页创建，展示房间地址供好友输入，实时显示入座情况；
+/// 房主模式：由各游戏的设置页创建，实时显示入座情况；
 /// 客户端模式：由房间列表页点击加入后进入，负责连接与加入流程展示。
-/// 满员后房主自动广播开局；对局页导航由步骤 4 接入，
-/// 当前仅展示「即将开始」状态。
+/// 满员开局时通过 [hostGameBuilder]/[clientGameBuilder] 跳转到对应游戏的
+/// 联机对局页，并把房间连接的所有权移交过去（由对局页负责关闭）。
+/// 未提供构建器的游戏满员后停留在「即将开始」展示（联机能力接入前的过渡态）。
+
+/// 房主侧联机对局页构建器：入参为已满员开局的房主连接
+typedef HostGameBuilder = Widget Function(BuildContext context, RoomHost host);
+
+/// 客户端侧联机对局页构建器：入参为收到开局通知的客户端连接
+typedef ClientGameBuilder = Widget Function(
+  BuildContext context,
+  RoomClient client,
+);
+
 class RoomPage extends StatefulWidget {
   const RoomPage.host({
     super.key,
     required this.gameName,
     required this.capacity,
+    this.hostGameBuilder,
   })  : address = null,
-        port = null;
+        port = null,
+        clientGameBuilder = null;
 
   const RoomPage.client({
     super.key,
     required this.address,
     required this.port,
     this.gameName,
-  }) : capacity = 0;
+    this.clientGameBuilder,
+  })  : capacity = 0,
+        hostGameBuilder = null;
 
   /// 游戏名称（等待页顶部标识卡展示，如「单词PK」）
   final String? gameName;
@@ -40,6 +55,12 @@ class RoomPage extends StatefulWidget {
 
   /// 房主端口（仅客户端模式有效）
   final int? port;
+
+  /// 满员开局后的对局页构建器（房主模式；null 表示该游戏联机对局未接入）
+  final HostGameBuilder? hostGameBuilder;
+
+  /// 满员开局后的对局页构建器（客户端模式；null 表示该游戏联机对局未接入）
+  final ClientGameBuilder? clientGameBuilder;
 
   /// 是否房主模式
   bool get isHost => address == null;
@@ -55,6 +76,9 @@ class _RoomPageState extends State<RoomPage> {
   /// 房主监听创建失败（候选端口全部被占用）
   bool _hostStartFailed = false;
 
+  /// 连接所有权是否已移交给对局页（移交后本页销毁不再关闭连接）
+  bool _transferred = false;
+
   @override
   void initState() {
     super.initState();
@@ -63,6 +87,8 @@ class _RoomPageState extends State<RoomPage> {
     } else {
       _client = RoomClient(host: widget.address!, port: widget.port!)
         ..connect();
+      // 满员开局 -> 跳转对局页（监听而非 build 中触发，导航不能发生在构建期）
+      _client!.addListener(_onClientChanged);
     }
   }
 
@@ -78,14 +104,50 @@ class _RoomPageState extends State<RoomPage> {
       setState(() => _hostStartFailed = true);
       return;
     }
+    // 满员开局 -> 跳转对局页
+    host.addListener(_onHostChanged);
     setState(() => _host = host);
+  }
+
+  /// 房主侧状态变化：满员开局后跳转对局页并移交连接所有权
+  void _onHostChanged() {
+    final host = _host;
+    if (host == null || _transferred) return;
+    if (host.gameStarted && widget.hostGameBuilder != null) {
+      _transferred = true;
+      // pushReplacement 替换本页：对局页成为连接的唯一持有者
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => widget.hostGameBuilder!(context, host),
+        ),
+      );
+    }
+  }
+
+  /// 客户端侧状态变化：收到开局通知后跳转对局页并移交连接所有权
+  void _onClientChanged() {
+    final client = _client;
+    if (client == null || _transferred) return;
+    if (client.phase == RoomClientPhase.gameStarting &&
+        widget.clientGameBuilder != null) {
+      _transferred = true;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => widget.clientGameBuilder!(context, client),
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
-    // 页面销毁即退出房间：房主解散房间 / 客户端断开连接
-    _host?.close();
-    _client?.close();
+    _host?.removeListener(_onHostChanged);
+    _client?.removeListener(_onClientChanged);
+    // 连接所有权未移交对局页时由本页负责关闭（房主解散/客户端退出）
+    if (!_transferred) {
+      _host?.close();
+      _client?.close();
+    }
     super.dispose();
   }
 

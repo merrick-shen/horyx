@@ -11,6 +11,7 @@ import '../widgets/confirm_dialog.dart';
 import '../widgets/word_pk/board_view.dart';
 import '../widgets/word_pk/setup_view.dart';
 import 'room_page.dart';
+import 'word_pk_online_page.dart';
 
 /// 单词PK游戏页
 /// 持有对局状态（人数、当前输入者、单词列表），统一负责：
@@ -65,14 +66,15 @@ class _WordPkPageState extends State<WordPkPage> {
   }
 
   /// 局域网模式：创建房间并进入等待页（自己为玩家 1，房主）
-  /// 房间等待页为所有游戏通用结构，此入口传入单词PK标识
-  /// 对局页导航待满员开局时由步骤 4 接入
+  /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）
   void _createRoom(int count) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
           gameName: GameData.wordPk.name,
           capacity: count,
+          hostGameBuilder: (context, host) =>
+              WordPkOnlinePage.host(host: host),
         ),
       ),
     );

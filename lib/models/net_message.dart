@@ -26,6 +26,9 @@ enum NetMessageType {
   /// 单词生效：房主广播（全端同步入列并轮换回合）
   wordApplied,
 
+  /// 回合变更：房主广播（轮到的玩家中途离开时轮换到下一在线座位）
+  turnChanged,
+
   /// 心跳探测：定时发送
   ping,
 

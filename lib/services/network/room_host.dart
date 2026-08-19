@@ -19,6 +19,7 @@ class RoomHost extends ChangeNotifier {
     required this.gameName,
     required this.capacity,
     this.basePort = defaultPort,
+    this.enableDiscovery = true,
   }) : assert(capacity >= 2, '房间至少 2 人');
 
   /// 游戏名称（等待页与房间列表展示用，如「单词PK」）
@@ -26,6 +27,9 @@ class RoomHost extends ChangeNotifier {
 
   /// 本局总人数（2-8，含房主）
   final int capacity;
+
+  /// 是否启动 UDP 房间发现应答（测试并发跑多房间时关掉，避免固定端口串扰）
+  final bool enableDiscovery;
 
   /// 监听起始端口：绑定失败自动尝试 +1（最多 10 个候选）；
   /// 测试可传 0 让系统分配临时端口，避免与真实端口冲突
@@ -59,6 +63,14 @@ class RoomHost extends ChangeNotifier {
   bool _closed = false;
   bool get closed => _closed;
 
+  /// 对局消息回调（游戏层挂接）：已入座客户端发来的非房间管理类消息
+  /// （如 wordSubmit）按座位转发；开局前为 null，消息被忽略
+  void Function(int seat, NetMessage message)? onGameMessage;
+
+  /// 玩家离开回调（游戏层挂接）：对局中有人掉线/退出时由游戏层
+  /// 处理回合跳过与全员离开判定；等待阶段（未开局）无消费者
+  void Function(int seat)? onSeatLeft;
+
   /// 当前已占用的座位（含房主的 1 号位），升序
   List<int> get seats => [1, ..._clients.keys.toList()..sort()];
 
@@ -74,7 +86,7 @@ class RoomHost extends ChangeNotifier {
         _port = server.port;
         // 只处理接入的连接；监听异常（端口被抢占等极端场景）交由各会话自行断开
         server.listen(_onAccept);
-        await _startDiscovery();
+        if (enableDiscovery) await _startDiscovery();
         notifyListeners();
         return true;
       } on SocketException {
@@ -207,15 +219,28 @@ class RoomHost extends ChangeNotifier {
           // 客户端主动退出：bye 后 socket 关闭会触发 onDisconnected 统一清理
           break;
         default:
-          // 对局消息（wordSubmit 等）由步骤 4 的游戏层处理，此处忽略
+          // 对局消息按座位转发游戏层（开局前未挂接，忽略）
+          if (seat != 0) onGameMessage?.call(seat, message);
           break;
       }
     });
   }
 
-  /// 处理握手：满员则拒绝并断开；否则分配最小空位、应答加入结果、
+  /// 处理握手：开局后或满员则拒绝并断开；否则分配最小空位、应答加入结果、
   /// 广播入座消息，返回分配的座位号（拒绝时返回 0）
   int _handleHello(NetSession session) {
+    // 开局后不再放人：中途退出的座位虽空出，但对局进行中新加入者
+    // 无法追上已同步的对局状态（重连/补位为后续增强）
+    if (_gameStarted) {
+      session.send(
+        const NetMessage(
+          type: NetMessageType.joinResponse,
+          payload: {'ok': false, 'reason': 'gameStarted'},
+        ),
+      );
+      session.close();
+      return 0;
+    }
     if (isFull) {
       session.send(
         const NetMessage(
@@ -287,8 +312,16 @@ class RoomHost extends ChangeNotifier {
         payload: {'seat': seat},
       ),
     );
+    // 对局中的离开交由游戏层（回合跳过/全员离开判定）；等待阶段无消费者
+    onSeatLeft?.call(seat);
     notifyListeners();
   }
+
+  /// 对局广播：向所有已入座客户端发送消息（游戏层使用）
+  void broadcast(NetMessage message) => _broadcast(message);
+
+  /// 定向发送：向指定座位的客户端发送消息（游戏层使用）
+  void sendTo(int seat, NetMessage message) => _clients[seat]?.send(message);
 
   /// 向所有已入座客户端广播消息；[except] 指定的会话跳过
   void _broadcast(NetMessage message, {NetSession? except}) {

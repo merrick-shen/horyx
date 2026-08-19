@@ -48,6 +48,27 @@ class RoomClient extends ChangeNotifier {
   /// 收到过房主的 bye（用于区分「房主解散」与「异常掉线」）
   bool _byeReceived = false;
 
+  /// 对局消息处理器（游戏层挂接）：房主发来的对局消息（wordResult/wordApplied 等）
+  /// 未挂接期间的消息暂存于 [_pendingGameMessages]，挂接后按序回放——
+  /// 覆盖「收到 gameStart 到对局页挂接完成」的间隙，避免漏消息导致状态分叉
+  void Function(NetMessage message)? onGameMessage;
+
+  /// 待回放的对局消息（上限防御：异常情况下不至于无限增长）
+  final List<NetMessage> _pendingGameMessages = [];
+
+  /// 挂接对局消息处理器并回放暂存消息（游戏层调用一次）
+  void attachGameHandler(void Function(NetMessage message) handler) {
+    onGameMessage = handler;
+    final pending = List.of(_pendingGameMessages);
+    _pendingGameMessages.clear();
+    for (final message in pending) {
+      handler(message);
+    }
+  }
+
+  /// 发送对局消息给房主（wordSubmit 等，游戏层使用）
+  void send(NetMessage message) => _session?.send(message);
+
   /// 断开时展示给用户的提示文案
   String get disconnectText =>
       _byeReceived ? '房主已解散房间' : '与房间的连接已断开，请检查网络';
@@ -117,7 +138,12 @@ class RoomClient extends ChangeNotifier {
       case NetMessageType.bye:
         _byeReceived = true;
       default:
-        // 对局消息由步骤 4 的游戏层处理，此处忽略
+        // 对局消息转发游戏层；未挂接（开局跳转间隙）时暂存待回放
+        if (onGameMessage != null) {
+          onGameMessage!(message);
+        } else if (_pendingGameMessages.length < 100) {
+          _pendingGameMessages.add(message);
+        }
         break;
     }
   }
@@ -150,6 +176,8 @@ class RoomClient extends ChangeNotifier {
     switch (reason) {
       case 'roomFull':
         return '房间已满，无法加入';
+      case 'gameStarted':
+        return '对局已开始，无法加入';
       default:
         return '加入失败，请稍后重试';
     }

@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../widgets/app_top_bar.dart';
 import '../widgets/primary_button.dart';
 import 'room_page.dart';
+import 'word_pk_online_page.dart';
 
 /// 局域网房间列表页（「联机」tab 常驻页）
 /// 通过 UDP 广播自动发现同一局域网内的房间并实时展示；
@@ -36,6 +37,7 @@ class _RoomListPageState extends State<RoomListPage> {
   }
 
   /// 加入房间：进入等待页并连接对应房主
+  /// 满员后按游戏名跳转对应联机对局页（当前仅单词PK接入，其余等待接入）
   void _join(DiscoveredRoom room) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -43,9 +45,19 @@ class _RoomListPageState extends State<RoomListPage> {
           address: room.ip,
           port: room.tcpPort,
           gameName: room.gameName,
+          clientGameBuilder: _gameBuilderFor(room.gameName),
         ),
       ),
     );
+  }
+
+  /// 游戏名 -> 客户端侧联机对局页构建器
+  /// 未接入联机对局的游戏返回 null（等待页满员后停留「即将开始」）
+  ClientGameBuilder? _gameBuilderFor(String gameName) {
+    if (gameName == GameData.wordPk.name) {
+      return (context, client) => WordPkOnlinePage.client(client: client);
+    }
+    return null;
   }
 
   @override

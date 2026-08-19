@@ -23,8 +23,14 @@ void main() {
   }
 
   test('建房与加入：座位分配、入座广播与满员自动开局', () async {
-    // basePort 0：系统分配临时端口，避免与真实服务端口冲突
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
+    // basePort 0：系统分配临时端口，避免与真实服务端口冲突；
+    // enableDiscovery false：测试并发跑多房间，UDP 固定端口会互相串扰
+    final host = RoomHost(
+      gameName: '单词PK',
+      capacity: 3,
+      basePort: 0,
+      enableDiscovery: false,
+    );
     expect(await host.start(), isTrue);
     expect(host.port, greaterThan(0));
 
@@ -57,8 +63,13 @@ void main() {
     await clientB.close();
   });
 
-  test('满员拒绝：超出人数的加入请求被拒绝并断开', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
+  test('开局后拒绝：对局已开始时的加入请求被拒绝并断开', () async {
+    final host = RoomHost(
+      gameName: '单词PK',
+      capacity: 2,
+      basePort: 0,
+      enableDiscovery: false,
+    );
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -66,10 +77,11 @@ void main() {
     // 容量 2：A 入座后即满员并自动开局
     await until(() => clientA.phase == RoomClientPhase.gameStarting);
 
+    // 满员即开局，后续加入统一按「对局已开始」拒绝
     final clientB = RoomClient(host: '127.0.0.1', port: host.port);
     unawaited(clientB.connect());
     await until(() => clientB.phase == RoomClientPhase.failed);
-    expect(clientB.failReason, contains('已满'));
+    expect(clientB.failReason, '对局已开始，无法加入');
 
     await host.close();
     await clientA.close();
@@ -77,7 +89,12 @@ void main() {
   });
 
   test('玩家退出：房主清理座位并广播给其他玩家', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 4, basePort: 0);
+    final host = RoomHost(
+      gameName: '单词PK',
+      capacity: 4,
+      basePort: 0,
+      enableDiscovery: false,
+    );
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -102,7 +119,12 @@ void main() {
   });
 
   test('房主解散：已加入的玩家收到断开提示（bye 区分主动解散）', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
+    final host = RoomHost(
+      gameName: '单词PK',
+      capacity: 3,
+      basePort: 0,
+      enableDiscovery: false,
+    );
     expect(await host.start(), isTrue);
 
     final client = RoomClient(host: '127.0.0.1', port: host.port);
