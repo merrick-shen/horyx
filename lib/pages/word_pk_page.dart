@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/game_data.dart';
 import '../models/word_entry.dart';
 import '../models/word_pk_game_state.dart';
 import '../services/word_pk_storage.dart';
@@ -9,6 +10,7 @@ import '../widgets/app_top_bar.dart';
 import '../widgets/confirm_dialog.dart';
 import '../widgets/word_pk/board_view.dart';
 import '../widgets/word_pk/setup_view.dart';
+import 'room_page.dart';
 
 /// 单词PK游戏页
 /// 持有对局状态（人数、当前输入者、单词列表），统一负责：
@@ -60,6 +62,20 @@ class _WordPkPageState extends State<WordPkPage> {
       // 开启新对局后不再展示旧存档入口
       _savedState = null;
     });
+  }
+
+  /// 局域网模式：创建房间并进入等待页（自己为玩家 1，房主）
+  /// 房间等待页为所有游戏通用结构，此入口传入单词PK标识
+  /// 对局页导航待满员开局时由步骤 4 接入
+  void _createRoom(int count) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RoomPage.host(
+          gameName: GameData.wordPk.name,
+          capacity: count,
+        ),
+      ),
+    );
   }
 
   /// 恢复未完成对局：从存档还原人数、回合进度与单词列表
@@ -226,6 +242,7 @@ class _WordPkPageState extends State<WordPkPage> {
                       : WordPkSetupView(
                           key: const ValueKey('setup'),
                           onStart: _onStart,
+                          onCreateRoom: _createRoom,
                           savedState: _savedState,
                           onResume: _resumeSaved,
                         ),

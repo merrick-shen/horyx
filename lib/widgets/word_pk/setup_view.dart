@@ -14,12 +14,16 @@ class WordPkSetupView extends StatefulWidget {
   const WordPkSetupView({
     super.key,
     required this.onStart,
+    required this.onCreateRoom,
     this.savedState,
     this.onResume,
   });
 
-  /// 点击「开始 PK」回调，参数为所选人数
+  /// 点击「开始 PK」回调，参数为所选人数（本地模式）
   final ValueChanged<int> onStart;
+
+  /// 局域网模式点击「创建房间」回调，参数为所选总人数
+  final ValueChanged<int> onCreateRoom;
 
   /// 未完成对局的存档；null 时不显示恢复入口
   final WordPkGameState? savedState;
@@ -153,13 +157,14 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
                 ),
                 const SizedBox(height: 24),
                 PrimaryButton(
-                  // 局域网模式按钮变为「创建房间」；建房流程待联机里程碑接入，
-                  // 当前呈禁用态，避免误触后进入与模式不符的本地对局
+                  // 局域网模式按钮变为「创建房间」，进入房间等待页（自己为玩家 1）
                   label: _isLan ? '创建房间' : '开始 PK',
                   icon: _isLan
                       ? Icons.wifi_tethering_rounded
                       : Icons.local_fire_department_rounded,
-                  onPressed: _isLan ? null : () => widget.onStart(_selected),
+                  onPressed: _isLan
+                      ? () => widget.onCreateRoom(_selected)
+                      : () => widget.onStart(_selected),
                 ),
               ],
             ),

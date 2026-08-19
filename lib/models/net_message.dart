@@ -34,6 +34,12 @@ enum NetMessageType {
 
   /// 主动退出：正常关闭前发送，对端据此区分「主动离开」与「异常掉线」
   bye,
+
+  /// 房间发现探测：客户端 UDP 广播（不经 TCP 会话，见 room_discovery.dart）
+  discoveryRequest,
+
+  /// 房间信息应答：房主收到探测后单播应答（携带游戏名、人数与 TCP 端口）
+  discoveryResponse,
 }
 
 /// 局域网联机协议消息
