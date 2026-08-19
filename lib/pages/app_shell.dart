@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'home_page.dart';
 import 'more_page.dart';
+import 'room_list_page.dart';
 
-/// 应用根骨架：底部导航栏 + 首页/更多页切换
+/// 应用根骨架：底部导航栏 + 首页/联机/更多页切换
 /// 页面切换使用 PageView 支持左右滑动手势：
-/// - 左滑切到更多页、右滑切回首页，拖动不足自动回弹
+/// - 左滑切到下一页、右滑切回上一页，拖动不足自动回弹
 /// - 页面用保活包装，与原 IndexedStack 一样不丢页面状态
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class AppShell extends StatefulWidget {
@@ -35,6 +36,7 @@ class _AppShellState extends State<AppShell> {
         onPageChanged: (index) => setState(() => _currentIndex = index),
         children: [
           _PageKeeper(child: HomePage()),
+          _PageKeeper(child: RoomListPage()),
           _PageKeeper(child: MorePage()),
         ],
       ),
@@ -56,6 +58,12 @@ class _AppShellState extends State<AppShell> {
               icon: Icon(Icons.home_outlined),
               selectedIcon: Icon(Icons.home_rounded),
               label: '首页',
+            ),
+            // 联机 tab：局域网房间列表（底部导航常驻入口，非页面跳转进入）
+            NavigationDestination(
+              icon: Icon(Icons.lan_outlined),
+              selectedIcon: Icon(Icons.lan_rounded),
+              label: '联机',
             ),
             NavigationDestination(
               icon: Icon(Icons.more_horiz_outlined),
