@@ -8,7 +8,8 @@ import '../primary_button.dart';
 import '../resume_card.dart';
 
 /// 单词PK - 人数设置视图
-/// 顶部展示未完成对局的恢复入口（存在存档时），下方为人数选择与开始按钮
+/// 顶部展示未完成对局的恢复入口（存在存档时），
+/// 下方为对局模式选择（本地/局域网）、人数选择与开始按钮
 class WordPkSetupView extends StatefulWidget {
   const WordPkSetupView({
     super.key,
@@ -37,6 +38,10 @@ class WordPkSetupView extends StatefulWidget {
 class _WordPkSetupViewState extends State<WordPkSetupView> {
   int _selected = WordPkSetupView.minPlayers;
 
+  /// 是否选择局域网模式；默认本地对战（与现有同屏玩法一致）
+  /// 联机人数可选 2-8 人：创建者固定为玩家 1，其余玩家通过加入房间依次入座
+  bool _isLan = false;
+
   @override
   Widget build(BuildContext context) {
     final saved = widget.savedState;
@@ -63,6 +68,48 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // 对局模式选择面板
+                PanelCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '对局模式',
+                        style: TextStyle(
+                          color: palette.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '本地同屏轮流输入；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
+                        style: TextStyle(
+                          color: palette.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          OptionBlock(
+                            label: '本地对战',
+                            selected: !_isLan,
+                            onTap: () => setState(() => _isLan = false),
+                          ),
+                          OptionBlock(
+                            label: '局域网对战',
+                            selected: _isLan,
+                            onTap: () => setState(() => _isLan = true),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 // 人数选择面板
                 PanelCard(
                   child: Column(
@@ -106,9 +153,13 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
                 ),
                 const SizedBox(height: 24),
                 PrimaryButton(
-                  label: '开始 PK',
-                  icon: Icons.local_fire_department_rounded,
-                  onPressed: () => widget.onStart(_selected),
+                  // 局域网模式按钮变为「创建房间」；建房流程待联机里程碑接入，
+                  // 当前呈禁用态，避免误触后进入与模式不符的本地对局
+                  label: _isLan ? '创建房间' : '开始 PK',
+                  icon: _isLan
+                      ? Icons.wifi_tethering_rounded
+                      : Icons.local_fire_department_rounded,
+                  onPressed: _isLan ? null : () => widget.onStart(_selected),
                 ),
               ],
             ),
