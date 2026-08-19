@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../models/word_pk_game_state.dart';
+import '../../models/games/word_pk_game_state.dart';
 import '../../theme/app_theme.dart';
-import '../option_block.dart';
-import '../panel_card.dart';
-import '../primary_button.dart';
-import '../resume_card.dart';
+import '../common/option_block.dart';
+import '../common/panel_card.dart';
+import '../common/primary_button.dart';
+import '../common/resume_card.dart';
 
 /// 单词PK - 人数设置视图
 /// 顶部展示未完成对局的恢复入口（存在存档时），

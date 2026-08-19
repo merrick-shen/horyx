@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
-import '../primary_button.dart';
+import '../common/primary_button.dart';
 
 /// 计分板 - 横屏对战计分视图（红蓝双方）
 /// 两侧大数字为当前局小比分（点击对应侧加分），中央为局间大比分

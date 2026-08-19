@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'pages/app_shell.dart';
-import 'services/theme_storage.dart';
-import 'services/word_validator.dart';
+import 'services/storage/theme_storage.dart';
+import 'services/word_pk/word_validator.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../models/word_entry.dart';
+import '../../models/games/word_entry.dart';
 import '../../theme/app_theme.dart';
-import '../primary_button.dart';
-import '../turn_card.dart';
+import '../common/primary_button.dart';
+import '../common/turn_card.dart';
 
 /// 单词PK - 对局视图
 /// 受控组件：对局状态（当前输入者、单词列表）由父级持有，

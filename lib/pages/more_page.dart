@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import '../widgets/app_top_bar.dart';
-import '../widgets/setting_tile.dart';
-import 'about_page.dart';
-import 'archive_page.dart';
-import 'theme_settings_page.dart';
+import '../widgets/common/app_top_bar.dart';
+import '../widgets/common/setting_tile.dart';
+import 'settings/about_page.dart';
+import 'settings/archive_page.dart';
+import 'settings/theme_settings_page.dart';
 
 /// 更多页
 /// 按模块分组展示设置项，新增模块在 [MorePage.build] 中扩展

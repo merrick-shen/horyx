@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
-import '../widgets/app_top_bar.dart';
+import '../widgets/common/app_top_bar.dart';
 
 /// 通用占位页
 /// 功能待开发的页面统一使用：顶栏 + 居中「功能开发中」提示

@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:horyx/models/word_entry.dart';
-import 'package:horyx/models/word_pk_game_state.dart';
-import 'package:horyx/services/word_pk_storage.dart';
+import 'package:horyx/models/games/word_entry.dart';
+import 'package:horyx/models/games/word_pk_game_state.dart';
+import 'package:horyx/services/storage/word_pk_storage.dart';
 
 void main() {
   setUp(() {

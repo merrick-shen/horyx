@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../widgets/app_top_bar.dart';
-import '../widgets/game_grid.dart';
+import '../widgets/common/app_top_bar.dart';
+import '../widgets/home/game_grid.dart';
 
 /// 主页：导航栏 + 游戏列表
 /// 状态栏样式与底部导航由外层 AppShell 统一管理

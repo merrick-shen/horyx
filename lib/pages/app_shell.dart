@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'home_page.dart';
 import 'more_page.dart';
-import 'room_list_page.dart';
+import 'lan/room_list_page.dart';
 
 /// 应用根骨架：底部导航栏 + 首页/联机/更多页切换
 /// 页面切换使用 PageView 支持左右滑动手势：
