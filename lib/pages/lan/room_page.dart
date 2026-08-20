@@ -30,6 +30,7 @@ class RoomPage extends StatefulWidget {
     super.key,
     required this.gameName,
     required this.capacity,
+    this.gameStartPayload = const {},
     this.hostGameBuilder,
   })  : address = null,
         port = null,
@@ -42,6 +43,7 @@ class RoomPage extends StatefulWidget {
     this.gameName,
     this.clientGameBuilder,
   })  : capacity = 0,
+        gameStartPayload = const {},
         hostGameBuilder = null;
 
   /// 游戏名称（等待页顶部标识卡展示，如「单词PK」）
@@ -49,6 +51,9 @@ class RoomPage extends StatefulWidget {
 
   /// 本局总人数（仅房主模式有效，含房主）
   final int capacity;
+
+  /// 满员开局消息的附加载荷（仅房主模式有效，如五子棋的棋盘规格）
+  final Map<String, dynamic> gameStartPayload;
 
   /// 房主地址（仅客户端模式有效）
   final String? address;
@@ -97,6 +102,7 @@ class _RoomPageState extends State<RoomPage> {
     final host = RoomHost(
       gameName: widget.gameName!,
       capacity: widget.capacity,
+      gameStartPayload: widget.gameStartPayload,
     );
     final ok = await host.start();
     if (!mounted) return;

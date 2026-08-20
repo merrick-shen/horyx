@@ -13,6 +13,7 @@ import '../../widgets/common/resume_card.dart';
 import '../../widgets/common/stone_board.dart';
 import '../../widgets/common/turn_card.dart';
 import '../lan/room_page.dart';
+import 'gomoku_online_page.dart';
 
 /// 五子棋游戏页
 /// 持有对局状态（落子序列、预选、胜负），统一负责：
@@ -183,13 +184,16 @@ class _GomokuPageState extends State<GomokuPage> {
 
   /// 局域网模式：创建房间并进入等待页（固定 2 人，自己执黑先行）
   /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）；
-  /// hostGameBuilder 待步骤 3 接入，当前满员后停留「即将开始」展示
+  /// 所选规格随开局载荷广播，客户端据此构建同规格棋盘
   void _createRoom(int boardSize) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
           gameName: GameData.gomoku.name,
           capacity: 2,
+          gameStartPayload: {'boardSize': boardSize},
+          hostGameBuilder: (context, host) =>
+              GomokuOnlinePage.host(host: host, boardSize: boardSize),
         ),
       ),
     );

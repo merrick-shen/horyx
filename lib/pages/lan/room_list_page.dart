@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/primary_button.dart';
 import 'room_page.dart';
+import '../games/gomoku_online_page.dart';
 import '../games/word_pk_online_page.dart';
 
 /// 局域网房间列表页（「联机」tab 常驻页）
@@ -56,6 +57,9 @@ class _RoomListPageState extends State<RoomListPage> {
   ClientGameBuilder? _gameBuilderFor(String gameName) {
     if (gameName == GameData.wordPk.name) {
       return (context, client) => WordPkOnlinePage.client(client: client);
+    }
+    if (gameName == GameData.gomoku.name) {
+      return (context, client) => GomokuOnlinePage.client(client: client);
     }
     return null;
   }

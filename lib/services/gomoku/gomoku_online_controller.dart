@@ -67,6 +67,9 @@ class GomokuOnlineController extends ChangeNotifier {
   /// 胜方座位号；null 表示对局进行中
   int? winnerSeat;
 
+  /// 胜负是否来自对方中途退出（而非五连）：终局弹窗文案据此区分
+  bool wonByOpponentLeft = false;
+
   /// 校验拒绝等提示回调（页面接 SnackBar 展示；拒绝理由来自房主）
   void Function(String message)? onHint;
 
@@ -77,6 +80,10 @@ class GomokuOnlineController extends ChangeNotifier {
 
   /// 当前执子座位（黑=1 起，随落子数奇偶推导）
   int get currentSeat => moves.length.isEven ? 1 : 2;
+
+  /// 胜方文案（'黑方'/'白方'）；对局进行中为 null
+  String? get winnerText =>
+      winnerSeat == null ? null : (winnerSeat == 1 ? '黑方' : '白方');
 
   /// 是否轮到自己落子（终局后禁止继续）
   bool get isMyTurn =>
@@ -193,6 +200,7 @@ class GomokuOnlineController extends ChangeNotifier {
   void _onSeatLeft(int seat) {
     if (gameEndedText != null || winnerSeat != null) return;
     winnerSeat = mySeat;
+    wonByOpponentLeft = true;
     notifyListeners();
     _host?.broadcast(
       NetMessage(
@@ -219,6 +227,7 @@ class GomokuOnlineController extends ChangeNotifier {
         }
       case NetMessageType.gameOver:
         winnerSeat = message.payload['winner'] as int?;
+        wonByOpponentLeft = message.payload['reason'] == 'opponentLeft';
         notifyListeners();
       default:
         break;

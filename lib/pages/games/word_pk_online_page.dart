@@ -6,6 +6,7 @@ import '../../services/word_pk/word_pk_online_controller.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
+import '../../widgets/common/end_game_dialog.dart';
 import '../../widgets/word_pk/board_view.dart';
 
 /// 单词PK 联机对局页
@@ -67,7 +68,7 @@ class _WordPkOnlinePageState extends State<WordPkOnlinePage> {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (dialogContext) => _EndGameDialog(
+      builder: (dialogContext) => EndGameDialog(
         message: message,
         onConfirm: () {
           Navigator.of(dialogContext).pop();
@@ -161,93 +162,6 @@ class _WordPkOnlinePageState extends State<WordPkOnlinePage> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 终局弹窗：对局结束原因 + 单按钮返回（风格与确认弹窗一致）
-class _EndGameDialog extends StatelessWidget {
-  const _EndGameDialog({required this.message, required this.onConfirm});
-
-  /// 结束原因（断线/房主解散/全员离开）
-  final String message;
-
-  /// 返回按钮回调
-  final VoidCallback onConfirm;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: palette.surfaceBg,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: palette.stroke),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Icon(
-              Icons.link_off_rounded,
-              color: palette.textSecondary,
-              size: 30,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '对局已结束',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: palette.textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: palette.textSecondary,
-                fontSize: 13.5,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: onConfirm,
-              child: Container(
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: palette.primary,
-                  borderRadius: BorderRadius.circular(13),
-                  boxShadow: [
-                    BoxShadow(
-                      color: palette.primary.withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  '返回',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
