@@ -9,7 +9,8 @@ import 'package:horyx/services/network/room_host.dart';
 
 /// 五子棋联机对局集成测试：本机回环真实 TCP 连接
 /// 覆盖：开局规格同步、轮流落子全端一致、非本人回合/占用拒绝、
-/// 五连终局判定、对方离开判胜、房主解散终局
+/// 五连终局判定、对方离开判胜、房主解散终局、
+/// 悔棋协商（同意/拒绝）、认输终局
 void main() {
   // 轮询等待异步事件（网络消息到达无回调可 await，只能按状态轮询）
   Future<void> until(
@@ -29,6 +30,27 @@ void main() {
     final hints = <String>[];
     controller.onHint = hints.add;
     return hints;
+  }
+
+  // 建房 + 加入 + 双端挂控制器的通用前置（各用例仅一步之遥）
+  Future<(GomokuOnlineController, GomokuOnlineController)> setupGame(
+    Map<String, dynamic> startPayload,
+  ) async {
+    final host = RoomHost(
+      gameName: '五子棋',
+      capacity: 2,
+      basePort: 0,
+      enableDiscovery: false,
+      gameStartPayload: startPayload,
+    );
+    expect(await host.start(), isTrue);
+    final client = RoomClient(host: '127.0.0.1', port: host.port);
+    unawaited(client.connect());
+    await until(() => client.phase == RoomClientPhase.gameStarting);
+    return (
+      GomokuOnlineController.host(host, boardSize: startPayload['boardSize']),
+      GomokuOnlineController.client(client),
+    );
   }
 
   test('开局规格同步与轮流落子：双端棋盘一致、回合轮换正确', () async {
@@ -233,6 +255,92 @@ void main() {
     await until(() => clientCtrl.gameEndedText != null);
     expect(clientCtrl.gameEndedText, '房主已解散房间');
 
+    clientCtrl.dispose();
+  });
+
+  test('悔棋协商（同意）：双端各回退一手、协商状态复位', () async {
+    final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
+
+    // 落两手：黑 (7,7)、白 (8,8)
+    expect(hostCtrl.submitStone(7, 7), isTrue);
+    await until(() => clientCtrl.moves.length == 1);
+    expect(clientCtrl.submitStone(8, 8), isTrue);
+    await until(() => hostCtrl.moves.length == 2);
+
+    // 房主发起悔棋：客户端进入待应答状态
+    hostCtrl.requestUndo();
+    await until(() => clientCtrl.undoState == UndoState.peerRequesting);
+    expect(hostCtrl.undoState, UndoState.awaitingPeer);
+
+    // 客户端同意：双端各回退一手（撤销白 (8,8)），回到白方回合
+    clientCtrl.respondUndo(true);
+    await until(() => hostCtrl.moves.length == 1);
+    expect(clientCtrl.moves.length, 1);
+    expect(hostCtrl.undoState, UndoState.idle);
+    expect(clientCtrl.undoState, UndoState.idle);
+    expect(clientCtrl.isMyTurn, isTrue); // 被撤销的是白棋，仍轮到白方
+
+    // 回退后白方可立即重新落子
+    expect(clientCtrl.submitStone(8, 8), isTrue);
+    await until(() => hostCtrl.moves.length == 2);
+
+    hostCtrl.dispose();
+    clientCtrl.dispose();
+  });
+
+  test('悔棋协商（拒绝）：棋盘不变、请求方收到提示', () async {
+    final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
+    final hints = hintsOf(clientCtrl);
+
+    expect(hostCtrl.submitStone(7, 7), isTrue);
+    await until(() => clientCtrl.moves.length == 1);
+
+    // 客户端发起悔棋 -> 房主拒绝：双端棋盘保持一手，请求方（客户端）收到提示
+    clientCtrl.requestUndo();
+    await until(() => hostCtrl.undoState == UndoState.peerRequesting);
+    hostCtrl.respondUndo(false);
+    await until(() => hints.isNotEmpty);
+    expect(hints.last, '对方拒绝了悔棋请求');
+    expect(hostCtrl.moves.length, 1);
+    expect(clientCtrl.moves.length, 1);
+    expect(hostCtrl.undoState, UndoState.idle);
+    expect(clientCtrl.undoState, UndoState.idle);
+
+    hostCtrl.dispose();
+    clientCtrl.dispose();
+  });
+
+  test('认输：客户端认输判房主获胜，双方终局一致', () async {
+    final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
+
+    expect(hostCtrl.submitStone(7, 7), isTrue);
+    await until(() => clientCtrl.moves.length == 1);
+
+    // 客户端认输：房主获胜并广播，双端状态一致
+    clientCtrl.resign();
+    await until(() => hostCtrl.winnerSeat == 1);
+    await until(() => clientCtrl.winnerSeat == 1);
+    expect(hostCtrl.wonByResign, isTrue);
+    expect(clientCtrl.wonByResign, isTrue);
+    expect(hostCtrl.isMyTurn, isFalse); // 终局禁落
+    expect(clientCtrl.isMyTurn, isFalse);
+
+    hostCtrl.dispose();
+    clientCtrl.dispose();
+  });
+
+  test('房主认输：判客户端获胜', () async {
+    final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
+
+    expect(hostCtrl.submitStone(7, 7), isTrue);
+    await until(() => clientCtrl.moves.length == 1);
+
+    hostCtrl.resign();
+    await until(() => clientCtrl.winnerSeat == 2);
+    expect(hostCtrl.winnerSeat, 2);
+    expect(hostCtrl.wonByResign, isTrue);
+
+    hostCtrl.dispose();
     clientCtrl.dispose();
   });
 }
