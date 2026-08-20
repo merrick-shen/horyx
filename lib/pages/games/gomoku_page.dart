@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/game_data.dart';
 import '../../models/games/gomoku_game_state.dart';
 import '../../services/storage/gomoku_storage.dart';
 import '../../theme/app_theme.dart';
@@ -11,6 +12,7 @@ import '../../widgets/common/primary_button.dart';
 import '../../widgets/common/resume_card.dart';
 import '../../widgets/common/stone_board.dart';
 import '../../widgets/common/turn_card.dart';
+import '../lan/room_page.dart';
 
 /// 五子棋游戏页
 /// 持有对局状态（落子序列、预选、胜负），统一负责：
@@ -179,6 +181,20 @@ class _GomokuPageState extends State<GomokuPage> {
     });
   }
 
+  /// 局域网模式：创建房间并进入等待页（固定 2 人，自己执黑先行）
+  /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）；
+  /// hostGameBuilder 待步骤 3 接入，当前满员后停留「即将开始」展示
+  void _createRoom(int boardSize) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RoomPage.host(
+          gameName: GameData.gomoku.name,
+          capacity: 2,
+        ),
+      ),
+    );
+  }
+
   /// 恢复未完成对局：从存档还原棋盘规格与落子序列
   void _resumeSaved() {
     final saved = _savedState;
@@ -283,6 +299,7 @@ class _GomokuPageState extends State<GomokuPage> {
                           onSelect: (size) =>
                               setState(() => _boardSize = size),
                           onStart: _onStart,
+                          onCreateRoom: _createRoom,
                           savedState: _savedState,
                           onResume: _resumeSaved,
                         ),
@@ -296,13 +313,15 @@ class _GomokuPageState extends State<GomokuPage> {
   }
 }
 
-/// 规格设置视图：恢复入口（存在存档时）+ 棋盘规格选择 + 开始按钮
-class _SetupView extends StatelessWidget {
+/// 规格设置视图：恢复入口（存在存档时）+ 对局模式选择 +
+/// 棋盘规格选择（联机时替换为执子规则说明）+ 开始/创建房间按钮
+class _SetupView extends StatefulWidget {
   const _SetupView({
     super.key,
     required this.boardSize,
     required this.onSelect,
     required this.onStart,
+    required this.onCreateRoom,
     this.savedState,
     this.onResume,
   });
@@ -313,14 +332,26 @@ class _SetupView extends StatelessWidget {
   /// 选择规格回调
   final ValueChanged<int> onSelect;
 
-  /// 点击「开始对局」回调
+  /// 点击「开始对局」回调（本地模式）
   final VoidCallback onStart;
+
+  /// 局域网模式点击「创建房间」回调（参数为选中路数）
+  /// 联机固定 2 人对弈：创建者执黑先行，加入者执白
+  final ValueChanged<int> onCreateRoom;
 
   /// 未完成对局的存档；null 时不显示恢复入口
   final GomokuGameState? savedState;
 
   /// 点击「继续上次对局」回调
   final VoidCallback? onResume;
+
+  @override
+  State<_SetupView> createState() => _SetupViewState();
+}
+
+class _SetupViewState extends State<_SetupView> {
+  /// 是否选择局域网模式；默认本地对战（双人对弈本就同屏即可）
+  bool _isLan = false;
 
   /// 可选规格：15 路标准盘 / 19 路大盘
   static const List<(int, String)> _options = [
@@ -331,7 +362,7 @@ class _SetupView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final saved = savedState;
+    final saved = widget.savedState;
 
     return SizedBox.expand(
       child: Center(
@@ -350,10 +381,54 @@ class _SetupView extends StatelessWidget {
                     summary:
                         '${saved.boardSize}×${saved.boardSize} 对局 · '
                         '已落子 ${saved.moves.length} 手',
-                    onTap: onResume,
+                    onTap: widget.onResume,
                   ),
                   const SizedBox(height: 16),
                 ],
+                // 对局模式选择面板
+                PanelCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '对局模式',
+                        style: TextStyle(
+                          color: palette.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '本地同屏对弈；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
+                        style: TextStyle(
+                          color: palette.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          OptionBlock(
+                            label: '本地对战',
+                            selected: !_isLan,
+                            onTap: () =>
+                                setState(() => _isLan = false),
+                          ),
+                          OptionBlock(
+                            label: '局域网对战',
+                            selected: _isLan,
+                            onTap: () => setState(() => _isLan = true),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // 棋盘规格面板（本地与联机共用，联机建房沿用所选规格）
                 PanelCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,8 +457,8 @@ class _SetupView extends StatelessWidget {
                           for (final (size, label) in _options)
                             OptionBlock(
                               label: label,
-                              selected: size == boardSize,
-                              onTap: () => onSelect(size),
+                              selected: size == widget.boardSize,
+                              onTap: () => widget.onSelect(size),
                             ),
                         ],
                       ),
@@ -392,9 +467,14 @@ class _SetupView extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 PrimaryButton(
-                  label: '开始对局',
-                  icon: Icons.sports_esports_rounded,
-                  onPressed: onStart,
+                  // 局域网模式按钮变为「创建房间」，进入房间等待页（自己执黑）
+                  label: _isLan ? '创建房间' : '开始对局',
+                  icon: _isLan
+                      ? Icons.wifi_tethering_rounded
+                      : Icons.sports_esports_rounded,
+                  onPressed: _isLan
+                      ? () => widget.onCreateRoom(widget.boardSize)
+                      : widget.onStart,
                 ),
               ],
             ),
