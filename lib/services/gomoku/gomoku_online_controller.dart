@@ -20,11 +20,12 @@ enum UndoState {
 }
 
 /// 五子棋联机对局控制器（房主权威模型）
-/// 房主端：校验落子（轮次 + 落点）并广播生效，五连/对方离开时判定终局；
+/// 房主端：校验落子（轮次 + 落点）并广播生效，五连时判定胜负；
 /// 客户端：提交落子交房主校验，棋盘状态随广播同步，不自行判定。
 /// 执子规则固定：创建者（座位 1）执黑先行，加入者（座位 2）执白。
 /// 悔棋为双方协商：请求 -> 对方应答 -> 房主广播回退，全程房主仲裁；
-/// 认输为单方声明：房主收到即判对方获胜并广播终局。
+/// 认输为单方声明：房主收到即判对方获胜并广播终局；
+/// 中途退出（任一方）对局直接结束，不判胜负（与单词PK一致）。
 /// 页面销毁（dispose）即退出对局：控制器负责关闭底层房间连接。
 class GomokuOnlineController extends ChangeNotifier {
   /// 以房主身份接管房间（满员开局后由等待页调用）
@@ -80,11 +81,8 @@ class GomokuOnlineController extends ChangeNotifier {
   /// 已生效落子序列（索引奇偶决定黑白：偶=黑=座位1，奇=白=座位2）
   final List<(int, int)> moves = [];
 
-  /// 胜方座位号；null 表示对局进行中
+  /// 胜方座位号；null 表示对局进行中或异常终止（无胜负）
   int? winnerSeat;
-
-  /// 胜负是否来自对方中途退出（而非五连）：终局弹窗文案据此区分
-  bool wonByOpponentLeft = false;
 
   /// 胜负是否来自认输（终局弹窗文案区分）
   bool wonByResign = false;
@@ -338,18 +336,13 @@ class GomokuOnlineController extends ChangeNotifier {
     return false;
   }
 
-  /// 房主侧：对方离开（掉线/主动退出）——2 人博弈无旁观者，直接判自己获胜
+  /// 房主侧：对方离开（掉线/主动退出）——对局直接结束，不判胜负
+  /// （与单词PK一致：中途退出属异常终止，留局方无胜利可言；
+  /// 2 人局无人可收到广播，仅本地终局）
   void _onSeatLeft(int seat) {
     if (gameEndedText != null || winnerSeat != null) return;
-    winnerSeat = mySeat;
-    wonByOpponentLeft = true;
+    gameEndedText = '其他玩家均已离开，对局结束';
     notifyListeners();
-    _host?.broadcast(
-      NetMessage(
-        type: NetMessageType.gameOver,
-        payload: {'reason': 'opponentLeft', 'winner': mySeat},
-      ),
-    );
   }
 
   /// 客户端侧：处理房主对局消息，棋盘状态以广播为准
@@ -370,7 +363,6 @@ class GomokuOnlineController extends ChangeNotifier {
       case NetMessageType.gameOver:
         winnerSeat = msg.payload['winner'] as int?;
         wonByResign = msg.payload['reason'] == 'resign';
-        wonByOpponentLeft = msg.payload['reason'] == 'opponentLeft';
         notifyListeners();
       case NetMessageType.undoRequest:
         // 房主转发的悔棋请求：进入待应答状态（页面弹窗）
@@ -432,7 +424,7 @@ class GomokuOnlineController extends ChangeNotifier {
   @override
   void dispose() {
     // 页面销毁即退出对局：关闭底层房间连接
-    // （房主解散会通知对方判胜，客户端退出会让房主判胜）
+    // （任一方退出对局即结束、不判胜负，与单词PK一致）
     _client?.removeListener(_onClientChanged);
     _host?.close();
     _client?.close();

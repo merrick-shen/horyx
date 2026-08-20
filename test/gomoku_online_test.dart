@@ -9,7 +9,7 @@ import 'package:horyx/services/network/room_host.dart';
 
 /// 五子棋联机对局集成测试：本机回环真实 TCP 连接
 /// 覆盖：开局规格同步、轮流落子全端一致、非本人回合/占用拒绝、
-/// 五连终局判定、对方离开判胜、房主解散终局、
+/// 五连终局判定、对方离开对局结束（不判胜负）、房主解散终局、
 /// 悔棋协商（同意/拒绝）、认输终局
 void main() {
   // 轮询等待异步事件（网络消息到达无回调可 await，只能按状态轮询）
@@ -209,7 +209,7 @@ void main() {
     clientCtrl.dispose();
   });
 
-  test('对方离开判胜：客户端中途退出，房主直接获胜', () async {
+  test('对方离开：对局结束且不判胜负（与单词PK一致）', () async {
     final host = RoomHost(
       gameName: '五子棋',
       capacity: 2,
@@ -225,11 +225,14 @@ void main() {
     final hostCtrl = GomokuOnlineController.host(host, boardSize: 15);
     final clientCtrl = GomokuOnlineController.client(client);
 
-    // 对局进行中客户端退出（关闭底层连接）：房主判胜（座位 1）
+    // 对局进行中客户端退出（关闭底层连接）：房主对局结束，无胜方
     expect(hostCtrl.submitStone(7, 7), isTrue);
     await until(() => clientCtrl.moves.length == 1);
     await client.close();
-    await until(() => hostCtrl.winnerSeat == 1);
+    await until(() => hostCtrl.gameEndedText != null);
+    expect(hostCtrl.gameEndedText, '其他玩家均已离开，对局结束');
+    expect(hostCtrl.winnerSeat, isNull);
+    expect(hostCtrl.isMyTurn, isFalse); // 终局禁落
 
     hostCtrl.dispose();
   });

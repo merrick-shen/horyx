@@ -132,7 +132,8 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
     }
   }
 
-  /// 胜利弹窗：区分五连获胜/对方退出判胜/认输；可留在棋盘查看棋型
+  /// 胜利弹窗：区分五连获胜/认输；可留在棋盘查看棋型
+  /// 中途退出不产生胜负（走终局弹窗，无胜方），不进此弹窗
   Future<void> _showWinDialog() async {
     final winner = _controller.winnerSeat == 1 ? '黑方' : '白方';
     final String message;
@@ -140,10 +141,6 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
       message = _controller.winnerSeat == _controller.mySeat
           ? '对方认输了，你获得胜利'
           : '你认输了，本局告负';
-    } else if (_controller.wonByOpponentLeft) {
-      message = _controller.winnerSeat == _controller.mySeat
-          ? '对方中途退出了对局，你获得胜利'
-          : '对方中途退出，你输掉了本局';
     } else {
       message = '五子连珠，$winner赢得本局';
     }
@@ -196,7 +193,7 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
     }
   }
 
-  /// 退出请求：对局进行中确认后断开（对方将收到退出/解散提示并判胜），
+  /// 退出请求：对局进行中确认后断开（对局随之结束、不判胜负，与单词PK一致），
   /// 终局后（已弹过终局弹窗）直接返回
   Future<void> _requestExit() async {
     if (_endDialogShown) {
@@ -206,7 +203,7 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
     final result = await showConfirmDialog(
       context,
       title: '退出对局？',
-      message: '退出后将断开与房间的连接，本局将判对方获胜',
+      message: '退出后将断开与房间的连接，对局将结束',
       confirmLabel: '退出对局',
     );
     if (!mounted) return;
