@@ -20,6 +20,7 @@ class RoomHost extends ChangeNotifier {
     required this.capacity,
     this.basePort = defaultPort,
     this.enableDiscovery = true,
+    this.gameStartPayload = const {},
   }) : assert(capacity >= 2, '房间至少 2 人');
 
   /// 游戏名称（等待页与房间列表展示用，如「单词PK」）
@@ -30,6 +31,10 @@ class RoomHost extends ChangeNotifier {
 
   /// 是否启动 UDP 房间发现应答（测试并发跑多房间时关掉，避免固定端口串扰）
   final bool enableDiscovery;
+
+  /// 满员开局消息的附加载荷（游戏专属数据，随 gameStart 广播给全员）
+  /// 如五子棋的棋盘规格；单词PK等无附加数据的游戏保持空
+  final Map<String, dynamic> gameStartPayload;
 
   /// 监听起始端口：绑定失败自动尝试 +1（最多 10 个候选）；
   /// 测试可传 0 让系统分配临时端口，避免与真实端口冲突
@@ -287,17 +292,17 @@ class RoomHost extends ChangeNotifier {
     return seat;
   }
 
-  /// 满员开局：广播 gameStart，客户端进入「即将开始」状态
+  /// 满员开局：广播 gameStart（含游戏专属载荷），客户端进入「即将开始」状态
   void _startGame() {
     _gameStarted = true;
     _broadcast(
       NetMessage(
         type: NetMessageType.gameStart,
-        payload: {'playerCount': capacity},
+        payload: {'playerCount': capacity, ...gameStartPayload},
       ),
     );
     notifyListeners();
-    // 游戏页面导航与对局逻辑在步骤 4 接入
+    // 游戏页面导航与对局逻辑由各游戏的联机层接入
   }
 
   /// 清理离线玩家的座位并广播

@@ -79,6 +79,10 @@ class RoomClient extends ChangeNotifier {
   /// 房间总人数
   int capacity = 0;
 
+  /// 满员开局载荷（游戏专属数据，如五子棋的棋盘规格）
+  /// 由房主建房时提供、随 gameStart 广播；游戏层开局时读取
+  Map<String, dynamic> startPayload = const {};
+
   /// 座位快照（含房主 1 号位）；用 Set 去重，展示时排序
   final Set<int> _seats = {};
   List<int> get seats => _seats.toList()..sort();
@@ -133,6 +137,8 @@ class RoomClient extends ChangeNotifier {
         _seats.remove(message.payload['seat'] as int? ?? -1);
         notifyListeners();
       case NetMessageType.gameStart:
+        // 开局载荷整体保存，游戏层按需取用（如五子棋的 boardSize）
+        startPayload = Map<String, dynamic>.of(message.payload);
         phase = RoomClientPhase.gameStarting;
         notifyListeners();
       case NetMessageType.bye:
