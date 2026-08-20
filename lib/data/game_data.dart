@@ -20,6 +20,7 @@ abstract final class GameData {
   );
 
   /// 围棋
+  /// 暂时下架：不在 [games] 列表中即不展示入口，页面与规则代码保留
   static const GameInfo weiqi = GameInfo(
     name: '围棋',
     description: '黑白围地博弈，气尽提子，地多者胜',
@@ -33,10 +34,10 @@ abstract final class GameData {
     icon: Icons.score_rounded,
   );
 
+  /// 首页游戏列表（围棋暂时下架，恢复时把 weiqi 加回列表即可）
   static final List<GameInfo> games = [
     wordPk,
     gomoku,
-    weiqi,
     scoreboard,
   ];
 }

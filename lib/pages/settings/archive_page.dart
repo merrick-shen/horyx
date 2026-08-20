@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../services/storage/gomoku_storage.dart';
 import '../../services/storage/scoreboard_storage.dart';
-import '../../services/storage/weiqi_storage.dart';
+// 围棋暂时下架：存储服务代码保留，恢复入口时取消注释
+// import '../../services/storage/weiqi_storage.dart';
 import '../../services/storage/word_pk_storage.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/app_top_bar.dart';
@@ -37,7 +38,8 @@ class _ArchivePageState extends State<ArchivePage> {
     // 本地存储读取极快，顺序读取即可（混合类型不宜用 Future.wait）
     final wordPk = await WordPkStorage.load();
     final gomoku = await GomokuStorage.load();
-    final weiqi = await WeiqiStorage.load();
+    // 围棋暂时下架：不再读取展示（存档数据保留，恢复入口时取消注释）
+    // final weiqi = await WeiqiStorage.load();
     final scoreboard = await ScoreboardStorage.load();
 
     // 摘要文案与各游戏设置页「继续上次对局」卡片保持一致；
@@ -61,15 +63,16 @@ class _ArchivePageState extends State<ArchivePage> {
           savedAt: gomoku.savedAt,
           clear: GomokuStorage.clear,
         ),
-      if (weiqi != null)
-        _ArchiveEntry(
-          name: '围棋',
-          icon: Icons.blur_on_rounded,
-          summary: '${weiqi.boardSize}×${weiqi.boardSize} 对局 · '
-              '已下 ${weiqi.moves.length} 手',
-          savedAt: weiqi.savedAt,
-          clear: WeiqiStorage.clear,
-        ),
+      // 围棋条目（暂时下架，恢复入口时取消注释）
+      // if (weiqi != null)
+      //   _ArchiveEntry(
+      //     name: '围棋',
+      //     icon: Icons.blur_on_rounded,
+      //     summary: '${weiqi.boardSize}×${weiqi.boardSize} 对局 · '
+      //         '已下 ${weiqi.moves.length} 手',
+      //     savedAt: weiqi.savedAt,
+      //     clear: WeiqiStorage.clear,
+      //   ),
       if (scoreboard != null)
         _ArchiveEntry(
           name: '计分器',
