@@ -183,10 +183,10 @@ class RoomHost extends ChangeNotifier {
     _closed = true;
     final sessions = List.of(_clients.values);
     _clients.clear();
-    // 先发 bye 再关 socket；会话断开回调因 _closed 已置位而不再触发座位清理
-    for (final session in sessions) {
-      await session.close();
-    }
+    // 先发 bye 再关 socket；会话断开回调因 _closed 已置位而不再触发座位清理。
+    // 并行关闭：半开连接（对端不回包）下单会话 flush 会挂满超时（默认 5 秒），
+    // 串行等待随人数线性叠加（8 人房间最坏约 40 秒），并行后只等最慢的一个
+    await Future.wait(sessions.map((session) => session.close()));
     _stopDiscovery();
     await _server?.close();
     _server = null;
