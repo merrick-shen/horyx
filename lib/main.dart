@@ -12,9 +12,16 @@ Future<void> main() async {
   // 词表加载依赖 rootBundle，需先初始化绑定
   WidgetsFlutterBinding.ensureInitialized();
   await WordValidator.load();
-  // 启动时恢复用户上次选择的主题模式与主题色彩，避免重启后回退默认值
-  final themeMode = await ThemeStorage.load();
-  final seedColor = await ThemeStorage.loadSeedColor();
+  // 启动时恢复用户上次选择的主题模式与主题色彩，避免重启后回退默认值；
+  // 极端平台异常（存储初始化失败等）时回退默认主题，保证应用可正常启动
+  var themeMode = ThemeMode.system;
+  var seedColor = AppPalette.brandPrimary;
+  try {
+    themeMode = await ThemeStorage.load();
+    seedColor = await ThemeStorage.loadSeedColor();
+  } catch (_) {
+    // 初始化失败不阻断启动，使用与 ThemeController 默认值一致的主题
+  }
   runApp(MyApp(themeController: ThemeController(themeMode, seedColor)));
 }
 
