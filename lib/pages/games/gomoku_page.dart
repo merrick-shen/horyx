@@ -273,14 +273,8 @@ class _GomokuPageState extends State<GomokuPage> {
             children: [
               AppTopBar(
                 title: '五子棋',
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: context.palette.textPrimary,
-                    size: 20,
-                  ),
-                  onPressed: _requestExit,
-                ),
+                showBack: true,
+                onBack: _requestExit,
               ),
               Expanded(
                 // 阶段切换动画：设置视图 <-> 对局视图淡入淡出

@@ -23,17 +23,7 @@ class PlaceholderPage extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            AppTopBar(
-              title: title,
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: context.palette.textPrimary,
-                  size: 20,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
+            AppTopBar(title: title, showBack: true),
             Expanded(
               child: Center(
                 child: Column(

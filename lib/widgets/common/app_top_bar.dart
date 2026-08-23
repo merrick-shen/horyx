@@ -5,14 +5,22 @@ import '../../theme/app_theme.dart';
 /// 应用通用顶栏：居中标题 + 底部描边
 /// 主页与游戏页共用，保证视觉统一
 class AppTopBar extends StatelessWidget {
-  const AppTopBar({super.key, required this.title, this.leading});
+  const AppTopBar({
+    super.key,
+    required this.title,
+    this.showBack = false,
+    this.onBack,
+  });
 
   /// 顶栏标题文字
   final String title;
 
-  /// 可选的前置控件（如游戏页的返回按钮）
-  /// 使用 Stack 绝对居中，标题不因前置控件而偏移
-  final Widget? leading;
+  /// 是否显示返回按钮（二级页面通用样式）
+  final bool showBack;
+
+  /// 返回按钮回调；缺省时执行 maybePop。
+  /// 需要退出确认流程的页面（如对局中防误触退出）传入自定义回调
+  final VoidCallback? onBack;
 
   static const double _height = 64;
 
@@ -38,8 +46,20 @@ class AppTopBar extends StatelessWidget {
                 ),
               ),
             ),
-            if (leading != null)
-              Align(alignment: Alignment.centerLeft, child: leading!),
+            // 使用 Stack 绝对居中，标题不因返回按钮而偏移
+            if (showBack)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: context.palette.textPrimary,
+                    size: 20,
+                  ),
+                  onPressed:
+                      onBack ?? () => Navigator.of(context).maybePop(),
+                ),
+              ),
           ],
         ),
       ),

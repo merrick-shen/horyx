@@ -396,17 +396,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
       body: SafeArea(
         child: Column(
           children: [
-            AppTopBar(
-              title: '计分器',
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: context.palette.textPrimary,
-                  size: 20,
-                ),
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
-            ),
+            AppTopBar(title: '计分器', showBack: true),
             Expanded(
               child: Center(
                 // 平板/横屏窗口下限制内容宽度

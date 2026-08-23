@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../services/network/room_client.dart';
 import '../../services/network/room_host.dart';
 import '../../services/word_pk/word_pk_online_controller.dart';
-import '../../theme/app_theme.dart';
 import '../../utils/hint_bar.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
@@ -126,14 +125,8 @@ class _WordPkOnlinePageState extends State<WordPkOnlinePage> {
             children: [
               AppTopBar(
                 title: '单词PK · 联机',
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: context.palette.textPrimary,
-                    size: 20,
-                  ),
-                  onPressed: _requestExit,
-                ),
+                showBack: true,
+                onBack: _requestExit,
               ),
               Expanded(
                 child: ListenableBuilder(

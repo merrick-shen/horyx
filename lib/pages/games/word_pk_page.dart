@@ -5,7 +5,6 @@ import '../../models/games/word_entry.dart';
 import '../../models/games/word_pk_game_state.dart';
 import '../../services/storage/word_pk_storage.dart';
 import '../../services/word_pk/word_validator.dart';
-import '../../theme/app_theme.dart';
 import '../../utils/hint_bar.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
@@ -196,14 +195,8 @@ class _WordPkPageState extends State<WordPkPage> {
             children: [
               AppTopBar(
                 title: '单词PK',
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: context.palette.textPrimary,
-                    size: 20,
-                  ),
-                  onPressed: _requestExit,
-                ),
+                showBack: true,
+                onBack: _requestExit,
               ),
               Expanded(
                 // 阶段切换动画：设置视图 <-> 对局视图淡入淡出

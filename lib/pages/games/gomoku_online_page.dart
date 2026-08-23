@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../services/gomoku/gomoku_online_controller.dart';
 import '../../services/network/room_client.dart';
 import '../../services/network/room_host.dart';
-import '../../theme/app_theme.dart';
 import '../../utils/hint_bar.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
@@ -247,14 +246,8 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
             children: [
               AppTopBar(
                 title: '五子棋 · 联机',
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: context.palette.textPrimary,
-                    size: 20,
-                  ),
-                  onPressed: _requestExit,
-                ),
+                showBack: true,
+                onBack: _requestExit,
               ),
               Expanded(
                 // 棋盘视图随控制器状态实时重建（落子广播/终局判定）

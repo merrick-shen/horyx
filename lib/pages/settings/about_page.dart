@@ -43,18 +43,7 @@ class _AboutPageState extends State<AboutPage> {
         bottom: false,
         child: Column(
           children: [
-            // 顶栏 + 返回按钮（与各二级页一致）
-            AppTopBar(
-              title: '关于',
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: palette.textPrimary,
-                  size: 20,
-                ),
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
-            ),
+            AppTopBar(title: '关于', showBack: true),
             Expanded(
               child: Center(
                 child: Padding(

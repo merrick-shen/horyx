@@ -126,18 +126,7 @@ class _ArchivePageState extends State<ArchivePage> {
         bottom: false,
         child: Column(
           children: [
-            // 顶栏 + 返回按钮（与各游戏页一致）
-            AppTopBar(
-              title: '存档管理',
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: palette.textPrimary,
-                  size: 20,
-                ),
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
-            ),
+            AppTopBar(title: '存档管理', showBack: true),
             Expanded(
               child: SingleChildScrollView(
                 child: Center(

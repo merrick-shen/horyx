@@ -201,14 +201,8 @@ class _RoomPageState extends State<RoomPage> {
             children: [
               AppTopBar(
                 title: '房间',
-                leading: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: context.palette.textPrimary,
-                    size: 20,
-                  ),
-                  onPressed: _requestExit,
-                ),
+                showBack: true,
+                onBack: _requestExit,
               ),
               Expanded(child: _buildBody()),
             ],

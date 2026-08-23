@@ -63,17 +63,7 @@ class ThemeSettingsPage extends StatelessWidget {
         bottom: false,
         child: Column(
           children: [
-            AppTopBar(
-              title: '主题设置',
-              leading: IconButton(
-                icon: Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: context.palette.textPrimary,
-                  size: 20,
-                ),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
+            AppTopBar(title: '主题设置', showBack: true),
             Expanded(
               child: SingleChildScrollView(
                 child: Center(
