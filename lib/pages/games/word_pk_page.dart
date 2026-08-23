@@ -6,6 +6,7 @@ import '../../models/games/word_pk_game_state.dart';
 import '../../services/storage/word_pk_storage.dart';
 import '../../services/word_pk/word_validator.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/hint_bar.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
 import '../../widgets/word_pk/board_view.dart';
@@ -100,11 +101,14 @@ class _WordPkPageState extends State<WordPkPage> {
   /// 设置阶段直接退出页面
   Future<void> _requestExit() async {
     if (!_started) {
-      Navigator.of(context).pop();
+      // 设置阶段顶栏返回：清理残留提示（棋盘阶段被退回设置后可能遗留）
+      exitPageClean(context);
       return;
     }
     // 开局后还没提交任何单词：不打扰，直接回设置
     if (_entries.isEmpty) {
+      // 非法提交的提示仍挂在 messenger 上，回设置视图前清理
+      clearHint(context);
       setState(() => _started = false);
       return;
     }
@@ -128,45 +132,37 @@ class _WordPkPageState extends State<WordPkPage> {
             savedAt: DateTime.now(),
           ),
         );
-        if (mounted) _exitPage();
+        if (mounted) exitPageClean(context);
       case ConfirmResult.neutral:
         // 放弃当前对局：清除旧存档，避免下次误提示可继续
         await WordPkStorage.clear();
-        if (mounted) _exitPage();
+        if (mounted) exitPageClean(context);
       case ConfirmResult.cancel:
         // 留在对局
         break;
     }
   }
 
-  /// 退出游戏页：先移除未关闭的错误提示再返回
-  /// SnackBar 挂在应用级 ScaffoldMessenger 上，不随页面销毁，
-  /// 不主动移除会残留到主页，且其回调引用已销毁页面导致无法关闭
-  void _exitPage() {
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    Navigator.of(context).pop();
-  }
-
   /// 提交校验：格式 → 重复 → 真实性；通过则入列并轮换，返回是否通过
   bool _submitWord(String raw) {
     raw = raw.trim();
     if (raw.isEmpty) {
-      _showHint('请输入英文单词');
+      showPersistentHint(context, '请输入英文单词');
       return false;
     }
     // 仅允许纯英文字母，提前拦截中文、数字、空格等输入
     if (!RegExp(r'^[A-Za-z]+$').hasMatch(raw)) {
-      _showHint('单词只能由英文字母组成');
+      showPersistentHint(context, '单词只能由英文字母组成');
       return false;
     }
     // 统一小写后参与重复比较，忽略大小写差异
     final word = raw.toLowerCase();
     if (_entries.any((e) => e.word == word)) {
-      _showHint('单词已重复');
+      showPersistentHint(context, '单词已重复');
       return false;
     }
     if (!WordValidator.isValid(word)) {
-      _showHint('不是有效的英文单词');
+      showPersistentHint(context, '不是有效的英文单词');
       return false;
     }
 
@@ -176,33 +172,8 @@ class _WordPkPageState extends State<WordPkPage> {
       _currentPlayer = _currentPlayer % _playerCount + 1;
     });
     // 新输入成功时清除遗留的错误提示，避免信息干扰
-    _hideHint();
+    hideHint(context);
     return true;
-  }
-
-  /// 展示错误/引导提示
-  /// 错误提示不自动消失（需手动关闭），避免玩家漏看
-  void _showHint(String message) {
-    // 捕获 messenger state 而非在回调里依赖页面 context：
-    // 提示可能比页面存活更久，引用已销毁 context 会导致「知道了」失效
-    final messenger = ScaffoldMessenger.of(context);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(days: 1),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: '知道了',
-            onPressed: () => messenger.hideCurrentSnackBar(),
-          ),
-        ),
-      );
-  }
-
-  void _hideHint() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
   }
 
   @override
@@ -211,7 +182,12 @@ class _WordPkPageState extends State<WordPkPage> {
       // 对局中拦截系统返回（走保存确认弹窗），设置阶段允许直接返回
       canPop: !_started,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _requestExit();
+        if (didPop) {
+          // 系统返回直接弹出（设置阶段 canPop）：绕过 _requestExit，需在此清理
+          clearHint(context);
+          return;
+        }
+        _requestExit();
       },
       child: Scaffold(
         body: SafeArea(

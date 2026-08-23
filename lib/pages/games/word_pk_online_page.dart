@@ -4,6 +4,7 @@ import '../../services/network/room_client.dart';
 import '../../services/network/room_host.dart';
 import '../../services/word_pk/word_pk_online_controller.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/hint_bar.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
 import '../../widgets/common/end_game_dialog.dart';
@@ -93,32 +94,16 @@ class _WordPkOnlinePageState extends State<WordPkOnlinePage> {
   }
 
   /// 退出页面：先移除未关闭的错误提示再返回
-  /// SnackBar 挂在应用级 ScaffoldMessenger 上，不随页面销毁，需主动清理
   void _exitPage() {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    Navigator.of(context).pop();
+    exitPageClean(context);
   }
 
   /// 展示校验拒绝等提示（沿用本地对局：不自动消失，需手动关闭）
+  /// 作为控制器回调挂接，通知可能晚于页面销毁到达，先检查 mounted
   void _showHint(String message) {
     if (!mounted) return;
-    // 捕获 messenger state 而非在回调里依赖页面 context：
-    // 提示可能比页面存活更久，引用已销毁 context 会导致「知道了」失效
-    final messenger = ScaffoldMessenger.of(context);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(days: 1),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: '知道了',
-            onPressed: () => messenger.hideCurrentSnackBar(),
-          ),
-        ),
-      );
+    showPersistentHint(context, message);
   }
 
   @override
@@ -127,7 +112,12 @@ class _WordPkOnlinePageState extends State<WordPkOnlinePage> {
       // 对局中拦截系统返回（走退出确认），终局弹窗阶段允许返回
       canPop: _endDialogShown,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _requestExit();
+        if (didPop) {
+          // 系统返回直接弹出（终局后 canPop）：绕过 _requestExit，需在此清理
+          clearHint(context);
+          return;
+        }
+        _requestExit();
       },
       child: Scaffold(
         body: SafeArea(

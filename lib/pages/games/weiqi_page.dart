@@ -4,6 +4,7 @@ import '../../models/games/weiqi_game_state.dart';
 import '../../services/weiqi/weiqi_rules.dart';
 import '../../services/storage/weiqi_storage.dart';
 import '../../theme/app_theme.dart';
+import '../../utils/hint_bar.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
 import '../../widgets/common/option_block.dart';
@@ -106,9 +107,9 @@ class _WeiqiPageState extends State<WeiqiPage> {
       case WeiqiPlaceResult.occupied:
         break; // 已有棋子静默忽略（与五子棋一致）
       case WeiqiPlaceResult.suicide:
-        _showHint('此处不能落子（自杀手）');
+        showPersistentHint(context, '此处不能落子（自杀手）');
       case WeiqiPlaceResult.repetition:
-        _showHint('打劫：不能立即回提');
+        showPersistentHint(context, '打劫：不能立即回提');
       case WeiqiPlaceResult.ok:
         setState(() => _pending = (col, row));
     }
@@ -128,7 +129,7 @@ class _WeiqiPageState extends State<WeiqiPage> {
     _pending = null;
     _recompute();
     // 合法落子生效后清除遗留的非法提示，避免误导
-    _hideHint();
+    hideHint(context);
   }
 
   /// 虚手（停一手）：不落子仅轮换执子方，记入着手序列供悔棋回退
@@ -208,6 +209,8 @@ class _WeiqiPageState extends State<WeiqiPage> {
 
   /// 返回设置页：清盘并回到规格选择
   void _backToSetup() {
+    // 终局前可能遗留非法落子提示，回设置视图前清理
+    clearHint(context);
     _moves.clear();
     _pending = null;
     setState(() {
@@ -293,35 +296,12 @@ class _WeiqiPageState extends State<WeiqiPage> {
     });
   }
 
-  /// 展示非法落子提示：不自动消失，需手动关闭（错误提示项目惯例）
-  void _showHint(String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(days: 1),
-          behavior: SnackBarBehavior.floating,
-          action: SnackBarAction(
-            label: '知道了',
-            onPressed: () => messenger.hideCurrentSnackBar(),
-          ),
-        ),
-      );
-  }
-
-  /// 隐藏当前提示（合法操作生效后清除遗留提示）
-  void _hideHint() {
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-  }
-
   /// 退出请求：对局中弹出三选项确认弹窗（保存退出/不保存退出/取消）
   /// 对局中尚无着手时无进行中内容，直接返回设置视图（与计分器未计分退出一致）
   /// 设置阶段与终局复盘阶段无进行中对局，直接退出页面
   Future<void> _requestExit() async {
-    // SnackBar 挂在应用级 ScaffoldMessenger，不随页面销毁，需主动清理
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
+    // 提示挂在应用级 ScaffoldMessenger，不随页面销毁，进入退出流程先清理
+    clearHint(context);
     if (!_started || _gameOver) {
       Navigator.of(context).pop();
       return;
@@ -367,7 +347,12 @@ class _WeiqiPageState extends State<WeiqiPage> {
       // 对局中拦截系统返回（走保存确认弹窗），设置/终局阶段允许直接返回
       canPop: !_started || _gameOver,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _requestExit();
+        if (didPop) {
+          // 系统返回直接弹出（设置/终局阶段 canPop）：绕过 _requestExit，需在此清理
+          clearHint(context);
+          return;
+        }
+        _requestExit();
       },
       child: Scaffold(
         body: SafeArea(
