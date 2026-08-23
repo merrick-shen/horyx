@@ -81,8 +81,16 @@ class RoomDiscovery extends ChangeNotifier {
   }
 
   /// 启动发现：绑定随机 UDP 端口并立即探测一次，随后按周期重复
+  /// 绑定失败（极端环境如网络栈权限异常）时静默降级：
+  /// 不启动探测，房间列表保持空态（_probe 对 null socket 有保护）
   Future<void> start() async {
-    final socket = await RawDatagramSocket.bind('0.0.0.0', 0);
+    RawDatagramSocket socket;
+    try {
+      socket = await RawDatagramSocket.bind('0.0.0.0', 0);
+    } catch (e) {
+      debugPrint('UDP 端口绑定失败，房间发现降级为空态: $e');
+      return;
+    }
     // Windows 等平台向广播地址发包必须显式开启，否则报权限错误(10013)
     socket.broadcastEnabled = true;
     _socket = socket;
