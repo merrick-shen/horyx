@@ -28,9 +28,14 @@ class _AboutPageState extends State<AboutPage> {
   /// 读取应用版本信息
   /// 读取失败（极端平台异常）时保持空串，页面仅省略版本行
   Future<void> _loadVersion() async {
-    final info = await PackageInfo.fromPlatform();
-    if (mounted) {
-      setState(() => _version = info.version);
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _version = info.version);
+      }
+    } catch (e) {
+      // 极端平台异常：记录线索后保持空串，页面仅省略版本行（与注释约定一致）
+      debugPrint('读取版本信息失败: $e');
     }
   }
 
