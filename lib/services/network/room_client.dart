@@ -110,6 +110,10 @@ class RoomClient extends ChangeNotifier {
 
   /// 处理房主消息，维护座位快照与阶段
   void _onMessage(NetMessage message) {
+    // 失败后（如加入超时）socket 关闭过程中仍可能派发残留消息，
+    // 迟到的 joinResponse 会把 failed 覆盖回 joined（等待页显示已加入
+    // 但连接已断、后续无任何提示），统一在此拦截
+    if (phase == RoomClientPhase.failed) return;
     switch (message.type) {
       case NetMessageType.joinResponse:
         _joinTimeout?.cancel();

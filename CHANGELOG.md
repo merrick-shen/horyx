@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - 修复局域网五子棋对局中，悔棋与对方落子几乎同时发生时，棋盘可能残留已被悔掉的棋子的问题
+- 修复加入房间超时后，可能仍显示已加入房间的问题
 
 ## [0.2.0] - 2026-08-20
 
