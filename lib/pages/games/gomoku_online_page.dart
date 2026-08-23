@@ -17,7 +17,8 @@ import '../../widgets/common/stone_turn_card.dart';
 /// 视图结构与本地对局一致（执子卡 + 棋盘 + 操作按钮），联机适配点：
 /// 仅轮到自己时可预选/确认落子，落子经房主校验后随广播全端生效。
 /// 页面销毁即退出对局并关闭连接（联机对局不落本地存档）。
-/// 悔棋/再来一局协商为后续步骤，当前悔棋按钮呈禁用态占位。
+/// 悔棋经双方协商生效（一方发起请求、对方应答后随广播回退）；
+/// 再来一局暂未支持，终局后仅提供退出对局。
 class GomokuOnlinePage extends StatefulWidget {
   const GomokuOnlinePage.host({
     super.key,
@@ -279,8 +280,9 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
 }
 
 /// 联机对局视图：与本地对局同构（执子卡 + 棋盘 + 操作按钮）
-/// 差异点：执子卡副标题提示等待对象；悔棋禁用（协商悔棋后续接入）；
-/// 终局后按钮为「退出对局」（再来一局协商后续接入）
+/// 差异点：执子卡副标题提示等待对象；悔棋为协商制（发起请求、
+/// 对方应答后随广播回退，等待应答期间按钮禁用防重复发起）；
+/// 终局后按钮为「退出对局」（再来一局暂未支持）
 class _BoardView extends StatelessWidget {
   const _BoardView({
     required this.boardSize,
@@ -393,7 +395,7 @@ class _BoardView extends StatelessWidget {
                 ),
                 const SizedBox(height: 12),
                 if (isOver)
-                  // 终局：退出对局（再来一局需双方协商，后续步骤接入）
+                  // 终局：退出对局（再来一局暂未支持）
                   PrimaryButton(
                     label: '退出对局',
                     icon: Icons.logout_rounded,
