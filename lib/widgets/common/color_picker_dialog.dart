@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
+import 'dialog_action_button.dart';
 
 /// 自定义颜色选择器弹窗
 /// HSV 三通道（色相/饱和度/亮度）滑块调节 + 实时预览
@@ -131,14 +132,14 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
             Row(
               children: [
                 Expanded(
-                  child: _PickerButton(
+                  child: DialogActionButton(
                     label: '取消',
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _PickerButton(
+                  child: DialogActionButton(
                     label: '确定',
                     filled: true,
                     fillColor: current,
@@ -249,52 +250,6 @@ class _SpectrumTrackShape extends RoundedRectSliderTrackShape {
     context.canvas.drawRRect(
       RRect.fromRectAndRadius(rect, Radius.circular(trackHeight / 2)),
       paint,
-    );
-  }
-}
-
-/// 弹窗底部按钮：样式与确认弹窗按钮一致（描边 / 实底）
-class _PickerButton extends StatelessWidget {
-  const _PickerButton({
-    required this.label,
-    required this.onPressed,
-    this.filled = false,
-    this.fillColor,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-
-  /// 是否实底主按钮样式
-  final bool filled;
-
-  /// 实底颜色（默认品牌色）
-  final Color? fillColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final background = fillColor ?? palette.primary;
-
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: filled ? background : palette.scaffoldBg,
-          borderRadius: BorderRadius.circular(13),
-          border: filled ? null : Border.all(color: palette.stroke),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: filled ? Colors.white : palette.textPrimary,
-            fontSize: 14.5,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
     );
   }
 }

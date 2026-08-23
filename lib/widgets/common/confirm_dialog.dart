@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
+import 'dialog_action_button.dart';
 
 /// 确认弹窗的操作结果
 enum ConfirmResult {
@@ -98,7 +99,7 @@ class _ConfirmDialog extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _DialogButton(
+                    child: DialogActionButton(
                       label: cancelLabel,
                       onPressed: () =>
                           Navigator.of(context).pop(ConfirmResult.cancel),
@@ -106,7 +107,7 @@ class _ConfirmDialog extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _DialogButton(
+                    child: DialogActionButton(
                       label: confirmLabel,
                       filled: true,
                       onPressed: () =>
@@ -117,14 +118,14 @@ class _ConfirmDialog extends StatelessWidget {
               )
             else ...[
               // 三按钮垂直布局：主操作最突出，取消弱化为文字按钮
-              _DialogButton(
+              DialogActionButton(
                 label: confirmLabel,
                 filled: true,
                 onPressed: () =>
                     Navigator.of(context).pop(ConfirmResult.confirm),
               ),
               const SizedBox(height: 10),
-              _DialogButton(
+              DialogActionButton(
                 label: neutralLabel!,
                 onPressed: () =>
                     Navigator.of(context).pop(ConfirmResult.neutral),
@@ -143,54 +144,6 @@ class _ConfirmDialog extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 弹窗按钮：默认描边样式，[filled] 为 true 时使用品牌纯色主按钮样式
-class _DialogButton extends StatelessWidget {
-  const _DialogButton({
-    required this.label,
-    required this.onPressed,
-    this.filled = false,
-  });
-
-  final String label;
-  final VoidCallback onPressed;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: filled ? palette.primary : palette.scaffoldBg,
-          borderRadius: BorderRadius.circular(13),
-          border: filled ? null : Border.all(color: palette.stroke),
-          boxShadow: filled
-              ? [
-                  BoxShadow(
-                    color: palette.primary.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: filled ? Colors.white : palette.textPrimary,
-            fontSize: 14.5,
-            fontWeight: FontWeight.w700,
-          ),
         ),
       ),
     );

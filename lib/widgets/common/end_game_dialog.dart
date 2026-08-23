@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
+import 'dialog_action_button.dart';
 
 /// 联机终局弹窗：结束原因 + 单按钮返回
 /// 适用于对局被迫终止且无胜负结果的场景（断线/房主解散/全员离开等）
@@ -62,31 +63,10 @@ class EndGameDialog extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            GestureDetector(
-              onTap: onConfirm,
-              child: Container(
-                height: 44,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: palette.primary,
-                  borderRadius: BorderRadius.circular(13),
-                  boxShadow: [
-                    BoxShadow(
-                      color: palette.primary.withValues(alpha: 0.35),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Text(
-                  '返回',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
+            DialogActionButton(
+              label: '返回',
+              filled: true,
+              onPressed: onConfirm,
             ),
           ],
         ),
