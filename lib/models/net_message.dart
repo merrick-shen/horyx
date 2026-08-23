@@ -93,7 +93,8 @@ class NetMessage {
       };
 
   /// 反序列化；版本不符、类型未知、结构不符时抛出 [FormatException]，
-  /// 由会话层统一容错（丢弃该条消息并断开，视为对端实现异常）
+  /// 由帧解码层容错（仅丢弃该行、不断开连接：单条坏消息不足以判定
+  /// 对端异常，见 NetFrameDecoder._decodeLine）
   factory NetMessage.fromJson(Map<String, dynamic> json) {
     final version = json['v'];
     if (version is! int || version != protocolVersion) {
