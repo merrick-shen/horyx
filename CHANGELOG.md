@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- 修复局域网五子棋对局中，悔棋与对方落子几乎同时发生时，棋盘可能残留已被悔掉的棋子的问题
+
 ## [0.2.0] - 2026-08-20
 
 ### Added

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
@@ -225,6 +226,9 @@ class _BoardPainter extends CustomPainter {
   bool shouldRepaint(_BoardPainter oldDelegate) =>
       oldDelegate.size != size ||
       oldDelegate.linesColor != linesColor ||
-      oldDelegate.stones.length != stones.length ||
+      // 逐项比较内容而非长度：联机悔棋与落子可能同帧到达，
+      // 棋子先移除后新增时长度不变，仅比长度会漏掉这次重绘
+      // Stone 为 record 自带值语义，可安全逐项 == 比较
+      !listEquals(oldDelegate.stones, stones) ||
       oldDelegate.pending != pending;
 }
