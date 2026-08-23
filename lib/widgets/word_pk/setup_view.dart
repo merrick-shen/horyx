@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/games/word_pk_game_state.dart';
 import '../../theme/app_theme.dart';
+import '../common/lan_mode_panel.dart';
 import '../common/option_block.dart';
 import '../common/panel_card.dart';
 import '../common/primary_button.dart';
@@ -73,45 +74,11 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
                   const SizedBox(height: 16),
                 ],
                 // 对局模式选择面板
-                PanelCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '对局模式',
-                        style: TextStyle(
-                          color: palette.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '本地同屏轮流输入；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          OptionBlock(
-                            label: '本地对战',
-                            selected: !_isLan,
-                            onTap: () => setState(() => _isLan = false),
-                          ),
-                          OptionBlock(
-                            label: '局域网对战',
-                            selected: _isLan,
-                            onTap: () => setState(() => _isLan = true),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                LanModePanel(
+                  isLan: _isLan,
+                  onChanged: (v) => setState(() => _isLan = v),
+                  description:
+                      '本地同屏轮流输入；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
                 ),
                 const SizedBox(height: 16),
                 // 人数选择面板
