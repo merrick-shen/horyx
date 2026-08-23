@@ -3,17 +3,10 @@ import 'package:flutter/material.dart';
 import '../../data/game_data.dart';
 import '../../models/games/gomoku_game_state.dart';
 import '../../services/storage/gomoku_storage.dart';
-import '../../theme/app_theme.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
-import '../../widgets/common/confirm_move_row.dart';
-import '../../widgets/common/lan_mode_panel.dart';
-import '../../widgets/common/option_block.dart';
-import '../../widgets/common/panel_card.dart';
-import '../../widgets/common/primary_button.dart';
-import '../../widgets/common/resume_card.dart';
-import '../../widgets/common/stone_board.dart';
-import '../../widgets/common/stone_turn_card.dart';
+import '../../widgets/gomoku/board_view.dart';
+import '../../widgets/gomoku/setup_view.dart';
 import '../lan/room_page.dart';
 import 'gomoku_online_page.dart';
 
@@ -281,7 +274,7 @@ class _GomokuPageState extends State<GomokuPage> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: _started
-                      ? _BoardView(
+                      ? GomokuBoardView(
                           key: const ValueKey('board'),
                           boardSize: _boardSize,
                           moves: _moves,
@@ -293,7 +286,7 @@ class _GomokuPageState extends State<GomokuPage> {
                           onUndo: _undo,
                           onRestart: _restartMatch,
                         )
-                      : _SetupView(
+                      : GomokuSetupView(
                           key: const ValueKey('setup'),
                           boardSize: _boardSize,
                           onSelect: (size) =>
@@ -306,262 +299,6 @@ class _GomokuPageState extends State<GomokuPage> {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 规格设置视图：恢复入口（存在存档时）+ 对局模式选择 +
-/// 棋盘规格选择（联机时替换为执子规则说明）+ 开始/创建房间按钮
-class _SetupView extends StatefulWidget {
-  const _SetupView({
-    super.key,
-    required this.boardSize,
-    required this.onSelect,
-    required this.onStart,
-    required this.onCreateRoom,
-    this.savedState,
-    this.onResume,
-  });
-
-  /// 当前选中路数
-  final int boardSize;
-
-  /// 选择规格回调
-  final ValueChanged<int> onSelect;
-
-  /// 点击「开始对局」回调（本地模式）
-  final VoidCallback onStart;
-
-  /// 局域网模式点击「创建房间」回调（参数为选中路数）
-  /// 联机固定 2 人对弈：创建者执黑先行，加入者执白
-  final ValueChanged<int> onCreateRoom;
-
-  /// 未完成对局的存档；null 时不显示恢复入口
-  final GomokuGameState? savedState;
-
-  /// 点击「继续上次对局」回调
-  final VoidCallback? onResume;
-
-  @override
-  State<_SetupView> createState() => _SetupViewState();
-}
-
-class _SetupViewState extends State<_SetupView> {
-  /// 是否选择局域网模式；默认本地对战（双人对弈本就同屏即可）
-  bool _isLan = false;
-
-  /// 可选规格：15 路标准盘 / 19 路大盘
-  static const List<(int, String)> _options = [
-    (15, '15×15'),
-    (19, '19×19'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final saved = widget.savedState;
-
-    return SizedBox.expand(
-      child: Center(
-        // 平板/桌面端限制内容宽度，居中展示
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 存在未完成对局时展示恢复入口
-                if (saved != null) ...[
-                  ResumeCard(
-                    summary:
-                        '${saved.boardSize}×${saved.boardSize} 对局 · '
-                        '已落子 ${saved.moves.length} 手',
-                    onTap: widget.onResume,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                // 对局模式选择面板
-                LanModePanel(
-                  isLan: _isLan,
-                  onChanged: (v) => setState(() => _isLan = v),
-                  description:
-                      '本地同屏对弈；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
-                ),
-                const SizedBox(height: 16),
-                // 棋盘规格面板（本地与联机共用，联机建房沿用所选规格）
-                PanelCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '棋盘规格',
-                        style: TextStyle(
-                          color: palette.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '标准 15 路棋盘节奏明快，19 路大盘空间更大、博弈更充分',
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          for (final (size, label) in _options)
-                            OptionBlock(
-                              label: label,
-                              selected: size == widget.boardSize,
-                              onTap: () => widget.onSelect(size),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                PrimaryButton(
-                  // 局域网模式按钮变为「创建房间」，进入房间等待页（自己执黑）
-                  label: _isLan ? '创建房间' : '开始对局',
-                  icon: _isLan
-                      ? Icons.wifi_tethering_rounded
-                      : Icons.sports_esports_rounded,
-                  onPressed: _isLan
-                      ? () => widget.onCreateRoom(widget.boardSize)
-                      : widget.onStart,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 对局视图：当前执子提示 + 棋盘 + 操作按钮
-class _BoardView extends StatelessWidget {
-  const _BoardView({
-    super.key,
-    required this.boardSize,
-    required this.moves,
-    required this.pending,
-    required this.winner,
-    required this.onCellTap,
-    required this.onCancelMove,
-    required this.onConfirmMove,
-    required this.onUndo,
-    required this.onRestart,
-  });
-
-  /// 棋盘路数
-  final int boardSize;
-
-  /// 已确认落子序列
-  final List<(int, int)> moves;
-
-  /// 预选落子位置；null 表示无预选
-  final (int, int)? pending;
-
-  /// 胜方；null 表示对局进行中
-  final String? winner;
-
-  /// 点击棋盘交叉点回调
-  final void Function(int col, int row) onCellTap;
-
-  /// 点击「取消」回调：清除落子预选
-  final VoidCallback onCancelMove;
-
-  /// 点击「下棋」回调：确认落子
-  final VoidCallback onConfirmMove;
-
-  /// 点击「悔棋」回调
-  final VoidCallback onUndo;
-
-  /// 终局后点击「再来一局」回调：清盘重开
-  final VoidCallback onRestart;
-
-  @override
-  Widget build(BuildContext context) {
-    // 落子确认按钮仅在棋盘上有预选棋子时出现
-    final hasPending = pending != null;
-    // 终局后无预选、无子可悔
-    final isOver = winner != null;
-    final blackTurn = moves.length.isEven;
-
-    return SizedBox.expand(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 对局中提示执子方（图标颜色对应棋子）；终局提示胜方
-                StoneTurnCard(
-                  isOver: isOver,
-                  blackToMove: blackTurn,
-                  winner: winner,
-                  subtitle: '当前执子',
-                ),
-                const SizedBox(height: 16),
-                // 棋盘占据剩余空间，正方形自适应宽高较小者
-                Expanded(
-                  child: Center(
-                    // 五子棋无提子，落子序列奇偶即可推导颜色（先手黑）
-                    // 转换为显式颜色棋子集合供通用棋盘组件绘制
-                    child: StoneBoard(
-                      size: boardSize,
-                      stones: [
-                        for (int i = 0; i < moves.length; i++)
-                          (moves[i].$1, moves[i].$2, i.isEven),
-                      ],
-                      pending: pending == null
-                          ? null
-                          : (
-                              pending!.$1,
-                              pending!.$2,
-                              moves.length.isEven,
-                            ),
-                      onCellTap: onCellTap,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ConfirmMoveRow(
-                  visible: hasPending,
-                  onCancelMove: onCancelMove,
-                  onConfirmMove: onConfirmMove,
-                ),
-                const SizedBox(height: 12),
-                if (isOver)
-                  // 终局：悔棋替换为再来一局，方便查看棋型后重开
-                  PrimaryButton(
-                    label: '再来一局',
-                    icon: Icons.refresh_rounded,
-                    onPressed: onRestart,
-                  )
-                else
-                  // 对局中：无子可悔时按钮禁用（灰底不可点击）
-                  PrimaryButton(
-                    label: '悔棋',
-                    icon: Icons.undo_rounded,
-                    onPressed: moves.isEmpty ? null : onUndo,
-                  ),
-              ],
-            ),
           ),
         ),
       ),
