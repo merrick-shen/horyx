@@ -6,12 +6,13 @@ import '../../services/storage/gomoku_storage.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
+import '../../widgets/common/confirm_move_row.dart';
 import '../../widgets/common/option_block.dart';
 import '../../widgets/common/panel_card.dart';
 import '../../widgets/common/primary_button.dart';
 import '../../widgets/common/resume_card.dart';
 import '../../widgets/common/stone_board.dart';
-import '../../widgets/common/turn_card.dart';
+import '../../widgets/common/stone_turn_card.dart';
 import '../lan/room_page.dart';
 import 'gomoku_online_page.dart';
 
@@ -549,16 +550,11 @@ class _BoardView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // 对局中提示执子方（图标颜色对应棋子）；终局提示胜方
-                TurnCard(
-                  icon: Icons.circle_rounded,
-                  iconColor: (isOver ? !blackTurn : blackTurn)
-                      ? StoneBoard.blackStone
-                      : StoneBoard.whiteStone,
-                  subtitle: isOver ? '对局结束' : '当前执子',
-                  title: isOver ? '$winner胜利' : (blackTurn ? '黑方' : '白方'),
-                  titleKey: ValueKey(
-                    isOver ? '$winner胜利' : (blackTurn ? '黑方' : '白方'),
-                  ),
+                StoneTurnCard(
+                  isOver: isOver,
+                  blackToMove: blackTurn,
+                  winner: winner,
+                  subtitle: '当前执子',
                 ),
                 const SizedBox(height: 16),
                 // 棋盘占据剩余空间，正方形自适应宽高较小者
@@ -584,35 +580,10 @@ class _BoardView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // 固定高度占位：确认按钮显隐时不挤压棋盘布局
-                SizedBox(
-                  height: 48,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 180),
-                    child: hasPending
-                        ? Row(
-                            key: const ValueKey('confirm_row'),
-                            children: [
-                              Expanded(
-                                child: PrimaryButton(
-                                  label: '取消',
-                                  outlined: true,
-                                  onPressed: onCancelMove,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: PrimaryButton(
-                                  label: '下棋',
-                                  onPressed: onConfirmMove,
-                                ),
-                              ),
-                            ],
-                          )
-                        : const SizedBox.shrink(
-                            key: ValueKey('confirm_row_hidden'),
-                          ),
-                  ),
+                ConfirmMoveRow(
+                  visible: hasPending,
+                  onCancelMove: onCancelMove,
+                  onConfirmMove: onConfirmMove,
                 ),
                 const SizedBox(height: 12),
                 if (isOver)
