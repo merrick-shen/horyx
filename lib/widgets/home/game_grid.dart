@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../data/game_data.dart';
-import '../../pages/games/gomoku_page.dart';
-import '../../pages/games/scoreboard_page.dart';
-// 围棋暂时下架：WeiqiPage 代码保留，恢复入口时取消此 import 与跳转注释
-// import '../../pages/games/weiqi_page.dart';
-import '../../pages/games/word_pk_page.dart';
 import 'game_card.dart';
 
 /// 游戏列表区域：根据可用宽度自动切换列数（响应式布局）
@@ -39,36 +34,21 @@ class GameGrid extends StatelessWidget {
             mainAxisExtent: 212,
           ),
           itemCount: GameData.games.length,
-          itemBuilder: (context, index) => GameCard(
-            game: GameData.games[index],
-            // 各游戏卡片跳转对应游戏页（围棋暂时下架，入口移除代码保留）
-            onTap: switch (index) {
-              0 => () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const WordPkPage(),
-                    ),
-                  ),
-              1 => () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const GomokuPage(),
-                    ),
-                  ),
-              // 恢复围棋时：列表加回 weiqi 并启用以下跳转（索引顺延 +1）
-              // 2 => () => Navigator.of(context).push(
-              //       MaterialPageRoute(
-              //         builder: (_) => const WeiqiPage(),
-              //       ),
-              //     ),
-              // 计分器：比分设置 + 横屏计分板
-              2 => () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const ScoreboardPage(),
-                    ),
-                  ),
-              // 列表仅三个游戏，此处为 switch 穷尽性兜底
-              _ => null,
-            },
-          ),
+          itemBuilder: (context, index) {
+            final game = GameData.games[index];
+            return GameCard(
+              game: game,
+              // 跳转目标来自注册表（GameData），本组件不感知具体游戏页；
+              // 未登记跳转的游戏卡片禁用点击（当前不存在此情况）
+              onTap: game.pageBuilder == null
+                  ? null
+                  : () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: game.pageBuilder!,
+                        ),
+                      ),
+            );
+          },
         );
       },
     );

@@ -380,12 +380,11 @@ class _RoomPageState extends State<RoomPage> {
   }
 
   /// 游戏标识卡：游戏图标 + 名称 + 局规格，所有游戏通用的房间头部
-  /// 图标按游戏名匹配静态数据源；未匹配（未来新游戏未登记）时回退通用图标
+  /// 图标按游戏名从注册表匹配；未匹配（未来新游戏未登记）时回退通用图标
   Widget _buildGameCard({required int capacity}) {
     final palette = context.palette;
     final name = widget.gameName ?? '游戏房间';
-    final matched = GameData.games.where((g) => g.name == name);
-    final icon = matched.isEmpty ? Icons.sports_esports_rounded : matched.first.icon;
+    final icon = GameData.iconFor(name);
 
     return PanelCard(
       child: Row(
