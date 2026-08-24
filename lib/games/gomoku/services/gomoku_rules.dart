@@ -19,14 +19,21 @@ abstract final class GomokuRules {
     int row,
     bool black,
   ) {
+    // 一次性构建位置→是否黑子索引：序列索引奇偶即颜色（偶=黑），
+    // 四方向延伸的每步查询降为 O(1)，整体复杂度从 O(n²) 降为 O(n)
+    // （19 路满盘 361 手时原实现约 13 万次比较，现仅建一次索引）
+    final isBlackAt = <(int, int), bool>{
+      for (var i = 0; i < moves.length; i++) moves[i]: i.isEven,
+    };
     const dirs = [(1, 0), (0, 1), (1, 1), (1, -1)];
     for (final (dx, dy) in dirs) {
       var count = 1;
-      // 沿正负两个方向延伸计数
+      // 沿正负两个方向延伸计数；索引未命中（含越界点）即视为无子
       for (final sign in [1, -1]) {
         var c = col + dx * sign;
         var r = row + dy * sign;
-        while (_isSameStone(moves, boardSize, c, r, black)) {
+        while (c >= 0 && c < boardSize && r >= 0 && r < boardSize
+            && isBlackAt[(c, r)] == black) {
           count++;
           c += dx * sign;
           r += dy * sign;
@@ -35,21 +42,5 @@ abstract final class GomokuRules {
       if (count >= 5) return true;
     }
     return false;
-  }
-
-  /// 指定位置是否为指定颜色的已落棋子（越界视为无子）
-  static bool _isSameStone(
-    List<(int, int)> moves,
-    int boardSize,
-    int col,
-    int row,
-    bool black,
-  ) {
-    if (col < 0 || col >= boardSize || row < 0 || row >= boardSize) {
-      return false;
-    }
-    // record 结构相等可直接 indexOf；索引奇偶即棋子颜色
-    final index = moves.indexOf((col, row));
-    return index >= 0 && index.isEven == black;
   }
 }

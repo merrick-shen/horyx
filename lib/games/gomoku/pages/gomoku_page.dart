@@ -35,6 +35,10 @@ class _GomokuPageState
   /// 已确认落子序列（索引奇偶决定黑白：0=黑 1=白）
   final List<(int, int)> _moves = [];
 
+  /// 已占位集合（与 _moves 同步增删，点击占位判定 O(1)，
+  /// 悔棋/恢复/清盘处必须同步维护，否则判定失真）
+  final Set<(int, int)> _occupied = {};
+
   /// 预选落子位置；null 表示无预选
   (int, int)? _pending;
 
@@ -54,7 +58,7 @@ class _GomokuPageState
   /// 点击棋盘交叉点：终局或已有棋子的点不可选，其余更新预选
   void _onCellTap(int col, int row) {
     if (_winner != null) return;
-    if (_moves.contains((col, row))) return;
+    if (_occupied.contains((col, row))) return;
     setState(() => _pending = (col, row));
   }
 
@@ -70,6 +74,7 @@ class _GomokuPageState
     final (col, row) = selected;
     setState(() {
       _moves.add(selected);
+      _occupied.add(selected);
       _pending = null;
     });
 
@@ -112,6 +117,7 @@ class _GomokuPageState
   void _restartMatch() {
     setState(() {
       _moves.clear();
+      _occupied.clear();
       _pending = null;
       _winner = null;
     });
@@ -121,6 +127,7 @@ class _GomokuPageState
   void _backToSetup() {
     setState(() {
       _moves.clear();
+      _occupied.clear();
       _pending = null;
       _winner = null;
       _started = false;
@@ -131,7 +138,8 @@ class _GomokuPageState
   void _undo() {
     if (_moves.isEmpty) return;
     setState(() {
-      _moves.removeLast();
+      // removeLast 返回被移除的元素，同步清出占位集合
+      _occupied.remove(_moves.removeLast());
       _pending = null;
     });
   }
@@ -168,6 +176,9 @@ class _GomokuPageState
     setState(() {
       _boardSize = saved.boardSize;
       _moves
+        ..clear()
+        ..addAll(saved.moves);
+      _occupied
         ..clear()
         ..addAll(saved.moves);
       _started = true;
