@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'stone_board.dart';
-import 'turn_card.dart';
+import 'package:horyx/shared/widgets/stone_board.dart';
+import 'package:horyx/shared/widgets/turn_card.dart';
 
 /// 棋类执子提示卡：封装 TurnCard 在黑白棋对局中的通用推导
 /// （对局中显示当前执子方，终局显示胜方；图标颜色对应棋子颜色）

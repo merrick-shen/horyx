@@ -13,7 +13,7 @@ import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/word_pk/widgets/board_view.dart';
 import 'package:horyx/games/word_pk/widgets/setup_view.dart';
 import 'package:horyx/shared/network/room_page.dart';
-import 'word_pk_online_page.dart';
+import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 
 /// 单词PK游戏页
 /// 持有对局状态（人数、当前输入者、单词列表），统一负责：

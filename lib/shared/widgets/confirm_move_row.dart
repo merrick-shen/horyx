@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'primary_button.dart';
+import 'package:horyx/shared/widgets/primary_button.dart';
 
 /// 落子确认按钮行：棋盘有预选棋子时显示「取消/下棋」
 ///

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'dialog_action_button.dart';
+import 'package:horyx/shared/widgets/dialog_action_button.dart';
 
 /// 联机终局弹窗：结束原因 + 单按钮返回
 /// 适用于对局被迫终止且无胜负结果的场景（断线/房主解散/全员离开等）

@@ -5,7 +5,7 @@ import 'package:horyx/shared/network/room_discovery.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
-import 'room_page.dart';
+import 'package:horyx/shared/network/room_page.dart';
 
 /// 局域网房间列表页（「联机」tab 常驻页）
 /// 通过 UDP 广播自动发现同一局域网内的房间并实时展示；

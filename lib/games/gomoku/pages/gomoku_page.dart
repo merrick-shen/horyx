@@ -11,7 +11,7 @@ import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/gomoku/widgets/board_view.dart';
 import 'package:horyx/games/gomoku/widgets/setup_view.dart';
 import 'package:horyx/shared/network/room_page.dart';
-import 'gomoku_online_page.dart';
+import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 
 /// 五子棋游戏页
 /// 持有对局状态（落子序列、预选、胜负），统一负责：

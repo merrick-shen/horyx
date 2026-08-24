@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'dialog_action_button.dart';
+import 'package:horyx/shared/widgets/dialog_action_button.dart';
 
 /// 自定义颜色选择器弹窗
 /// HSV 三通道（色相/饱和度/亮度）滑块调节 + 实时预览

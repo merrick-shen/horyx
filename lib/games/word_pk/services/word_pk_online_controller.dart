@@ -3,7 +3,7 @@ import 'package:horyx/games/word_pk/models/word_entry.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
-import 'word_validator.dart';
+import 'package:horyx/games/word_pk/services/word_validator.dart';
 
 /// 单词PK 联机对局控制器（房主权威模型）
 /// 公共骨架（连接持有/挂接/断线终局/回执构造/生命周期）见基类

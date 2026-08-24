@@ -6,8 +6,8 @@ import 'package:flutter/foundation.dart';
 
 import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/net_utils.dart';
-import 'net_protocol.dart';
-import 'room_host.dart';
+import 'package:horyx/shared/network/net_protocol.dart';
+import 'package:horyx/shared/network/room_host.dart';
 
 /// 已发现的房间条目（客户端视角）
 /// 数据来自房主的 UDP 应答，字段与 discoveryResponse 载荷一一对应

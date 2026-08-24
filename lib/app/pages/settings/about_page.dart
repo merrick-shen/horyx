@@ -4,7 +4,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
-import 'changelog_page.dart';
+import 'package:horyx/app/pages/settings/changelog_page.dart';
 
 /// 关于页
 /// 展示应用图标、名称、简介与版本号（版本号读取自 pubspec，自动同步）

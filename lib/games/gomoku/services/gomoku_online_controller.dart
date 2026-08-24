@@ -2,7 +2,7 @@ import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
-import 'gomoku_rules.dart';
+import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 
 /// 悔棋协商状态机
 /// idle -> awaitingPeer（我发起了请求，等对方应答）

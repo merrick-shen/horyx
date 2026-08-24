@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'package:horyx/shared/network/net_message.dart';
-import 'net_session.dart';
+import 'package:horyx/shared/network/net_session.dart';
 
 /// 客户端加入房间的阶段
 enum RoomClientPhase {

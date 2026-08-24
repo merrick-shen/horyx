@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'option_block.dart';
-import 'panel_card.dart';
+import 'package:horyx/shared/widgets/option_block.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 对局模式选择面板：本地对战 / 局域网对战二选一
 ///

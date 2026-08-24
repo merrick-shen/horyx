@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'dialog_action_button.dart';
+import 'package:horyx/shared/widgets/dialog_action_button.dart';
 
 /// 确认弹窗的操作结果
 enum ConfirmResult {

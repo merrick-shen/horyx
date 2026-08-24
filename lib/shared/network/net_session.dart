@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:horyx/shared/network/net_message.dart';
-import 'net_protocol.dart';
+import 'package:horyx/shared/network/net_protocol.dart';
 
 /// TCP 会话：包装单条 Socket 连接的完整生命周期
 /// 房主端（ServerSocket accept）与客户端（Socket connect）共用本封装，

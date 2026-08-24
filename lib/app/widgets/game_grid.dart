@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/app/widgets/game_card.dart';
 import 'package:horyx/shared/game/game_data.dart';
-import 'game_card.dart';
 
 /// 游戏列表区域：根据可用宽度自动切换列数（响应式布局）
 /// 手机 2 列 / 平板 3 列 / 小桌面 4 列 / 大桌面 5 列

@@ -5,8 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'package:horyx/shared/network/net_message.dart';
-import 'net_protocol.dart';
-import 'net_session.dart';
+import 'package:horyx/shared/network/net_protocol.dart';
+import 'package:horyx/shared/network/net_session.dart';
 
 /// 局域网房间 - 房主端服务
 /// 职责：TCP 监听（端口占用自动顺延）、hello 握手与座位分配、
