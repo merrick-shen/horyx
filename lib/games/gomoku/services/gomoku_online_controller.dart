@@ -81,6 +81,10 @@ class GomokuOnlineController extends OnlineGameControllerBase {
   /// 悔棋协商状态
   UndoState undoState = UndoState.idle;
 
+  /// 同意悔棋后的目标手数（发起方"悔自己上一手"后的长度）
+  /// 发起时快照：协商期间对方若又落子，同意后一并回退到快照（B9）
+  int _undoTarget = 0;
+
   /// 当前执子座位（黑=1 起，随落子数奇偶推导）
   int get currentSeat => moves.length.isEven ? 1 : 2;
 
@@ -125,7 +129,17 @@ class GomokuOnlineController extends OnlineGameControllerBase {
   bool _occupied(int col, int row) =>
       moves.any((m) => m.$1 == col && m.$2 == row);
 
-  /// 发起悔棋请求：无子可悔或终局时本地拦截；
+  /// 执行悔棋回退：撤到发起方快照（_undoTarget），
+  /// 含协商期间快照之后的新落子；仅由房主侧在广播前调用
+  void _applyUndo() {
+    if (_undoTarget < moves.length) {
+      moves.removeRange(_undoTarget, moves.length);
+    }
+  }
+
+  /// 发起悔棋请求（悔自己上一手）：仅对方回合可发起——轮到自己时
+  /// 最后一手是对方的子，悔棋语义不成立（B9）。发起时快照手数，
+  /// 同意后回退到快照（协商期间对方新落的子一并回退）。
   /// 房主直接进入协商（本地应答方是客户端），客户端发请求给房主
   void requestUndo() {
     if (winnerSeat != null || gameEndedText != null) return;
@@ -133,14 +147,24 @@ class GomokuOnlineController extends OnlineGameControllerBase {
       onHint?.call('还没有落子，无需悔棋');
       return;
     }
+    if (isMyTurn) {
+      // 最后一手是对方的子，悔棋只能悔自己的上一手
+      onHint?.call('只能在对方回合悔棋（悔自己的上一手）');
+      return;
+    }
     if (undoState != UndoState.idle) return; // 已有协商进行中
+    _undoTarget = moves.length - 1;
+    final msg = _msg(NetMessageType.undoRequest, {'count': moves.length});
     final host = this.host;
     if (host != null) {
       undoState = UndoState.awaitingPeer;
       notifyListeners();
-      host.sendTo(2, _msg(NetMessageType.undoRequest));
+      host.sendTo(2, msg);
     } else {
-      client?.send(_msg(NetMessageType.undoRequest));
+      // 客户端同样置 awaitingPeer：按钮进入"等待对方应答"防重复发起
+      undoState = UndoState.awaitingPeer;
+      notifyListeners();
+      client?.send(msg);
     }
   }
 
@@ -152,9 +176,11 @@ class GomokuOnlineController extends OnlineGameControllerBase {
     if (host != null) {
       undoState = UndoState.idle;
       if (accept) {
-        moves.removeLast();
+        _applyUndo();
         notifyListeners();
-        host.broadcast(_msg(NetMessageType.undoApplied));
+        host.broadcast(
+          _msg(NetMessageType.undoApplied, {'target': _undoTarget}),
+        );
       } else {
         notifyListeners();
         host.sendTo(
@@ -198,7 +224,7 @@ class GomokuOnlineController extends OnlineGameControllerBase {
       case NetMessageType.stoneSubmit:
         _onHostStoneSubmit(seat, msg);
       case NetMessageType.undoRequest:
-        _onHostUndoRequest(seat);
+        _onHostUndoRequest(seat, msg);
       case NetMessageType.undoResponse:
         _onHostUndoResponse(seat, msg);
       case NetMessageType.resign:
@@ -227,25 +253,33 @@ class GomokuOnlineController extends OnlineGameControllerBase {
   }
 
   /// 房主收悔棋请求（仅来自客户端）：本地进入待应答状态（页面弹窗），
-  /// 不转发——房主自己就是应答方，本地 respondUndo 处理
-  void _onHostUndoRequest(int seat) {
+  /// 不转发——房主自己就是应答方，本地 respondUndo 处理。
+  /// 终极校验载荷 count（发起方快照手数）：数值合法且快照末位确实是
+  /// 请求方的子（防"悔对方的子"或篡改），否则忽略请求
+  void _onHostUndoRequest(int seat, NetMessage msg) {
     if (winnerSeat != null || gameEndedText != null) return;
-    if (moves.isEmpty) return; // 无子可悔
     if (undoState != UndoState.idle) return; // 已有协商进行中
+    final count = msg.payload['count'];
+    if (count is! int || count < 1 || count > moves.length) return;
+    // 快照末位（索引 count-1）的颜色须为请求方：偶索引=黑=座位1
+    if ((count - 1).isEven != (seat == 1)) return;
+    _undoTarget = count - 1;
     undoState = UndoState.peerRequesting;
     notifyListeners();
   }
 
   /// 房主收悔棋应答（客户端应答房主发起的请求）：
-  /// 同意则广播回退一手（双端各自执行），拒绝仅本地提示；状态复位
+  /// 同意则广播回退（双端各自执行），拒绝仅本地提示；状态复位
   void _onHostUndoResponse(int seat, NetMessage msg) {
     if (undoState != UndoState.awaitingPeer) return; // 非我方请求的应答，忽略
     undoState = UndoState.idle;
     final accepted = msg.payload['accept'] == true;
     if (accepted) {
-      moves.removeLast();
+      _applyUndo();
       notifyListeners();
-      host?.broadcast(_msg(NetMessageType.undoApplied));
+      host?.broadcast(
+        _msg(NetMessageType.undoApplied, {'target': _undoTarget}),
+      );
     } else {
       onHint?.call('对方拒绝了悔棋请求');
       notifyListeners();
@@ -336,11 +370,18 @@ class GomokuOnlineController extends OnlineGameControllerBase {
         }
         notifyListeners();
       case NetMessageType.undoApplied:
-        // 广播回退：非应答方（含房主侧已处理外的兜底）同步棋盘
-        if (undoState == UndoState.idle) {
-          if (moves.isNotEmpty) moves.removeLast();
-          notifyListeners();
+        // 广播回退（target = 发起方快照）：双端同步 removeRange 撤到
+        // 快照（含协商期间的新落子）。请求方（awaitingPeer，房主本地
+        // 同意不经过应答消息）在此一并复位协商状态
+        undoState = UndoState.idle;
+        final target = msg.payload['target'];
+        if (target is int && target >= 0 && target < moves.length) {
+          moves.removeRange(target, moves.length);
+        } else if (moves.isNotEmpty) {
+          // target 缺失/非法的兜底：退一手（同版本协议下不会走到）
+          moves.removeLast();
         }
+        notifyListeners();
       default:
         break;
     }

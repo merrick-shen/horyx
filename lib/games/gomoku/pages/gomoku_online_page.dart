@@ -341,13 +341,15 @@ class _BoardView extends StatelessWidget {
                     onPressed: onExit,
                   )
                 else ...[
-                  // 悔棋：等对方应答期间/无子可悔时禁用，防重复发起
+                  // 悔棋：仅对方回合可发起（悔自己的上一手），
+                  // 等对方应答期间/无子可悔/轮到自己落子时禁用
                   PrimaryButton(
                     label: undoState == UndoState.awaitingPeer
                         ? '等待对方应答…'
                         : '悔棋',
                     icon: Icons.undo_rounded,
-                    onPressed: undoState == UndoState.idle && hasMoves
+                    onPressed:
+                        undoState == UndoState.idle && hasMoves && !isMyTurn
                         ? onRequestUndo
                         : null,
                   ),

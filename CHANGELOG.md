@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- 联机五子棋悔棋规则调整：只能悔自己的上一手，轮到对方落子时才可发起悔棋
+
 ### Fixed
 
 - 修复局域网五子棋对局中，悔棋与对方落子几乎同时发生时，棋盘可能残留已被悔掉的棋子的问题

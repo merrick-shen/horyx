@@ -275,15 +275,16 @@ void main() {
     expect(clientCtrl.submitStone(8, 8), isTrue);
     await until(() => hostCtrl.moves.length == 2);
 
-    // 房主发起悔棋：客户端进入待应答状态
-    hostCtrl.requestUndo();
-    await until(() => clientCtrl.undoState == UndoState.peerRequesting);
-    expect(hostCtrl.undoState, UndoState.awaitingPeer);
+    // 轮到黑方（房主），由客户端发起悔棋（悔自己的白 (8,8)）
+    clientCtrl.requestUndo();
+    await until(() => hostCtrl.undoState == UndoState.peerRequesting);
+    expect(clientCtrl.undoState, UndoState.awaitingPeer);
 
-    // 客户端同意：双端各回退一手（撤销白 (8,8)），回到白方回合
-    clientCtrl.respondUndo(true);
-    await until(() => hostCtrl.moves.length == 1);
-    expect(clientCtrl.moves.length, 1);
+    // 房主同意：双端各回退一手（撤销白 (8,8)），回到白方回合
+    // （客户端随 undoApplied 广播异步回退，以客户端为准等待）
+    hostCtrl.respondUndo(true);
+    await until(() => clientCtrl.moves.length == 1);
+    expect(hostCtrl.moves.length, 1);
     expect(hostCtrl.undoState, UndoState.idle);
     expect(clientCtrl.undoState, UndoState.idle);
     expect(clientCtrl.isMyTurn, isTrue); // 被撤销的是白棋，仍轮到白方
@@ -296,17 +297,71 @@ void main() {
     clientCtrl.dispose();
   });
 
+  test('B9：轮到自己时不可悔棋（悔棋只能悔自己的上一手）', () async {
+    final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
+    final hostHints = hintsOf(hostCtrl);
+    final clientHints = hintsOf(clientCtrl);
+
+    // 一手黑后轮到白：白方（客户端）此刻发起会被拦截并提示
+    expect(hostCtrl.submitStone(7, 7), isTrue);
+    await until(() => clientCtrl.moves.length == 1);
+    clientCtrl.requestUndo();
+    await until(() => clientHints.isNotEmpty);
+    expect(clientHints.last, '只能在对方回合悔棋（悔自己的上一手）');
+    expect(clientCtrl.undoState, UndoState.idle); // 未进入协商
+
+    // 两手后轮到黑：黑方（房主）发起同样被拦截
+    expect(clientCtrl.submitStone(8, 8), isTrue);
+    await until(() => hostCtrl.moves.length == 2);
+    hostCtrl.requestUndo();
+    await until(() => hostHints.isNotEmpty);
+    expect(hostHints.last, '只能在对方回合悔棋（悔自己的上一手）');
+    expect(hostCtrl.undoState, UndoState.idle);
+
+    hostCtrl.dispose();
+    clientCtrl.dispose();
+  });
+
+  test('B9：协商期间对方落子，同意后回退到发起时刻快照', () async {
+    final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
+
+    // 两手（黑白）后轮到黑：客户端发起悔棋（快照 target=1，悔白 (8,8)）
+    expect(hostCtrl.submitStone(7, 7), isTrue);
+    await until(() => clientCtrl.moves.length == 1);
+    expect(clientCtrl.submitStone(8, 8), isTrue);
+    await until(() => hostCtrl.moves.length == 2);
+    clientCtrl.requestUndo();
+    await until(() => hostCtrl.undoState == UndoState.peerRequesting);
+
+    // 协商期间房主仍可落子（轮到黑）：落第 3 手黑 (9,9)
+    expect(hostCtrl.submitStone(9, 9), isTrue);
+    await until(() => clientCtrl.moves.length == 3);
+
+    // 房主同意：回退到快照（1 手），协商期间的第 3 手一并撤销
+    // （客户端随 undoApplied 广播异步回退，以客户端为准等待）
+    hostCtrl.respondUndo(true);
+    await until(() => clientCtrl.moves.length == 1);
+    expect(hostCtrl.moves.length, 1);
+    expect(hostCtrl.moves.last, (7, 7)); // 仅剩黑 (7,7)
+    expect(clientCtrl.isMyTurn, isTrue); // 白被撤，仍轮到白
+    expect(hostCtrl.undoState, UndoState.idle);
+    expect(clientCtrl.undoState, UndoState.idle);
+
+    hostCtrl.dispose();
+    clientCtrl.dispose();
+  });
+
   test('悔棋协商（拒绝）：棋盘不变、请求方收到提示', () async {
     final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
-    final hints = hintsOf(clientCtrl);
+    final hints = hintsOf(hostCtrl);
 
     expect(hostCtrl.submitStone(7, 7), isTrue);
     await until(() => clientCtrl.moves.length == 1);
 
-    // 客户端发起悔棋 -> 房主拒绝：双端棋盘保持一手，请求方（客户端）收到提示
-    clientCtrl.requestUndo();
-    await until(() => hostCtrl.undoState == UndoState.peerRequesting);
-    hostCtrl.respondUndo(false);
+    // 轮到白方（客户端），由房主发起悔棋（悔自己的黑 (7,7)）-> 客户端拒绝
+    hostCtrl.requestUndo();
+    await until(() => clientCtrl.undoState == UndoState.peerRequesting);
+    clientCtrl.respondUndo(false);
     await until(() => hints.isNotEmpty);
     expect(hints.last, '对方拒绝了悔棋请求');
     expect(hostCtrl.moves.length, 1);
