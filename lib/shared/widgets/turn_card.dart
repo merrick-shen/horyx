@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 
-/// 通用回合信息卡：品牌色强调卡片，展示当前回合关键信息
+/// 通用回合信息卡：主题色强调卡片，展示当前回合关键信息
 /// （如单词PK「当前输入者·玩家N」、五子棋「当前执子·黑方」）
 /// 标题文字带 key 时启用切换动画（玩家/执子方轮换的视觉提示）
 class TurnCard extends StatelessWidget {
@@ -18,7 +18,7 @@ class TurnCard extends StatelessWidget {
   /// 左侧图标
   final IconData icon;
 
-  /// 图标颜色；默认白色（品牌色卡片上），
+  /// 图标颜色；默认白色（主题色卡片上），
   /// 需表达具体含义时可覆盖（如五子棋执子方棋子颜色）
   final Color? iconColor;
 
@@ -40,7 +40,7 @@ class TurnCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: palette.primary,
         borderRadius: BorderRadius.circular(20),
-        // 品牌色光晕强调「当前回合」
+        // 主题色光晕强调「当前回合」
         boxShadow: [
           BoxShadow(
             color: palette.primary.withValues(alpha: 0.35),
@@ -64,7 +64,7 @@ class TurnCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 半透明白色小字，叠在品牌色底上仍清晰
+              // 半透明白色小字，叠在主题色底上仍清晰
               Text(
                 subtitle,
                 style: TextStyle(

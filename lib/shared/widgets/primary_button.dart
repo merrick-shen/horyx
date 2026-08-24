@@ -48,7 +48,7 @@ class PrimaryButton extends StatelessWidget {
         border: outlined ? Border.all(color: palette.stroke) : null,
         boxShadow: enabled && !outlined
             ? [
-                // 品牌色光晕投影，与游戏卡片悬停效果呼应
+                // 主题色光晕投影，与游戏卡片悬停效果呼应
                 BoxShadow(
                   color: palette.primary.withValues(alpha: 0.35),
                   blurRadius: 18,

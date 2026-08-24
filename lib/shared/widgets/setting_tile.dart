@@ -38,7 +38,7 @@ class SettingTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              // 品牌色淡底图标容器
+              // 主题色淡底图标容器
               Container(
                 width: 36,
                 height: 36,

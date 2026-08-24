@@ -49,13 +49,11 @@ dev_dependencies:
   # 应用图标生成工具（执行 dart run flutter_launcher_icons 生成各分辨率图标）
   flutter_launcher_icons: ^0.14.4
 
-# 应用图标配置：白色背景 + 品牌色 Logo
 flutter_launcher_icons:
   android: true
   ios: false
   # 传统位图图标（低版本 Android 回退使用）
   image_path: "assets/icon/app_icon.png"
-  # 自适应图标（Android 8+）：白色背景 + 透明底品牌色 Logo 前景
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 继续上次对局/计分入口卡片
-/// 各游戏设置页通用的恢复入口：品牌色淡底 + 播放图标 + 进度摘要，
+/// 各游戏设置页通用的恢复入口：主题色淡底 + 播放图标 + 进度摘要，
 /// 点击后由页面从存档恢复对局
 class ResumeCard extends StatelessWidget {
   const ResumeCard({
@@ -31,7 +31,7 @@ class ResumeCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          // 品牌色淡底 + 描边，与普通卡片区分，突出「可继续」
+          // 主题色淡底 + 描边，与普通卡片区分，突出「可继续」
           color: palette.primary.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(

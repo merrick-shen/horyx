@@ -63,7 +63,7 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
   late final TextEditingController _winScoreController;
   late final TextEditingController _leadController;
 
-  /// 输入焦点（聚焦时品牌色描边提示输入中）
+  /// 输入焦点（聚焦时主题色描边提示输入中）
   late final FocusNode _bestOfFocus;
   late final FocusNode _winScoreFocus;
   late final FocusNode _leadFocus;

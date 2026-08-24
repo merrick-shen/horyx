@@ -138,7 +138,7 @@ class _ChangelogPageState extends State<ChangelogPage> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 品牌色小圆点作为主列表符号
+              // 主题色小圆点作为主列表符号
               Container(
                 width: 6,
                 height: 6,

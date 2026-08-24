@@ -133,7 +133,7 @@ class _ConfirmDialog extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             if (neutralLabel == null)
-              // 两按钮：取消（描边）+ 确认（品牌色实底）横排
+              // 两按钮：取消（描边）+ 确认（主题色实底）横排
               Row(
                 children: [
                   Expanded(

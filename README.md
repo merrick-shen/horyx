@@ -73,5 +73,5 @@ flutter build apk --release      # 构建 release 包
 
 - **变更记录**：用户可感知的变化需更新 [CHANGELOG.md](CHANGELOG.md)，遵循 Keep a Changelog 1.1.0 规范与语义化版本
 - **提交信息**：`type: 中文描述`，type 取值 `feat / ui / fix / refactor / init / style / docs / chore / perf / release / test / build / ci / revert`
-- **UI 规范**：统一使用品牌纯色（默认 #7C5CFF），图标使用 Material Icons
+- **UI 规范**：图标使用 Material Icons
 - **导入规范**：统一使用 package 绝对导入（`package:horyx/...`），不使用相对导入

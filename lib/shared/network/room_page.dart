@@ -383,7 +383,7 @@ class _RoomPageState extends State<RoomPage> {
     return PanelCard(
       child: Row(
         children: [
-          // 游戏图标：品牌色淡底，作为房间视觉锚点
+          // 游戏图标：主题色淡底，作为房间视觉锚点
           Container(
             width: 44,
             height: 44,
@@ -507,7 +507,7 @@ class _SeatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        // 已入座用品牌色淡底突出，空位用页面底色弱化
+        // 已入座用主题色淡底突出，空位用页面底色弱化
         color: taken
             ? palette.primary.withValues(alpha: 0.08)
             : palette.scaffoldBg,

@@ -211,7 +211,7 @@ class _ArchiveTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 品牌色淡底图标容器（与设置行图标风格一致）
+          // 主题色淡底图标容器（与设置行图标风格一致）
           Container(
             width: 42,
             height: 42,

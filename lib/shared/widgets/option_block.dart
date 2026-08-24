@@ -99,7 +99,7 @@ class NumberOptionBlock extends StatefulWidget {
   /// 输入框控制器（初始文本由使用方预填默认值）
   final TextEditingController controller;
 
-  /// 输入焦点（聚焦时以品牌色描边提示输入中）
+  /// 输入焦点（聚焦时以主题色描边提示输入中）
   final FocusNode focusNode;
 
   /// 空输入提示文案
@@ -121,7 +121,7 @@ class NumberOptionBlock extends StatefulWidget {
   /// 块高度，与 OptionBlock 默认高度一致
   final double height;
 
-  /// 超范围提示色（固定红，深浅主题下均醒目，不随品牌色变化）
+  /// 超范围提示色（固定红，深浅主题下均醒目，不随主题色变化）
   static const Color _invalidColor = Color(0xFFE5484D);
 
   @override
@@ -153,7 +153,7 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
       // 点击块内空白区域也可聚焦，扩大点击面积
       onTap: () => widget.focusNode.requestFocus(),
       child: AnimatedBuilder(
-        // 监听焦点：聚焦未生效时以品牌色描边提示输入中
+        // 监听焦点：聚焦未生效时以主题色描边提示输入中
         animation: widget.focusNode,
         builder: (context, _) {
           final focused = widget.focusNode.hasFocus;

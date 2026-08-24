@@ -242,7 +242,7 @@ class _PlayerSequence extends StatelessWidget {
             duration: const Duration(milliseconds: 180),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              // 当前输入者以描边 + 品牌色文字点亮
+              // 当前输入者以描边 + 主题色文字点亮
               borderRadius: BorderRadius.circular(999),
               color: i == currentIndex
                   ? palette.primary.withValues(alpha: 0.15)
@@ -318,7 +318,7 @@ class _WordChip extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 品牌色圆点作为视觉锚点
+          // 主题色圆点作为视觉锚点
           Container(
             width: 6,
             height: 6,

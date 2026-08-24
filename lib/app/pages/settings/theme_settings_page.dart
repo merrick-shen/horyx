@@ -193,7 +193,7 @@ class ThemeSettingsPage extends StatelessWidget {
 }
 
 /// 主题模式选项行：图标 + 名称/描述 + 单选标记
-/// 选中态以品牌色描边 + 淡底点亮，与人数选择块的选中风格一致
+/// 选中态以主题色描边 + 淡底点亮，与人数选择块的选中风格一致
 class _ModeOption extends StatelessWidget {
   const _ModeOption({
     required this.data,
@@ -274,7 +274,7 @@ class _ModeOption extends StatelessWidget {
               ),
             ),
             Icon(
-              // 单选标记：选中实心品牌色，未选中空心描边
+              // 单选标记：选中实心主题色，未选中空心描边
               selected
                   ? Icons.check_circle_rounded
                   : Icons.radio_button_unchecked,
