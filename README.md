@@ -23,27 +23,28 @@
 
 ## 项目结构
 
+按 feature-first 组织：一个游戏一个目录（pages / services / models / widgets），跨游戏复用的设施集中在 shared/，应用级页面在 app/。
+
 ```
 lib/
 ├── main.dart               # 应用入口：预加载词表、恢复主题（含启动异常兜底）
-├── data/                   # 静态数据源（游戏注册中心，统一游戏元数据与路由）
-├── models/                 # 数据模型（games/ 各游戏对局状态、联机消息协议）
-├── pages/
+├── app/                    # 应用层
 │   ├── app_shell.dart      # 底部导航壳（首页/联机/更多，PageView 保活）
-│   ├── games/              # 各游戏页（本地 + 联机对局页）
-│   ├── lan/                # 联机页（房间列表、房间等待）
-│   └── settings/           # 设置页（主题、存档管理、关于、更新日志）
-├── services/
-│   ├── network/            # 联机基础层（协议分帧、TCP 会话、房主/客户端/UDP 发现）
-│   ├── storage/            # 各游戏存档读写（泛型基类统一四份实现）
-│   ├── gomoku/             # 五子棋规则引擎（五连判定）、联机对局控制器
-│   ├── word_pk/            # 单词PK联机对局控制器、词表校验
-│   ├── scoreboard/         # 计分器规则引擎（BO 多数局、平分延长规则）
-│   └── weiqi/              # 围棋规则引擎（已下架待升级，代码保留）
-├── theme/                  # 主题系统（调色板、控制器、持久化）
-├── utils/                  # 通用工具（页面提示条）
-└── widgets/                # 复用组件（common/ 通用、home/ 主页、各游戏设置/对局视图）
-test/                       # 单元与集成测试（规则引擎、存档、校验、联机回环全链路）
+│   ├── pages/              # 应用级页面（主页、更多、设置：主题/存档管理/关于/更新日志）
+│   └── widgets/            # 主页组件（游戏卡片、游戏网格）
+├── games/                  # 游戏层（一游戏一目录，内分 pages/services/models/widgets）
+│   ├── word_pk/            # 单词PK（页面、联机对局控制器、词表校验、存档）
+│   ├── gomoku/             # 五子棋（规则引擎、联机对局控制器、存档）
+│   ├── weiqi/              # 围棋（已下架待升级，代码保留）
+│   └── scoreboard/         # 计分器（BO 赛制规则引擎、存档）
+├── shared/                 # 共享层
+│   ├── game/               # 游戏注册中心（统一游戏元数据与路由）
+│   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端/UDP 发现、房间列表与等待页）
+│   ├── storage/            # 存档读写泛型基类、主题持久化
+│   ├── theme/              # 主题系统（调色板、控制器）
+│   ├── utils/              # 通用工具（页面提示条）
+│   └── widgets/            # 通用组件（顶栏、对话框、设置项、面板、续玩卡片等）
+test/                       # 单元与集成测试（按 games/、shared/ 与 lib 同构组织）
 assets/
 ├── icon/                   # Logo 源文件与图标生成源图
 └── words/                  # 单词PK 本地词表（google-10000）
@@ -73,3 +74,4 @@ flutter build apk --release      # 构建 release 包
 - **变更记录**：用户可感知的变化需更新 [CHANGELOG.md](CHANGELOG.md)，遵循 Keep a Changelog 1.1.0 规范与语义化版本
 - **提交信息**：`type: 中文描述`，type 取值 `feat / ui / fix / refactor / init / style / docs / chore / perf / release / test / build / ci / revert`
 - **UI 规范**：统一使用品牌纯色（默认 #7C5CFF），图标使用 Material Icons
+- **导入规范**：统一使用 package 绝对导入（`package:horyx/...`），不使用相对导入
