@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../models/games/scoreboard_game_state.dart';
+import '../../services/scoreboard/scoreboard_rules.dart';
 import '../../services/storage/scoreboard_storage.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
@@ -64,8 +65,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
   ScoreboardGameState? _savedState;
 
   /// 赢下整场所需局数（BO 多数局：BO3 需 2 胜，BO5 需 3 胜）
-  /// 偶数 BO 也取多数局，避免总比分平局
-  int get _gamesToWin => _bestOf ~/ 2 + 1;
+  int get _gamesToWin => ScoreboardRules.gamesToWin(_bestOf);
 
   @override
   void initState() {
@@ -92,11 +92,6 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
 
   // ---- 计分核心逻辑 ----
 
-  /// 某方得分是否赢下当前局：到达胜利分且满足领先分差
-  /// leadBy 为 0 时差值条件恒成立（到分即胜）
-  bool _winsGame(int score, int opp) =>
-      score >= _winScore && score - opp >= _leadBy;
-
   /// 点击计分区：终局锁定；本局已结束时开下一局；否则加分并判定
   void _onPanelTap(bool red) {
     if (_winner != null) return;
@@ -119,7 +114,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
 
       final scorer = red ? _redScore : _blueScore;
       final opp = red ? _blueScore : _redScore;
-      if (_winsGame(scorer, opp)) {
+      if (ScoreboardRules.winsGame(scorer, opp, _winScore, _leadBy)) {
         if (red) {
           _redGames++;
         } else {
