@@ -192,34 +192,21 @@ class _GomokuPageState extends State<GomokuPage> {
       _backToSetup();
       return;
     }
-    final result = await showConfirmDialog(
-      context,
+    await confirmExitWithArchive(
+      this,
       title: '退出对局？',
       message: '保存并退出后，下次进入可从当前进度继续对弈',
-      confirmLabel: '保存并退出',
-      neutralLabel: '不保存并退出',
+      // 持久化完整对局状态后退出
+      onSave: () => GomokuStorage.instance.save(
+        GomokuGameState(
+          boardSize: _boardSize,
+          moves: List.of(_moves),
+          savedAt: DateTime.now(),
+        ),
+      ),
+      onDiscard: GomokuStorage.instance.clear,
+      onExit: () => Navigator.of(context).pop(),
     );
-    if (!mounted) return;
-
-    switch (result) {
-      case ConfirmResult.confirm:
-        // 持久化完整对局状态后退出
-        await GomokuStorage.instance.save(
-          GomokuGameState(
-            boardSize: _boardSize,
-            moves: List.of(_moves),
-            savedAt: DateTime.now(),
-          ),
-        );
-        if (mounted) Navigator.of(context).pop();
-      case ConfirmResult.neutral:
-        // 放弃当前对局：清除旧存档，避免下次误提示可继续
-        await GomokuStorage.instance.clear();
-        if (mounted) Navigator.of(context).pop();
-      case ConfirmResult.cancel:
-        // 留在对局
-        break;
-    }
   }
 
   @override

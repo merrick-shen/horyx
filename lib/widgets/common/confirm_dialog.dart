@@ -15,6 +15,44 @@ enum ConfirmResult {
   cancel,
 }
 
+/// 「保存并退出」三选项公共流程（各游戏对局页共用）
+/// 弹出确认弹窗并分发动作：
+/// - 保存并退出：先 [onSave] 持久化，完成后 [onExit]
+/// - 不保存并退出：先 [onDiscard] 清档（放弃当前进度，避免下次误提示可继续），完成后 [onExit]
+/// - 取消：留在当前页面
+///
+/// [state] 传调用方页面 State：弹窗与存档操作均为异步，
+/// 期间页面可能已卸载，需以 State.mounted 守护后续 context 使用
+Future<void> confirmExitWithArchive(
+  State state, {
+  required String title,
+  required String message,
+  required Future<void> Function() onSave,
+  required Future<void> Function() onDiscard,
+  required VoidCallback onExit,
+}) async {
+  final result = await showConfirmDialog(
+    state.context,
+    title: title,
+    message: message,
+    confirmLabel: '保存并退出',
+    neutralLabel: '不保存并退出',
+  );
+  if (!state.mounted) return;
+
+  switch (result) {
+    case ConfirmResult.confirm:
+      await onSave();
+      if (state.mounted) onExit();
+    case ConfirmResult.neutral:
+      await onDiscard();
+      if (state.mounted) onExit();
+    case ConfirmResult.cancel:
+      // 留在当前页面
+      break;
+  }
+}
+
 /// 通用确认弹窗
 /// 自定义风格，与整体 UI 统一（配色随当前主题）
 /// 默认两按钮（取消/确认）横排；传入 [neutralLabel] 时为垂直三按钮布局

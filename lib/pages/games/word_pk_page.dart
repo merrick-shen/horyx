@@ -111,35 +111,22 @@ class _WordPkPageState extends State<WordPkPage> {
       setState(() => _started = false);
       return;
     }
-    final result = await showConfirmDialog(
-      context,
+    await confirmExitWithArchive(
+      this,
       title: '退出对局？',
       message: '保存并退出后，下次进入可从当前进度继续对战',
-      confirmLabel: '保存并退出',
-      neutralLabel: '不保存并退出',
+      // 持久化完整对局状态后退出
+      onSave: () => WordPkStorage.instance.save(
+        WordPkGameState(
+          playerCount: _playerCount,
+          currentPlayer: _currentPlayer,
+          entries: List.of(_entries),
+          savedAt: DateTime.now(),
+        ),
+      ),
+      onDiscard: WordPkStorage.instance.clear,
+      onExit: () => exitPageClean(context),
     );
-    if (!mounted) return;
-
-    switch (result) {
-      case ConfirmResult.confirm:
-        // 持久化完整对局状态后退出
-        await WordPkStorage.instance.save(
-          WordPkGameState(
-            playerCount: _playerCount,
-            currentPlayer: _currentPlayer,
-            entries: List.of(_entries),
-            savedAt: DateTime.now(),
-          ),
-        );
-        if (mounted) exitPageClean(context);
-      case ConfirmResult.neutral:
-        // 放弃当前对局：清除旧存档，避免下次误提示可继续
-        await WordPkStorage.instance.clear();
-        if (mounted) exitPageClean(context);
-      case ConfirmResult.cancel:
-        // 留在对局
-        break;
-    }
   }
 
   /// 提交校验：格式 → 重复 → 真实性；通过则入列并轮换，返回是否通过

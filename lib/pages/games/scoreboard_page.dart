@@ -258,40 +258,27 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
       return;
     }
 
-    final result = await showConfirmDialog(
-      context,
+    await confirmExitWithArchive(
+      this,
       title: '退出计分？',
       message: '保存并退出后，下次进入可从当前比分继续',
-      confirmLabel: '保存并退出',
-      neutralLabel: '不保存并退出',
+      // 持久化完整状态（含撤销栈）后回设置
+      onSave: () => ScoreboardStorage.instance.save(
+        ScoreboardGameState(
+          bestOf: _bestOf,
+          winScore: _winScore,
+          leadBy: _leadBy,
+          redGames: _redGames,
+          blueGames: _blueGames,
+          redScore: _redScore,
+          blueScore: _blueScore,
+          history: List.of(_history),
+          savedAt: DateTime.now(),
+        ),
+      ),
+      onDiscard: ScoreboardStorage.instance.clear,
+      onExit: _exitPlaying,
     );
-    if (!mounted) return;
-
-    switch (result) {
-      case ConfirmResult.confirm:
-        // 持久化完整状态（含撤销栈）后回设置
-        await ScoreboardStorage.instance.save(
-          ScoreboardGameState(
-            bestOf: _bestOf,
-            winScore: _winScore,
-            leadBy: _leadBy,
-            redGames: _redGames,
-            blueGames: _blueGames,
-            redScore: _redScore,
-            blueScore: _blueScore,
-            history: List.of(_history),
-            savedAt: DateTime.now(),
-          ),
-        );
-        if (mounted) _exitPlaying();
-      case ConfirmResult.neutral:
-        // 放弃当前计分：清除旧存档，避免下次误提示可继续
-        await ScoreboardStorage.instance.clear();
-        if (mounted) _exitPlaying();
-      case ConfirmResult.cancel:
-        // 留在计分板
-        break;
-    }
   }
 
   /// 退出计分：恢复竖屏并回到设置视图，刷新恢复入口（保存退出后需展示）
