@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'pages/app_shell.dart';
-import 'services/storage/theme_storage.dart';
-import 'services/word_pk/word_validator.dart';
-import 'theme/app_theme.dart';
-import 'theme/theme_controller.dart';
+import 'package:horyx/app/app_shell.dart';
+import 'package:horyx/games/word_pk/services/word_validator.dart';
+import 'package:horyx/shared/storage/theme_storage.dart';
+import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/theme/theme_controller.dart';
 
 /// 应用入口
 Future<void> main() async {
