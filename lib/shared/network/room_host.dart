@@ -162,21 +162,6 @@ class RoomHost extends ChangeNotifier {
     _discoverySocket = null;
   }
 
-  /// 获取本机局域网 IPv4 地址（房主页展示给好友输入用）
-  /// 未连接 Wi-Fi / 仅有蜂窝网络时返回 null
-  static Future<String?> localIpv4() async {
-    final interfaces = await NetworkInterface.list(
-      type: InternetAddressType.IPv4,
-    );
-    for (final interface in interfaces) {
-      for (final address in interface.addresses) {
-        // 跳过回环地址，取第一个局域网地址
-        if (!address.isLoopback) return address.address;
-      }
-    }
-    return null;
-  }
-
   /// 解散房间：断开所有已入座玩家（各自发送 bye），停止监听
   Future<void> close() async {
     if (_closed) return;

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 import 'package:horyx/shared/network/net_message.dart';
+import 'package:horyx/shared/network/net_utils.dart';
 import 'net_protocol.dart';
 import 'room_host.dart';
 
@@ -101,7 +102,7 @@ class RoomDiscovery extends ChangeNotifier {
       _onDatagram(datagram);
     });
     // 提前缓存本机 IP 用于推导定向广播地址（_probe 为同步方法不能 await）
-    _lastKnownLocalIp = await _localIpv4();
+    _lastKnownLocalIp = await NetUtils.localIpv4();
     _probe();
     _probeTimer = Timer.periodic(probeInterval, (_) {
       _probe();
@@ -209,22 +210,5 @@ class RoomDiscovery extends ChangeNotifier {
     if (staleKeys.isEmpty) return;
     staleKeys.forEach(_rooms.remove);
     notifyListeners();
-  }
-
-  /// 获取本机局域网 IPv4（推导定向广播地址用）；失败返回 null
-  Future<String?> _localIpv4() async {
-    try {
-      final interfaces = await NetworkInterface.list(
-        type: InternetAddressType.IPv4,
-      );
-      for (final interface in interfaces) {
-        for (final address in interface.addresses) {
-          if (!address.isLoopback) return address.address;
-        }
-      }
-    } catch (_) {
-      // 列举网卡失败不影响发现（有限广播目标仍会发出）
-    }
-    return null;
   }
 }
