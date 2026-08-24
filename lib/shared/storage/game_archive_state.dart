@@ -17,11 +17,16 @@ abstract class GameArchiveStateBase<W extends StatefulWidget, T>
   /// 进入时检测到的未完成存档；恢复或开始新对局后置 null 关闭入口
   T? savedState;
 
+  /// 当前是否仍处于设置阶段（恢复入口只在设置视图展示）
+  /// 用于丢弃迟到的加载结果：加载是毫秒级异步，若用户恰好在其间
+  /// 点了"开始对局"（savedState 已置 null），旧恢复入口不应复活
+  bool get isInSetupPhase;
+
   /// 检测未完成对局，存在则刷新恢复入口（initState 调用；
   /// 计分器退出计分回到设置视图后也会重新调用刷新）
   Future<void> loadSavedState() async {
     final state = await archiveStorage.load();
-    if (state != null && mounted) {
+    if (state != null && mounted && isInSetupPhase) {
       setState(() => savedState = state);
     }
   }

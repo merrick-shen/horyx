@@ -72,6 +72,9 @@ class _ScoreboardPageState
       ScoreboardStorage.instance;
 
   @override
+  bool get isInSetupPhase => !_playing;
+
+  @override
   void initState() {
     super.initState();
     // 进入页面即锁定竖屏，避免携横屏状态进入设置视图

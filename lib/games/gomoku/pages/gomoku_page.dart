@@ -50,6 +50,9 @@ class _GomokuPageState
       GomokuStorage.instance;
 
   @override
+  bool get isInSetupPhase => !_started;
+
+  @override
   void initState() {
     super.initState();
     loadSavedState();

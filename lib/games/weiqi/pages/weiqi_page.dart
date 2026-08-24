@@ -79,6 +79,9 @@ class _WeiqiPageState
       WeiqiStorage.instance;
 
   @override
+  bool get isInSetupPhase => !_started;
+
+  @override
   void initState() {
     super.initState();
     loadSavedState();

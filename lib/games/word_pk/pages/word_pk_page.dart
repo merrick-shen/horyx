@@ -45,6 +45,9 @@ class _WordPkPageState
       WordPkStorage.instance;
 
   @override
+  bool get isInSetupPhase => !_started;
+
+  @override
   void initState() {
     super.initState();
     loadSavedState();
