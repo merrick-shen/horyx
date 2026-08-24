@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:horyx/games/weiqi/models/weiqi_game_state.dart';
 import 'package:horyx/games/weiqi/services/weiqi_rules.dart';
 import 'package:horyx/games/weiqi/services/weiqi_storage.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
+import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/hint_bar.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
@@ -28,7 +30,8 @@ class WeiqiPage extends StatefulWidget {
 /// 虚手也必须记入序列：悔棋按着手回退执子方，含虚手的对局才能正确撤销
 typedef _Move = ({int col, int row, bool black, bool pass});
 
-class _WeiqiPageState extends State<WeiqiPage> {
+class _WeiqiPageState
+    extends GameArchiveStateBase<WeiqiPage, WeiqiGameState> {
   /// 是否已开始对局（false = 规格设置阶段）
   bool _started = false;
 
@@ -71,21 +74,14 @@ class _WeiqiPageState extends State<WeiqiPage> {
   int _scoreBlack = 0;
   int _scoreWhite = 0;
 
-  /// 进入时检测到的未完成存档；恢复或开始新对局后清空展示
-  WeiqiGameState? _savedState;
+  @override
+  ArchiveStorage<WeiqiGameState> get archiveStorage =>
+      WeiqiStorage.instance;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedState();
-  }
-
-  /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
-  Future<void> _loadSavedState() async {
-    final state = await WeiqiStorage.instance.load();
-    if (state != null && mounted) {
-      setState(() => _savedState = state);
-    }
+    loadSavedState();
   }
 
   /// 点击棋盘交叉点：先经引擎校验合法性，非法时提示且不进入预选
@@ -221,14 +217,14 @@ class _WeiqiPageState extends State<WeiqiPage> {
     setState(() {
       _started = true;
       // 开启新对局后不再展示旧存档入口
-      _savedState = null;
+      savedState = null;
     });
     _recompute(); // 初始化空盘派生状态（局面历史含初始空盘）
   }
 
   /// 恢复未完成对局：从存档还原棋盘规格与着手序列，重放派生状态
   void _resumeSaved() {
-    final saved = _savedState;
+    final saved = savedState;
     if (saved == null) return;
     _boardSize = saved.boardSize;
     _moves
@@ -237,7 +233,7 @@ class _WeiqiPageState extends State<WeiqiPage> {
     _pending = null;
     setState(() {
       _started = true;
-      _savedState = null;
+      savedState = null;
     });
     _recompute();
   }
@@ -375,7 +371,7 @@ class _WeiqiPageState extends State<WeiqiPage> {
                           boardSize: _boardSize,
                           onSelect: (size) => setState(() => _boardSize = size),
                           onStart: _onStart,
-                          savedState: _savedState,
+                          savedState: savedState,
                           onResume: _resumeSaved,
                         ),
                 ),

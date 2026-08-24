@@ -5,6 +5,8 @@ import 'package:horyx/games/word_pk/models/word_entry.dart';
 import 'package:horyx/games/word_pk/models/word_pk_game_state.dart';
 import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 import 'package:horyx/games/word_pk/services/word_validator.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
+import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/hint_bar.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
@@ -24,7 +26,8 @@ class WordPkPage extends StatefulWidget {
   State<WordPkPage> createState() => _WordPkPageState();
 }
 
-class _WordPkPageState extends State<WordPkPage> {
+class _WordPkPageState
+    extends GameArchiveStateBase<WordPkPage, WordPkGameState> {
   /// 是否已开始对局（false = 人数设置阶段）
   bool _started = false;
 
@@ -37,21 +40,14 @@ class _WordPkPageState extends State<WordPkPage> {
   /// 已验证通过的单词列表（最新置顶）
   final List<WordEntry> _entries = [];
 
-  /// 进入时检测到的未完成存档；恢复或开始新对局后清空展示
-  WordPkGameState? _savedState;
+  @override
+  ArchiveStorage<WordPkGameState> get archiveStorage =>
+      WordPkStorage.instance;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedState();
-  }
-
-  /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
-  Future<void> _loadSavedState() async {
-    final state = await WordPkStorage.instance.load();
-    if (state != null && mounted) {
-      setState(() => _savedState = state);
-    }
+    loadSavedState();
   }
 
   void _onStart(int count) {
@@ -61,7 +57,7 @@ class _WordPkPageState extends State<WordPkPage> {
       _entries.clear();
       _started = true;
       // 开启新对局后不再展示旧存档入口
-      _savedState = null;
+      savedState = null;
     });
   }
 
@@ -82,7 +78,7 @@ class _WordPkPageState extends State<WordPkPage> {
 
   /// 恢复未完成对局：从存档还原人数、回合进度与单词列表
   void _resumeSaved() {
-    final saved = _savedState;
+    final saved = savedState;
     if (saved == null) return;
     setState(() {
       _playerCount = saved.playerCount;
@@ -91,7 +87,7 @@ class _WordPkPageState extends State<WordPkPage> {
         ..clear()
         ..addAll(saved.entries);
       _started = true;
-      _savedState = null;
+      savedState = null;
     });
   }
 
@@ -197,7 +193,7 @@ class _WordPkPageState extends State<WordPkPage> {
                           key: const ValueKey('setup'),
                           onStart: _onStart,
                           onCreateRoom: _createRoom,
-                          savedState: _savedState,
+                          savedState: savedState,
                           onResume: _resumeSaved,
                         ),
                 ),

@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:horyx/games/scoreboard/models/scoreboard_game_state.dart';
 import 'package:horyx/games/scoreboard/services/scoreboard_rules.dart';
 import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
+import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/scoreboard/widgets/scoreboard_view.dart';
@@ -21,7 +23,8 @@ class ScoreboardPage extends StatefulWidget {
   State<ScoreboardPage> createState() => _ScoreboardPageState();
 }
 
-class _ScoreboardPageState extends State<ScoreboardPage> {
+class _ScoreboardPageState
+    extends GameArchiveStateBase<ScoreboardPage, ScoreboardGameState> {
   /// 是否处于计分阶段（横屏计分板）
   bool _playing = false;
 
@@ -61,18 +64,19 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
   /// 整场胜方（'红方'/'蓝方'）；null 表示比赛进行中
   String? _winner;
 
-  /// 进入时检测到的未完成存档；恢复或开始新一场后清空展示
-  ScoreboardGameState? _savedState;
-
   /// 赢下整场所需局数（BO 多数局：BO3 需 2 胜，BO5 需 3 胜）
   int get _gamesToWin => ScoreboardRules.gamesToWin(_bestOf);
+
+  @override
+  ArchiveStorage<ScoreboardGameState> get archiveStorage =>
+      ScoreboardStorage.instance;
 
   @override
   void initState() {
     super.initState();
     // 进入页面即锁定竖屏，避免携横屏状态进入设置视图
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    _loadSavedState();
+    loadSavedState();
   }
 
   @override
@@ -80,14 +84,6 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
     // 离开页面恢复竖屏，防止横屏锁定泄漏到其他页面
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     super.dispose();
-  }
-
-  /// 启动时检测未完成计分，存在则在设置视图展示恢复入口
-  Future<void> _loadSavedState() async {
-    final state = await ScoreboardStorage.instance.load();
-    if (state != null && mounted) {
-      setState(() => _savedState = state);
-    }
   }
 
   // ---- 计分核心逻辑 ----
@@ -241,7 +237,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
       _history.clear();
       _playing = true;
       // 开启新一场后不再展示旧存档恢复入口
-      _savedState = null;
+      savedState = null;
     });
   }
 
@@ -280,13 +276,13 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
   void _exitPlaying() {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     setState(() => _playing = false);
-    _loadSavedState();
+    loadSavedState();
   }
 
   /// 恢复未完成计分：还原配置、比分与撤销栈
   /// 输入框无需手动同步：回到设置阶段时视图以当前配置重建，自动展示一致
   void _resumeSaved() {
-    final saved = _savedState;
+    final saved = savedState;
     if (saved == null) return;
 
     SystemChrome.setPreferredOrientations([
@@ -306,7 +302,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
         ..addAll(saved.history);
       _gameOver = false;
       _winner = null;
-      _savedState = null;
+      savedState = null;
       _playing = true;
     });
   }
@@ -350,7 +346,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
                 initialBestOf: _bestOf,
                 initialWinScore: _winScore,
                 initialLeadBy: _leadBy,
-                savedState: _savedState,
+                savedState: savedState,
                 onResume: _resumeSaved,
                 onStart: _startPlaying,
               ),

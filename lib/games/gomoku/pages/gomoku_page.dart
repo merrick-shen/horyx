@@ -4,6 +4,8 @@ import 'package:horyx/shared/game/game_data.dart';
 import 'package:horyx/games/gomoku/models/gomoku_game_state.dart';
 import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
+import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/gomoku/widgets/board_view.dart';
@@ -22,7 +24,8 @@ class GomokuPage extends StatefulWidget {
   State<GomokuPage> createState() => _GomokuPageState();
 }
 
-class _GomokuPageState extends State<GomokuPage> {
+class _GomokuPageState
+    extends GameArchiveStateBase<GomokuPage, GomokuGameState> {
   /// 是否已开始对局（false = 规格设置阶段）
   bool _started = false;
 
@@ -38,21 +41,14 @@ class _GomokuPageState extends State<GomokuPage> {
   /// 胜方（'黑方'/'白方'）；null 表示对局进行中
   String? _winner;
 
-  /// 进入时检测到的未完成存档；恢复或开始新对局后清空展示
-  GomokuGameState? _savedState;
+  @override
+  ArchiveStorage<GomokuGameState> get archiveStorage =>
+      GomokuStorage.instance;
 
   @override
   void initState() {
     super.initState();
-    _loadSavedState();
-  }
-
-  /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
-  Future<void> _loadSavedState() async {
-    final state = await GomokuStorage.instance.load();
-    if (state != null && mounted) {
-      setState(() => _savedState = state);
-    }
+    loadSavedState();
   }
 
   /// 点击棋盘交叉点：终局或已有棋子的点不可选，其余更新预选
@@ -144,7 +140,7 @@ class _GomokuPageState extends State<GomokuPage> {
     setState(() {
       _started = true;
       // 开启新对局后不再展示旧存档入口
-      _savedState = null;
+      savedState = null;
     });
   }
 
@@ -167,7 +163,7 @@ class _GomokuPageState extends State<GomokuPage> {
 
   /// 恢复未完成对局：从存档还原棋盘规格与落子序列
   void _resumeSaved() {
-    final saved = _savedState;
+    final saved = savedState;
     if (saved == null) return;
     setState(() {
       _boardSize = saved.boardSize;
@@ -175,7 +171,7 @@ class _GomokuPageState extends State<GomokuPage> {
         ..clear()
         ..addAll(saved.moves);
       _started = true;
-      _savedState = null;
+      savedState = null;
     });
   }
 
@@ -251,7 +247,7 @@ class _GomokuPageState extends State<GomokuPage> {
                               setState(() => _boardSize = size),
                           onStart: _onStart,
                           onCreateRoom: _createRoom,
-                          savedState: _savedState,
+                          savedState: savedState,
                           onResume: _resumeSaved,
                         ),
                 ),
