@@ -37,4 +37,16 @@ class WordValidator {
   /// 需先调用 [load] 完成词表加载，未加载时一律返回 false
   static bool isValid(String word) =>
       word.isNotEmpty && (_dictionary?.contains(word.toLowerCase()) ?? false);
+
+  /// 词法校验（空串 / 纯英文字母），返回拒绝文案；通过返回 null
+  /// 单词PK 各提交入口（本地对局、联机客户端、联机房主校验）的
+  /// 格式规则唯一来源——改规则（如允许连字符）只需改这里
+  static String? validateFormat(String raw) {
+    final word = raw.trim();
+    if (word.isEmpty) return '请输入英文单词';
+    if (!RegExp(r'^[A-Za-z]+$').hasMatch(word)) {
+      return '单词只能由英文字母组成';
+    }
+    return null;
+  }
 }

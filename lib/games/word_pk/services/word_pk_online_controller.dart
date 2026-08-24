@@ -48,15 +48,13 @@ class WordPkOnlineController extends OnlineGameControllerBase {
   /// 提交单词（页面输入框调用；返回 true 表示输入合法、可清空输入框）
   /// 客户端的词法校验在本地完成（省一次往返），真实性仍由房主裁决
   bool submitWord(String raw) {
+    // 词法规则（空串/纯字母）统一走 WordValidator，与本地对局同源
+    final formatError = WordValidator.validateFormat(raw);
+    if (formatError != null) {
+      onHint?.call(formatError);
+      return false;
+    }
     final word = raw.trim().toLowerCase();
-    if (word.isEmpty) {
-      onHint?.call('请输入英文单词');
-      return false;
-    }
-    if (!RegExp(r'^[A-Za-z]+$').hasMatch(word)) {
-      onHint?.call('单词只能由英文字母组成');
-      return false;
-    }
     return host != null ? _submitAsHost(word) : _submitAsClient(word);
   }
 
@@ -107,7 +105,8 @@ class WordPkOnlineController extends OnlineGameControllerBase {
       host?.sendTo(seat, resultMessage(false, 'notYourTurn'));
       return;
     }
-    if (word.isEmpty || !RegExp(r'^[A-Za-z]+$').hasMatch(word)) {
+    // 词法规则与各端同源（WordValidator.validateFormat）
+    if (WordValidator.validateFormat(word) != null) {
       host?.sendTo(seat, resultMessage(false, 'format'));
       return;
     }

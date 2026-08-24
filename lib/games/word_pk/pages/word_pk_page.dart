@@ -131,18 +131,14 @@ class _WordPkPageState extends State<WordPkPage> {
 
   /// 提交校验：格式 → 重复 → 真实性；通过则入列并轮换，返回是否通过
   bool _submitWord(String raw) {
-    raw = raw.trim();
-    if (raw.isEmpty) {
-      showPersistentHint(context, '请输入英文单词');
-      return false;
-    }
-    // 仅允许纯英文字母，提前拦截中文、数字、空格等输入
-    if (!RegExp(r'^[A-Za-z]+$').hasMatch(raw)) {
-      showPersistentHint(context, '单词只能由英文字母组成');
+    // 词法规则（空串/纯字母）统一走 WordValidator，与联机对局同源
+    final formatError = WordValidator.validateFormat(raw);
+    if (formatError != null) {
+      showPersistentHint(context, formatError);
       return false;
     }
     // 统一小写后参与重复比较，忽略大小写差异
-    final word = raw.toLowerCase();
+    final word = raw.trim().toLowerCase();
     if (_entries.any((e) => e.word == word)) {
       showPersistentHint(context, '单词已重复');
       return false;
