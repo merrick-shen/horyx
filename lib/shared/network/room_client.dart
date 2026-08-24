@@ -135,10 +135,17 @@ class RoomClient extends ChangeNotifier {
         phase = RoomClientPhase.joined;
         notifyListeners();
       case NetMessageType.playerJoined:
-        _seats.add(message.payload['seat'] as int? ?? -1);
+        // 座位号缺失/非数字的异常载荷直接忽略（B10）：
+        // 兜 -1 入集合会留脏数据且对应的 playerLeft 也清不掉它
+        final joinedSeat = message.payload['seat'];
+        if (joinedSeat is! int) return;
+        _seats.add(joinedSeat);
         notifyListeners();
       case NetMessageType.playerLeft:
-        _seats.remove(message.payload['seat'] as int? ?? -1);
+        // 同上，异常载荷忽略，保持座位集合不变式
+        final leftSeat = message.payload['seat'];
+        if (leftSeat is! int) return;
+        _seats.remove(leftSeat);
         notifyListeners();
       case NetMessageType.gameStart:
         // 开局载荷整体保存，游戏层按需取用（如五子棋的 boardSize）
