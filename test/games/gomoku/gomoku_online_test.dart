@@ -100,6 +100,7 @@ void main() {
       capacity: 2,
       basePort: 0,
       enableDiscovery: false,
+      gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
 
@@ -141,6 +142,7 @@ void main() {
       capacity: 2,
       basePort: 0,
       enableDiscovery: false,
+      gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
 
@@ -172,6 +174,7 @@ void main() {
       capacity: 2,
       basePort: 0,
       enableDiscovery: false,
+      gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
 
@@ -215,6 +218,7 @@ void main() {
       capacity: 2,
       basePort: 0,
       enableDiscovery: false,
+      gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
 
@@ -243,6 +247,7 @@ void main() {
       capacity: 2,
       basePort: 0,
       enableDiscovery: false,
+      gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
 
@@ -345,5 +350,35 @@ void main() {
 
     hostCtrl.dispose();
     clientCtrl.dispose();
+  });
+
+  // B12：开局载荷规格校验（离线构造，无需真实连接）
+  group('客户端开局规格校验（B12）', () {
+    test('合法规格（15/19）正常开局', () {
+      for (final size in const [15, 19]) {
+        final client = RoomClient(host: '127.0.0.1', port: 1);
+        client.startPayload = {'boardSize': size};
+        final ctrl = GomokuOnlineController.client(client);
+        expect(ctrl.boardSize, size);
+        expect(ctrl.gameEndedText, isNull);
+        ctrl.dispose();
+      }
+    });
+
+    test('规格缺失/类型错误/非法值时终止对局而非静默回退', () {
+      final cases = <Map<String, dynamic>>[
+        {}, // 缺失
+        {'boardSize': 'big'}, // 类型错误
+        {'boardSize': 17}, // 非法值
+      ];
+      for (final payload in cases) {
+        final client = RoomClient(host: '127.0.0.1', port: 1);
+        client.startPayload = payload;
+        final ctrl = GomokuOnlineController.client(client);
+        expect(ctrl.gameEndedText, isNotNull, reason: '载荷 $payload 应终止');
+        expect(ctrl.isMyTurn, isFalse); // 终局禁落
+        ctrl.dispose();
+      }
+    });
   });
 }

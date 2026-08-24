@@ -71,6 +71,12 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
     _controller = widget.createController();
     _controller.onHint = _showHint;
     _controller.addListener(_onControllerChanged);
+    // 控制器构造期即已终局（如客户端开局载荷校验失败置 gameEndedText）
+    // 时无人收到通知，帧回调后补一次终局判定；延后到 build 完成再弹窗，
+    // 避免 initState 期间 showDialog 报 Navigator 未就绪
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _onControllerChanged();
+    });
   }
 
   @override
