@@ -54,19 +54,35 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
   /// 胜负弹窗只弹一次（无胜负终止弹窗由骨架处理，各用各的标志）
   bool _winDialogShown = false;
 
-  /// 游戏事件钩子：悔棋请求弹窗（消费本次通知，跳过终局判定）；
-  /// 胜负终局弹胜利弹窗并标记终局（无胜负终止交回骨架通用弹窗）
+  /// 游戏事件钩子：悔棋请求弹窗；胜负终局弹胜利弹窗并标记终局
+  /// （无胜负终止交回骨架通用弹窗）。
+  /// 悔棋分支不再无条件短路终局判定：弹窗期间对局结束（如对方认输）
+  /// 时关闭悔棋弹窗、复位协商状态并继续终局判定（B11）
   bool _onGameEvent(
     GomokuOnlineController controller,
     VoidCallback markEndShown,
   ) {
+    final ended =
+        controller.gameEndedText != null || controller.winnerText != null;
+
     // 悔棋请求弹窗（未终局且非自己已发起状态）
-    if (controller.undoState == UndoState.peerRequesting &&
+    if (!ended &&
+        controller.undoState == UndoState.peerRequesting &&
         !_undoDialogShown) {
       _undoDialogShown = true;
       _showUndoRequestDialog(controller);
       return true;
     }
+
+    // 悔棋弹窗未应答时对局结束：关弹窗、协商作废（对局已终止，
+    // 无需应答对方），继续终局判定；pop 关闭的是栈顶的悔棋弹窗，
+    // 其 await 恢复后 respondUndo 因协商已复位而 no-op
+    if (ended && _undoDialogShown) {
+      _undoDialogShown = false;
+      controller.undoState = UndoState.idle;
+      Navigator.of(context).pop();
+    }
+
     // 胜负终局（五连/认输）；无胜负终止（断线/解散）优先走骨架通用弹窗
     if (_winDialogShown ||
         controller.gameEndedText != null ||
