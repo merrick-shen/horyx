@@ -48,7 +48,7 @@ class _GomokuPageState extends State<GomokuPage> {
 
   /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
   Future<void> _loadSavedState() async {
-    final state = await GomokuStorage.load();
+    final state = await GomokuStorage.instance.load();
     if (state != null && mounted) {
       setState(() => _savedState = state);
     }
@@ -81,7 +81,7 @@ class _GomokuPageState extends State<GomokuPage> {
     if (_hasFiveInRow(col, row, blackMoved)) {
       setState(() => _winner = blackMoved ? '黑方' : '白方');
       // 对局已分胜负，立即清除存档：避免重进页面恢复出已结束的局面（与围棋终局处理一致）
-      GomokuStorage.clear();
+      GomokuStorage.instance.clear();
       _showWinDialog();
     }
   }
@@ -233,7 +233,7 @@ class _GomokuPageState extends State<GomokuPage> {
     switch (result) {
       case ConfirmResult.confirm:
         // 持久化完整对局状态后退出
-        await GomokuStorage.save(
+        await GomokuStorage.instance.save(
           GomokuGameState(
             boardSize: _boardSize,
             moves: List.of(_moves),
@@ -243,7 +243,7 @@ class _GomokuPageState extends State<GomokuPage> {
         if (mounted) Navigator.of(context).pop();
       case ConfirmResult.neutral:
         // 放弃当前对局：清除旧存档，避免下次误提示可继续
-        await GomokuStorage.clear();
+        await GomokuStorage.instance.clear();
         if (mounted) Navigator.of(context).pop();
       case ConfirmResult.cancel:
         // 留在对局

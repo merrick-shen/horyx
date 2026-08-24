@@ -84,7 +84,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
 
   /// 启动时检测未完成计分，存在则在设置视图展示恢复入口
   Future<void> _loadSavedState() async {
-    final state = await ScoreboardStorage.load();
+    final state = await ScoreboardStorage.instance.load();
     if (state != null && mounted) {
       setState(() => _savedState = state);
     }
@@ -138,7 +138,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
     if (matchWon) {
       // 整场已分胜负，立即清除存档：无论后续选哪条路径（再来一场/返回设置/查看比分），
       // 都不能让已结束的比分被当作进行中对局恢复（与围棋终局处理一致）
-      ScoreboardStorage.clear();
+      ScoreboardStorage.instance.clear();
       _showMatchWinDialog();
     } else if (gameWon) {
       _showGameWinDialog(red);
@@ -204,7 +204,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
         _restartMatch();
       case ConfirmResult.neutral:
         // 整场已结束，返回设置并清除存档（无可恢复内容）
-        await ScoreboardStorage.clear();
+        await ScoreboardStorage.instance.clear();
         if (mounted) _exitPlaying();
       case ConfirmResult.cancel:
         // 留在终局画面查看比分，撤销可回退终局
@@ -270,7 +270,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
     switch (result) {
       case ConfirmResult.confirm:
         // 持久化完整状态（含撤销栈）后回设置
-        await ScoreboardStorage.save(
+        await ScoreboardStorage.instance.save(
           ScoreboardGameState(
             bestOf: _bestOf,
             winScore: _winScore,
@@ -286,7 +286,7 @@ class _ScoreboardPageState extends State<ScoreboardPage> {
         if (mounted) _exitPlaying();
       case ConfirmResult.neutral:
         // 放弃当前计分：清除旧存档，避免下次误提示可继续
-        await ScoreboardStorage.clear();
+        await ScoreboardStorage.instance.clear();
         if (mounted) _exitPlaying();
       case ConfirmResult.cancel:
         // 留在计分板

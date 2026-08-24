@@ -1,43 +1,21 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../models/games/weiqi_game_state.dart';
+import 'archive_storage.dart';
 
-/// 围棋对局存档服务
-/// 基于 SharedPreferences 的本地 JSON 存储：
-/// 完整状态先序列化为一个字符串再单键写入（单键写入具备原子性），
-/// 读取时对损坏数据容错（解析失败视为无存档），避免半写状态影响进入流程
-class WeiqiStorage {
-  /// 工具类禁止实例化
-  WeiqiStorage._();
+/// 围棋对局存档服务（存储键 + 模型序列化，流程见 ArchiveStorage）
+/// 围棋入口暂时下架，本服务保留待恢复入口时复用
+class WeiqiStorage extends ArchiveStorage<WeiqiGameState> {
+  const WeiqiStorage();
 
-  /// 未完成对局的存储键
-  static const String _key = 'weiqi_unfinished_state';
+  /// 全局唯一实例（保持原静态调用习惯：WeiqiStorage.instance.load()）
+  static const WeiqiStorage instance = WeiqiStorage();
 
-  /// 保存对局状态
-  static Future<void> save(WeiqiGameState state) async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = jsonEncode(state.toJson());
-    await prefs.setString(_key, json);
-  }
+  @override
+  String get storageKey => 'weiqi_unfinished_state';
 
-  /// 读取未完成对局；无存档或存档损坏时返回 null
-  static Future<WeiqiGameState?> load() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
-      if (raw == null) return null;
-      return WeiqiGameState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      // JSON 损坏、字段缺失等异常均视为无可用存档
-      return null;
-    }
-  }
+  @override
+  WeiqiGameState fromJson(Map<String, dynamic> json) =>
+      WeiqiGameState.fromJson(json);
 
-  /// 清除存档
-  static Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
-  }
+  @override
+  Map<String, dynamic> toJson(WeiqiGameState state) => state.toJson();
 }

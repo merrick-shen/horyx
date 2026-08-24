@@ -1,43 +1,20 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../models/games/gomoku_game_state.dart';
+import 'archive_storage.dart';
 
-/// 五子棋对局存档服务
-/// 基于 SharedPreferences 的本地 JSON 存储：
-/// 完整状态先序列化为一个字符串再单键写入（单键写入具备原子性），
-/// 读取时对损坏数据容错（解析失败视为无存档），避免半写状态影响进入流程
-class GomokuStorage {
-  /// 工具类禁止实例化
-  GomokuStorage._();
+/// 五子棋对局存档服务（存储键 + 模型序列化，流程见 ArchiveStorage）
+class GomokuStorage extends ArchiveStorage<GomokuGameState> {
+  const GomokuStorage();
 
-  /// 未完成对局的存储键
-  static const String _key = 'gomoku_unfinished_state';
+  /// 全局唯一实例（保持原静态调用习惯：GomokuStorage.instance.load()）
+  static const GomokuStorage instance = GomokuStorage();
 
-  /// 保存对局状态
-  static Future<void> save(GomokuGameState state) async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = jsonEncode(state.toJson());
-    await prefs.setString(_key, json);
-  }
+  @override
+  String get storageKey => 'gomoku_unfinished_state';
 
-  /// 读取未完成对局；无存档或存档损坏时返回 null
-  static Future<GomokuGameState?> load() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
-      if (raw == null) return null;
-      return GomokuGameState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      // JSON 损坏、字段缺失等异常均视为无可用存档
-      return null;
-    }
-  }
+  @override
+  GomokuGameState fromJson(Map<String, dynamic> json) =>
+      GomokuGameState.fromJson(json);
 
-  /// 清除存档
-  static Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
-  }
+  @override
+  Map<String, dynamic> toJson(GomokuGameState state) => state.toJson();
 }

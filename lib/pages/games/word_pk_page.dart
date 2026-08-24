@@ -48,7 +48,7 @@ class _WordPkPageState extends State<WordPkPage> {
 
   /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
   Future<void> _loadSavedState() async {
-    final state = await WordPkStorage.load();
+    final state = await WordPkStorage.instance.load();
     if (state != null && mounted) {
       setState(() => _savedState = state);
     }
@@ -123,7 +123,7 @@ class _WordPkPageState extends State<WordPkPage> {
     switch (result) {
       case ConfirmResult.confirm:
         // 持久化完整对局状态后退出
-        await WordPkStorage.save(
+        await WordPkStorage.instance.save(
           WordPkGameState(
             playerCount: _playerCount,
             currentPlayer: _currentPlayer,
@@ -134,7 +134,7 @@ class _WordPkPageState extends State<WordPkPage> {
         if (mounted) exitPageClean(context);
       case ConfirmResult.neutral:
         // 放弃当前对局：清除旧存档，避免下次误提示可继续
-        await WordPkStorage.clear();
+        await WordPkStorage.instance.clear();
         if (mounted) exitPageClean(context);
       case ConfirmResult.cancel:
         // 留在对局

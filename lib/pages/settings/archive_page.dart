@@ -36,11 +36,11 @@ class _ArchivePageState extends State<ArchivePage> {
   /// 单个游戏存档损坏不影响其余展示（各 load 内部已容错返回 null）
   Future<void> _loadArchives() async {
     // 本地存储读取极快，顺序读取即可（混合类型不宜用 Future.wait）
-    final wordPk = await WordPkStorage.load();
-    final gomoku = await GomokuStorage.load();
+    final wordPk = await WordPkStorage.instance.load();
+    final gomoku = await GomokuStorage.instance.load();
     // 围棋暂时下架：不再读取展示（存档数据保留，恢复入口时取消注释）
-    // final weiqi = await WeiqiStorage.load();
-    final scoreboard = await ScoreboardStorage.load();
+    // final weiqi = await WeiqiStorage.instance.load();
+    final scoreboard = await ScoreboardStorage.instance.load();
 
     // 摘要文案与各游戏设置页「继续上次对局」卡片保持一致；
     // clear 绑定对应游戏的存档清除服务，删除时由页面统一调用
@@ -52,7 +52,7 @@ class _ArchivePageState extends State<ArchivePage> {
           summary: '${wordPk.playerCount} 人对局 · '
               '已验证 ${wordPk.entries.length} 个单词',
           savedAt: wordPk.savedAt,
-          clear: WordPkStorage.clear,
+          clear: WordPkStorage.instance.clear,
         ),
       if (gomoku != null)
         _ArchiveEntry(
@@ -61,7 +61,7 @@ class _ArchivePageState extends State<ArchivePage> {
           summary: '${gomoku.boardSize}×${gomoku.boardSize} 对局 · '
               '已落子 ${gomoku.moves.length} 手',
           savedAt: gomoku.savedAt,
-          clear: GomokuStorage.clear,
+          clear: GomokuStorage.instance.clear,
         ),
       // 围棋条目（暂时下架，恢复入口时取消注释）
       // if (weiqi != null)
@@ -71,7 +71,7 @@ class _ArchivePageState extends State<ArchivePage> {
       //     summary: '${weiqi.boardSize}×${weiqi.boardSize} 对局 · '
       //         '已下 ${weiqi.moves.length} 手',
       //     savedAt: weiqi.savedAt,
-      //     clear: WeiqiStorage.clear,
+      //     clear: WeiqiStorage.instance.clear,
       //   ),
       if (scoreboard != null)
         _ArchiveEntry(
@@ -81,7 +81,7 @@ class _ArchivePageState extends State<ArchivePage> {
               '大比分 ${scoreboard.redGames}:${scoreboard.blueGames} · '
               '当前局 ${scoreboard.redScore}:${scoreboard.blueScore}',
           savedAt: scoreboard.savedAt,
-          clear: ScoreboardStorage.clear,
+          clear: ScoreboardStorage.instance.clear,
         ),
     ];
 

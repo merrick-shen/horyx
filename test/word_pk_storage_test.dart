@@ -47,7 +47,7 @@ void main() {
 
   group('WordPkStorage 存档服务', () {
     test('无存档时 load 返回 null', () async {
-      expect(await WordPkStorage.load(), isNull);
+      expect(await WordPkStorage.instance.load(), isNull);
     });
 
     test('save 后 load 可完整还原', () async {
@@ -57,9 +57,9 @@ void main() {
         entries: const [WordEntry(word: 'apple', playerIndex: 1)],
         savedAt: DateTime(2026, 8, 15),
       );
-      await WordPkStorage.save(state);
+      await WordPkStorage.instance.save(state);
 
-      final loaded = await WordPkStorage.load();
+      final loaded = await WordPkStorage.instance.load();
       expect(loaded, isNotNull);
       expect(loaded!.playerCount, 2);
       expect(loaded.currentPlayer, 2);
@@ -70,11 +70,11 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       // 模拟半写/损坏数据
       await prefs.setString('word_pk_unfinished_state', '{broken json');
-      expect(await WordPkStorage.load(), isNull);
+      expect(await WordPkStorage.instance.load(), isNull);
     });
 
     test('clear 后存档清空', () async {
-      await WordPkStorage.save(
+      await WordPkStorage.instance.save(
         WordPkGameState(
           playerCount: 2,
           currentPlayer: 1,
@@ -82,8 +82,8 @@ void main() {
           savedAt: DateTime(2026, 8, 15),
         ),
       );
-      await WordPkStorage.clear();
-      expect(await WordPkStorage.load(), isNull);
+      await WordPkStorage.instance.clear();
+      expect(await WordPkStorage.instance.load(), isNull);
     });
   });
 }

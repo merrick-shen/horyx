@@ -82,7 +82,7 @@ class _WeiqiPageState extends State<WeiqiPage> {
 
   /// 启动时检测未完成对局，存在则在设置视图展示恢复入口
   Future<void> _loadSavedState() async {
-    final state = await WeiqiStorage.load();
+    final state = await WeiqiStorage.instance.load();
     if (state != null && mounted) {
       setState(() => _savedState = state);
     }
@@ -163,7 +163,7 @@ class _WeiqiPageState extends State<WeiqiPage> {
       _gameOver = true;
     });
     // 对局已结束，未完成存档随之失效（避免下次误入已终局的棋局）
-    WeiqiStorage.clear();
+    WeiqiStorage.instance.clear();
     _showResultDialog();
   }
 
@@ -319,7 +319,7 @@ class _WeiqiPageState extends State<WeiqiPage> {
     switch (result) {
       case ConfirmResult.confirm:
         // 持久化完整着手序列后退出（重放架构下恢复即完整还原盘面）
-        await WeiqiStorage.save(
+        await WeiqiStorage.instance.save(
           WeiqiGameState(
             boardSize: _boardSize,
             moves: List.of(_moves),
@@ -329,7 +329,7 @@ class _WeiqiPageState extends State<WeiqiPage> {
         if (mounted) Navigator.of(context).pop();
       case ConfirmResult.neutral:
         // 放弃当前对局：清除旧存档，避免下次误提示可继续
-        await WeiqiStorage.clear();
+        await WeiqiStorage.instance.clear();
         if (mounted) Navigator.of(context).pop();
       case ConfirmResult.cancel:
         // 留在对局

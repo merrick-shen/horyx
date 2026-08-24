@@ -1,45 +1,20 @@
-import 'dart:convert';
-
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../../models/games/scoreboard_game_state.dart';
+import 'archive_storage.dart';
 
-/// 计分器存档服务
-/// 基于 SharedPreferences 的本地 JSON 存储：
-/// 完整状态先序列化为一个字符串再单键写入（单键写入具备原子性），
-/// 读取时对损坏数据容错（解析失败视为无存档），避免半写状态影响进入流程
-class ScoreboardStorage {
-  /// 工具类禁止实例化
-  ScoreboardStorage._();
+/// 计分器存档服务（存储键 + 模型序列化，流程见 ArchiveStorage）
+class ScoreboardStorage extends ArchiveStorage<ScoreboardGameState> {
+  const ScoreboardStorage();
 
-  /// 未完成计分的存储键
-  static const String _key = 'scoreboard_unfinished_state';
+  /// 全局唯一实例（保持原静态调用习惯：ScoreboardStorage.instance.load()）
+  static const ScoreboardStorage instance = ScoreboardStorage();
 
-  /// 保存计分状态
-  static Future<void> save(ScoreboardGameState state) async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = jsonEncode(state.toJson());
-    await prefs.setString(_key, json);
-  }
+  @override
+  String get storageKey => 'scoreboard_unfinished_state';
 
-  /// 读取未完成计分；无存档或存档损坏时返回 null
-  static Future<ScoreboardGameState?> load() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_key);
-      if (raw == null) return null;
-      return ScoreboardGameState.fromJson(
-        jsonDecode(raw) as Map<String, dynamic>,
-      );
-    } catch (_) {
-      // JSON 损坏、字段缺失等异常均视为无可用存档
-      return null;
-    }
-  }
+  @override
+  ScoreboardGameState fromJson(Map<String, dynamic> json) =>
+      ScoreboardGameState.fromJson(json);
 
-  /// 清除存档
-  static Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
-  }
+  @override
+  Map<String, dynamic> toJson(ScoreboardGameState state) => state.toJson();
 }
