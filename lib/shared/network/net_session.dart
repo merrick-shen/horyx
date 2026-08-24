@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/net_protocol.dart';
 
@@ -56,12 +58,13 @@ class NetSession {
   VoidCallback? onDisconnected;
 
   /// 发送消息（NDJSON 编码后写入 socket）
-  /// socket 已关闭时静默忽略：发送失败最终会由心跳/错误回调兜底
+  /// 写入失败（socket 已关闭等）不抛出：留日志痕迹，由心跳/错误回调兜底
   void send(NetMessage message) {
     try {
       _socket.add(NetProtocol.encode(message));
-    } catch (_) {
+    } catch (e) {
       // 写入失败（对端已断）不抛出，等待断线回调统一处理
+      debugPrint('NetSession.send 写入失败（对端可能已断开）: $e');
     }
   }
 
@@ -119,8 +122,9 @@ class NetSession {
       // 给 bye 一点 flush 时间再销毁，尽量避免对端漏收
       try {
         await _socket.flush().timeout(_pingInterval);
-      } catch (_) {
-        // 对端已断导致 flush 失败属正常场景，忽略
+      } catch (e) {
+        // 对端已断导致 flush 失败/超时属正常场景，不阻断关闭流程
+        debugPrint('NetSession.close flush 失败或超时: $e');
       }
     }
     _socket.destroy();
@@ -131,5 +135,5 @@ class NetSession {
 }
 
 /// 无参回调的简洁别名（与 Flutter VoidCallback 语义一致，
-/// 服务层不依赖 Flutter 体系故自行声明）
+/// 保留自声明以减少引用方改动）
 typedef VoidCallback = void Function();

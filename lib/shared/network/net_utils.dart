@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+
 /// 网络工具函数（跨模块共享）
 class NetUtils {
   NetUtils._();
@@ -17,8 +19,9 @@ class NetUtils {
           if (!address.isLoopback) return address.address;
         }
       }
-    } catch (_) {
-      // 列举网卡失败按无地址处理（调用方均有兜底路径）
+    } catch (e) {
+      // 列举网卡失败按无地址处理（调用方均有兜底路径），留痕便于排查
+      debugPrint('NetUtils 枚举网卡失败: $e');
     }
     return null;
   }

@@ -141,8 +141,9 @@ class RoomDiscovery extends ChangeNotifier {
     for (final target in targets) {
       try {
         socket.send(data, InternetAddress(target), RoomHost.discoveryPort);
-      } catch (_) {
+      } catch (e) {
         // 个别目标发送失败（无该类地址的路由）不影响其余目标
+        debugPrint('RoomDiscovery 向 $target 发送探测失败: $e');
       }
     }
   }
@@ -195,8 +196,9 @@ class RoomDiscovery extends ChangeNotifier {
         );
       }
       notifyListeners();
-    } catch (_) {
-      // 坏包/异版消息忽略
+    } catch (e) {
+      // 坏包/异版消息忽略（仅留痕，不影响房间列表）
+      debugPrint('RoomDiscovery 忽略无法解析的应答包: $e');
     }
   }
 

@@ -151,8 +151,9 @@ class RoomHost extends ChangeNotifier {
         datagram.address,
         datagram.port,
       );
-    } catch (_) {
-      // 解码失败或对端版本不符：忽略该探测包
+    } catch (e) {
+      // 解码失败或对端版本不符：忽略该探测包（坏包在局域网常见，仅留痕）
+      debugPrint('RoomHost 忽略无法解码的 UDP 探测包: $e');
     }
   }
 
