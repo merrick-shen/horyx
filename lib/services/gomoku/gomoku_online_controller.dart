@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../models/net_message.dart';
 import '../network/room_client.dart';
 import '../network/room_host.dart';
+import 'gomoku_rules.dart';
 
 /// 悔棋协商状态机
 /// idle -> awaitingPeer（我发起了请求，等对方应答）
@@ -285,7 +286,13 @@ class GomokuOnlineController extends ChangeNotifier {
   /// 落子生效：入列 + 五连判定；房主侧同步广播（五连时携带胜方座位）
   void _applyStone(int col, int row) {
     moves.add((col, row));
-    if (_hasFiveInRow(col, row, moves.length.isOdd)) {
+    if (GomokuRules.hasFiveInRow(
+      moves,
+      boardSize,
+      col,
+      row,
+      moves.length.isOdd,
+    )) {
       // 刚落的子颜色 = 序列长度奇偶（1 手黑、2 手白……）
       winnerSeat = moves.length.isOdd ? 1 : 2;
     }
@@ -301,39 +308,6 @@ class GomokuOnlineController extends ChangeNotifier {
         },
       ),
     );
-  }
-
-  /// 五连判定：以落子点为中心，沿四个方向数连续同色棋子
-  /// 判定逻辑与本地对局页一致（规则同源，避免联机与本地行为不一致）
-  bool _hasFiveInRow(int col, int row, bool black) {
-    const dirs = [(1, 0), (0, 1), (1, 1), (1, -1)];
-    for (final (dx, dy) in dirs) {
-      var count = 1;
-      for (final sign in [1, -1]) {
-        var c = col + dx * sign;
-        var r = row + dy * sign;
-        while (_isSameStone(c, r, black)) {
-          count++;
-          c += dx * sign;
-          r += dy * sign;
-        }
-      }
-      if (count >= 5) return true;
-    }
-    return false;
-  }
-
-  /// 指定位置是否为指定颜色的已落棋子（越界视为无子）
-  bool _isSameStone(int col, int row, bool black) {
-    if (col < 0 || col >= boardSize || row < 0 || row >= boardSize) {
-      return false;
-    }
-    for (var i = 0; i < moves.length; i++) {
-      if (moves[i].$1 == col && moves[i].$2 == row) {
-        return i.isEven == black;
-      }
-    }
-    return false;
   }
 
   /// 房主侧：对方离开（掉线/主动退出）——对局直接结束，不判胜负

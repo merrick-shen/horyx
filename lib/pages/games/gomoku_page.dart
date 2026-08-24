@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/game_data.dart';
 import '../../models/games/gomoku_game_state.dart';
+import '../../services/gomoku/gomoku_rules.dart';
 import '../../services/storage/gomoku_storage.dart';
 import '../../widgets/common/app_top_bar.dart';
 import '../../widgets/common/confirm_dialog.dart';
@@ -78,42 +79,12 @@ class _GomokuPageState extends State<GomokuPage> {
 
     // 刚落子的一方：落子后序列长度奇偶判断（黑先）
     final blackMoved = _moves.length.isOdd;
-    if (_hasFiveInRow(col, row, blackMoved)) {
+    if (GomokuRules.hasFiveInRow(_moves, _boardSize, col, row, blackMoved)) {
       setState(() => _winner = blackMoved ? '黑方' : '白方');
       // 对局已分胜负，立即清除存档：避免重进页面恢复出已结束的局面（与围棋终局处理一致）
       GomokuStorage.instance.clear();
       _showWinDialog();
     }
-  }
-
-  /// 五连判定：以落子点为中心，沿四个方向数连续同色棋子
-  bool _hasFiveInRow(int col, int row, bool black) {
-    const dirs = [(1, 0), (0, 1), (1, 1), (1, -1)];
-    for (final (dx, dy) in dirs) {
-      var count = 1;
-      // 沿正负两个方向延伸计数
-      for (final sign in [1, -1]) {
-        var c = col + dx * sign;
-        var r = row + dy * sign;
-        while (_isSameStone(c, r, black)) {
-          count++;
-          c += dx * sign;
-          r += dy * sign;
-        }
-      }
-      if (count >= 5) return true;
-    }
-    return false;
-  }
-
-  /// 指定位置是否为指定颜色的已落棋子（越界视为无子）
-  bool _isSameStone(int col, int row, bool black) {
-    if (col < 0 || col >= _boardSize || row < 0 || row >= _boardSize) {
-      return false;
-    }
-    final index = _moves.indexOf((col, row));
-    // record 结构相等可直接 indexOf；索引奇偶即棋子颜色
-    return index >= 0 && index.isEven == black;
   }
 
   /// 胜利弹窗：再来一局 / 返回设置 / 查看棋盘
