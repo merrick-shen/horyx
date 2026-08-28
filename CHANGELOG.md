@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- 联机加入方式调整：不再展示自动搜索的房间列表，改为在联机页输入房主地址（IP:端口）直接加入；房主等待页会显示本机加入地址，可一键复制发给好友
+- 对局中的校验提示（如空词、重复单词、无效单词及联机校验拒绝）改用自定义样式的底部提示条
+
 ## [0.3.0] - 2026-08-24
 
 ### Changed
