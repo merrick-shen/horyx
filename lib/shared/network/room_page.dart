@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:horyx/shared/game/game_data.dart';
+import 'package:horyx/shared/network/net_utils.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
@@ -10,20 +14,15 @@ import 'package:horyx/shared/widgets/panel_card.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 
 /// 局域网房间等待页（所有游戏通用）
-/// 房主模式：由各游戏的设置页创建，实时显示入座情况；
-/// 客户端模式：由房间列表页点击加入后进入，负责连接与加入流程展示。
-/// 满员开局时通过 [hostGameBuilder]/[clientGameBuilder] 跳转到对应游戏的
-/// 联机对局页，并把房间连接的所有权移交过去（由对局页负责关闭）。
+/// 房主模式：由各游戏的设置页创建，实时显示入座情况与加入地址；
+/// 客户端模式：由联机页输入房主地址加入后进入，负责连接与加入流程展示。
+/// 满员开局时通过 [hostGameBuilder] 跳转到对应游戏的联机对局页，并把房间
+/// 连接的所有权移交过去（由对局页负责关闭）；客户端侧因加入前不知道游戏名，
+/// 开局时按握手应答中的游戏名现场解析对局页构建器。
 /// 未提供构建器的游戏满员后停留在「即将开始」展示（联机能力接入前的过渡态）。
 
 /// 房主侧联机对局页构建器：入参为已满员开局的房主连接
 typedef HostGameBuilder = Widget Function(BuildContext context, RoomHost host);
-
-/// 客户端侧联机对局页构建器：入参为收到开局通知的客户端连接
-typedef ClientGameBuilder = Widget Function(
-  BuildContext context,
-  RoomClient client,
-);
 
 class RoomPage extends StatefulWidget {
   const RoomPage.host({
@@ -33,20 +32,19 @@ class RoomPage extends StatefulWidget {
     this.gameStartPayload = const {},
     this.hostGameBuilder,
   })  : address = null,
-        port = null,
-        clientGameBuilder = null;
+        port = null;
 
   const RoomPage.client({
     super.key,
     required this.address,
     required this.port,
-    this.gameName,
-    this.clientGameBuilder,
-  })  : capacity = 0,
+  })  : gameName = null,
+        capacity = 0,
         gameStartPayload = const {},
         hostGameBuilder = null;
 
-  /// 游戏名称（等待页顶部标识卡展示，如「单词PK」）
+  /// 游戏名称（仅房主模式；等待页顶部标识卡展示，如「单词PK」。
+  /// 客户端模式加入前未知，改为取握手应答中的 gameName 展示）
   final String? gameName;
 
   /// 本局总人数（仅房主模式有效，含房主）
@@ -64,9 +62,6 @@ class RoomPage extends StatefulWidget {
   /// 满员开局后的对局页构建器（房主模式；null 表示该游戏联机对局未接入）
   final HostGameBuilder? hostGameBuilder;
 
-  /// 满员开局后的对局页构建器（客户端模式；null 表示该游戏联机对局未接入）
-  final ClientGameBuilder? clientGameBuilder;
-
   /// 是否房主模式
   bool get isHost => address == null;
 
@@ -77,6 +72,13 @@ class RoomPage extends StatefulWidget {
 class _RoomPageState extends State<RoomPage> {
   RoomHost? _host;
   RoomClient? _client;
+
+  /// 本机局域网地址（房主模式展示给好友加入用）
+  String? _hostAddress;
+
+  /// 加入地址是否刚复制成功（复制按钮短暂切换对勾反馈）
+  bool _addressCopied = false;
+  Timer? _copiedTimer;
 
   /// 房主监听创建失败（候选端口全部被占用）
   bool _hostStartFailed = false;
@@ -97,7 +99,22 @@ class _RoomPageState extends State<RoomPage> {
     }
   }
 
-  /// 房主模式：创建房间开始监听（好友通过房间列表自动发现并加入）
+  /// 复制加入地址到剪贴板；按钮图标短暂切换为对勾作反馈
+  /// （不使用全局 SnackBar：手动关闭式提示与「已复制」这类瞬时反馈不匹配）
+  Future<void> _copyJoinAddress() async {
+    final host = _host;
+    final address = _hostAddress;
+    if (host == null || address == null) return;
+    await Clipboard.setData(ClipboardData(text: '$address:${host.port}'));
+    if (!mounted) return;
+    _copiedTimer?.cancel();
+    setState(() => _addressCopied = true);
+    _copiedTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) setState(() => _addressCopied = false);
+    });
+  }
+
+  /// 房主模式：创建房间开始监听（好友通过地址加入）
   Future<void> _initHost() async {
     final host = RoomHost(
       gameName: widget.gameName!,
@@ -112,6 +129,9 @@ class _RoomPageState extends State<RoomPage> {
     }
     // 满员开局 -> 跳转对局页
     host.addListener(_onHostChanged);
+    // 房主地址供等待页展示（好友输入该地址加入）；获取失败由等待页降级提示
+    _hostAddress = await NetUtils.localIpv4();
+    if (!mounted) return;
     setState(() => _host = host);
   }
 
@@ -134,21 +154,24 @@ class _RoomPageState extends State<RoomPage> {
   void _onClientChanged() {
     final client = _client;
     if (client == null || _transferred) return;
-    if (client.phase == RoomClientPhase.gameStarting &&
-        widget.clientGameBuilder != null) {
-      _transferred = true;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => widget.clientGameBuilder!(context, client),
-        ),
-      );
-    }
+    if (client.phase != RoomClientPhase.gameStarting) return;
+    // 游戏名来自握手应答（加入前未知），开局时才解析对局页构建器；
+    // 未接入联机的游戏解析为 null，等待页停留「即将开始」
+    final builder = GameData.byName(client.gameName)?.onlineClientBuilder;
+    if (builder == null) return;
+    _transferred = true;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => builder(context, client),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _host?.removeListener(_onHostChanged);
     _client?.removeListener(_onClientChanged);
+    _copiedTimer?.cancel();
     // 连接所有权未移交对局页时由本页负责关闭（房主解散/客户端退出）
     if (!_transferred) {
       _host?.close();
@@ -231,7 +254,13 @@ class _RoomPageState extends State<RoomPage> {
           capacity: host.capacity,
           seats: host.seats,
           mySeat: 1,
-          hint: '好友在「联机」页的房间列表中即可看到并加入本房间',
+          // 加入地址（IP:端口，与加入页输入格式一致）独立成卡展示；
+          // IP 获取失败时降级为手动查询提示
+          joinAddress:
+              _hostAddress == null ? null : '$_hostAddress:${host.port}',
+          hint: _hostAddress == null
+              ? '未能获取本机 IP，请手动查询后与端口 ${host.port} 一并告知好友'
+              : '复制上方地址发给好友，在联机页输入即可加入本房间',
         ),
       );
     }
@@ -318,13 +347,14 @@ class _RoomPageState extends State<RoomPage> {
     );
   }
 
-  /// 房间主内容：游戏标识卡 + 座位列表卡片 + 等待状态文案
-  /// 房主与客户端共用（[hint] 随模式不同：房主引导好友加入，客户端提示自己的座位）
+  /// 房间主内容：游戏标识卡 + 加入地址卡（房主）+ 座位列表卡片 + 等待状态文案
+  /// 房主与客户端共用（[hint] 随模式不同：房主引导分享地址，客户端提示自己的座位）
   Widget _buildRoomContent({
     required int capacity,
     required List<int> seats,
     required int? mySeat,
     required String hint,
+    String? joinAddress,
   }) {
     final remaining = capacity - seats.length;
     final full = remaining <= 0;
@@ -339,6 +369,10 @@ class _RoomPageState extends State<RoomPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _buildGameCard(capacity: capacity),
+                if (joinAddress != null) ...[
+                  const SizedBox(height: 16),
+                  _buildJoinAddressCard(joinAddress),
+                ],
                 const SizedBox(height: 16),
                 _buildSeatCard(
                   capacity: capacity,
@@ -377,7 +411,13 @@ class _RoomPageState extends State<RoomPage> {
   /// 图标按游戏名从注册表匹配；未匹配（未来新游戏未登记）时回退通用图标
   Widget _buildGameCard({required int capacity}) {
     final palette = context.palette;
-    final name = widget.gameName ?? '游戏房间';
+    // 客户端加入前不知道房主开设的游戏，握手应答后才显示实际游戏名
+    final clientGameName = _client?.gameName;
+    final name = widget.isHost
+        ? widget.gameName!
+        : (clientGameName == null || clientGameName.isEmpty)
+            ? '游戏房间'
+            : clientGameName;
     final icon = GameData.iconFor(name);
 
     return PanelCard(
@@ -415,6 +455,66 @@ class _RoomPageState extends State<RoomPage> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 加入地址卡（房主模式）：好友输入该地址即可加入本房间
+  /// 地址用强调色大字突出，配复制按钮；复制成功后图标短暂切换为对勾
+  Widget _buildJoinAddressCard(String address) {
+    final palette = context.palette;
+    return PanelCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '加入地址',
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 12.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  address,
+                  style: TextStyle(
+                    color: palette.primary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          // 复制按钮：反馈仅切换图标（尺寸不变），不引起布局跳动；
+          // InkWell 波纹圆角与容器一致，不会溢出成圆形（IconButton 默认圆形波纹）
+          Container(
+            decoration: BoxDecoration(
+              color: palette.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _copyJoinAddress,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Icon(
+                    _addressCopied ? Icons.check_rounded : Icons.copy_rounded,
+                    color: palette.primary,
+                    size: 20,
+                  ),
+                ),
+              ),
             ),
           ),
         ],

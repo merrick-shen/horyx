@@ -251,12 +251,14 @@ class RoomHost extends ChangeNotifier {
     }
     _clients[seat] = session;
 
-    // 应答：自己的座位 + 房间总人数 + 当前所有已入座玩家（供等待页渲染）
+    // 应答：游戏名 + 自己的座位 + 房间总人数 + 当前所有已入座玩家（供等待页渲染）
+    // 客户端改为输入 IP 加入后，连接前不知道游戏名，依赖此处的 gameName
     session.send(
       NetMessage(
         type: NetMessageType.joinResponse,
         payload: {
           'ok': true,
+          'gameName': gameName,
           'seat': seat,
           'capacity': capacity,
           'players': seats,

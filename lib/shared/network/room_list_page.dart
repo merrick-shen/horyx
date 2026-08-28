@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/shared/game/game_data.dart';
-import 'package:horyx/shared/network/room_discovery.dart';
-import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
-import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/network/room_page.dart';
+import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/widgets/alert_dialog.dart';
+import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/primary_button.dart';
 
-/// 局域网房间列表页（「联机」tab 常驻页）
-/// 通过 UDP 广播自动发现同一局域网内的房间并实时展示；
-/// 点击「加入房间」连接对应房主（连接与入座流程由房间等待页负责）
+/// 局域网加入房间页（「联机」tab 常驻页）
+/// 输入房主在房间等待页显示的地址（IP:端口）直接加入；
+/// 连接与入座流程由房间等待页负责
 class RoomListPage extends StatefulWidget {
   const RoomListPage({super.key});
 
@@ -18,225 +18,183 @@ class RoomListPage extends StatefulWidget {
 }
 
 class _RoomListPageState extends State<RoomListPage> {
-  /// 房间发现器：页面可见期间周期探测，销毁时停止
-  late final RoomDiscovery _discovery;
-
-  @override
-  void initState() {
-    super.initState();
-    _discovery = RoomDiscovery();
-    _discovery.start();
-  }
+  /// 房主地址输入框
+  final _addressController = TextEditingController();
 
   @override
   void dispose() {
-    _discovery.stop();
-    _discovery.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
-  /// 加入房间：进入等待页并连接对应房主
-  /// 满员后按游戏名从注册表取联机对局页构建器跳转
-  /// （未接入联机的游戏构建器为 null，等待页满员后停留「即将开始」）
-  void _join(DiscoveredRoom room) {
+  /// 加入房间：校验通过后进入等待页并连接房主，格式有误弹窗提示
+  /// 加入前无法得知房主开设的游戏，满员后由等待页按握手应答中的
+  /// 游戏名解析联机对局页构建器跳转
+  void _join() {
+    // 收起键盘：无论加入还是弹窗提示，返回/关闭后键盘都不应残留
+    FocusScope.of(context).unfocus();
+    final address = _parseAddress(_addressController.text);
+    if (address == null) {
+      showAlertDialog(context, message: '请输入正确的 IP:端口');
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.client(
-          address: room.ip,
-          port: room.tcpPort,
-          gameName: room.gameName,
-          clientGameBuilder:
-              GameData.byName(room.gameName)?.onlineClientBuilder,
+          address: address.host,
+          port: address.port,
         ),
       ),
     );
   }
 
+  /// 解析地址输入：必须为 `IP:端口` 形式，两者均必填——
+  /// 房主等待页展示与复制的地址即此格式，直接粘贴可用
+  /// 格式非法（含缺少端口的单独 IP）返回 null，由调用方给出错误提示
+  ({String host, int port})? _parseAddress(String raw) {
+    final input = raw.trim();
+    if (input.isEmpty) return null;
+    // IPv6 含多个冒号，超出「IP:端口」一格的格式直接判非法
+    final parts = input.split(':');
+    if (parts.length != 2) return null;
+    final portValue = int.tryParse(parts[1]);
+    if (!_isValidIpv4(parts[0]) ||
+        portValue == null ||
+        portValue < 1 ||
+        portValue > 65535) {
+      return null;
+    }
+    return (host: parts[0], port: portValue);
+  }
+
+  /// IPv4 格式校验：四段 0-255 的数字
+  bool _isValidIpv4(String value) {
+    final segments = value.split('.');
+    if (segments.length != 4) return false;
+    for (final segment in segments) {
+      if (segment.isEmpty || segment.length > 3) return false;
+      final number = int.tryParse(segment);
+      if (number == null || number < 0 || number > 255) return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final palette = context.palette;
+
     return Scaffold(
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            const AppTopBar(title: '房间列表'),
+            const AppTopBar(title: '加入房间'),
             Expanded(
-              child: ListenableBuilder(
-                listenable: _discovery,
-                builder: (context, _) {
-                  final rooms = _discovery.rooms;
-                  // 无房间时整页切换为空状态提示
-                  return rooms.isEmpty
-                      ? const _EmptyView()
-                      : SizedBox.expand(
-                          child: Center(
-                            // 平板/桌面端限制内容宽度，居中展示
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: 520,
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  // 列表引导文案：说明房间来源
-                                  Padding(
-                                    padding: const EdgeInsets.fromLTRB(
-                                      20,
-                                      20,
-                                      20,
-                                      0,
-                                    ),
-                                    child: Text(
-                                      '同一 Wi-Fi 下好友创建的房间会显示在这里',
-                                      style: TextStyle(
-                                        color:
-                                            context.palette.textSecondary,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: ListView.separated(
-                                      padding: const EdgeInsets.all(20),
-                                      itemCount: rooms.length,
-                                      separatorBuilder: (_, _) =>
-                                          const SizedBox(height: 14),
-                                      itemBuilder: (context, index) =>
-                                          _RoomCard(
-                                        room: rooms[index],
-                                        onJoin: () => _join(rooms[index]),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+              child: Center(
+                // 平板/桌面端限制内容宽度，居中展示
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        // 顶部视觉锚点：主题色淡底圆角图标块（与房间卡图标同风格）
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: palette.primary.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
                           ),
-                        );
-                },
+                          child: Icon(
+                            Icons.lan_rounded,
+                            color: palette.primary,
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '输入房主地址加入对局',
+                          style: TextStyle(
+                            color: palette.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          '与好友连接同一 Wi-Fi，地址可在房主的房间等待页一键复制',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: palette.textSecondary,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        PanelCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                '房主地址',
+                                style: TextStyle(
+                                  color: palette.textPrimary,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              TextField(
+                                controller: _addressController,
+                                // 地址输入无联想与纠错需求，回车直接提交
+                                autocorrect: false,
+                                enableSuggestions: false,
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _join(),
+                                decoration: InputDecoration(
+                                  hintText: '例如 192.168.124.3:45654',
+                                  hintStyle: TextStyle(
+                                    color: palette.textSecondary,
+                                  ),
+                                  filled: true,
+                                  fillColor: palette.scaffoldBg,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(
+                                      color: palette.stroke,
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                    borderSide: BorderSide(
+                                      color: palette.primary,
+                                      width: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              PrimaryButton(
+                                label: '加入房间',
+                                icon: Icons.login_rounded,
+                                onPressed: _join,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// 房间卡片：游戏图标 + 游戏名/房主信息 + 「加入房间」按钮
-/// 满员房间的加入按钮置为禁用态（灰底不可点击）
-class _RoomCard extends StatelessWidget {
-  const _RoomCard({required this.room, required this.onJoin});
-
-  /// 卡片展示的房间信息
-  final DiscoveredRoom room;
-
-  /// 点击加入回调（满员时不会被调用）
-  final VoidCallback onJoin;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: palette.surfaceBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.stroke),
-      ),
-      child: Row(
-        children: [
-          // 游戏图标：按游戏名从注册表匹配，未匹配时回退通用图标
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: palette.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              GameData.iconFor(room.gameName),
-              color: palette.primary,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          // 房间信息：游戏名主行 + 房主地址与人数副行
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  room.gameName,
-                  style: TextStyle(
-                    color: palette.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${room.ip} · ${room.players}/${room.capacity}',
-                  style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 12.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // 固定宽度槽位：满员与可加入两态按钮等宽，列表视觉对齐
-          SizedBox(
-            width: 112,
-            child: PrimaryButton(
-              label: room.isFull ? '已满员' : '加入',
-              // 满员时禁用（灰底不可点击），其余房间可加入
-              onPressed: room.isFull ? null : onJoin,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// 空状态视图：局域网内暂无可加入房间时的整页提示
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.wifi_off_rounded,
-            color: palette.textSecondary,
-            size: 36,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '暂无可用房间',
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '请确认好友已与你连接同一 Wi-Fi 并创建了房间',
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -79,6 +79,11 @@ class RoomClient extends ChangeNotifier {
   /// 房间总人数
   int capacity = 0;
 
+  /// 游戏名称（来自 joinResponse）
+  /// 改为输入 IP 加入后，连接前不知道房主开设的游戏，
+  /// 等待页标识卡与满员后解析对局页构建器都依赖它
+  String gameName = '';
+
   /// 满员开局载荷（游戏专属数据，如五子棋的棋盘规格）
   /// 由房主建房时提供、随 gameStart 广播；游戏层开局时读取
   Map<String, dynamic> startPayload = const {};
@@ -125,6 +130,9 @@ class RoomClient extends ChangeNotifier {
         }
         mySeat = message.payload['seat'] as int?;
         capacity = (message.payload['capacity'] as int?) ?? 0;
+        // 旧版本房主不携带 gameName，缺省时等待页保持「游戏房间」兜底展示
+        final gameName = message.payload['gameName'];
+        if (gameName is String) this.gameName = gameName;
         final players = message.payload['players'];
         if (players is List) {
           _seats.addAll(players.whereType<int>());
