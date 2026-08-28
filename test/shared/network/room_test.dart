@@ -3,11 +3,10 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:horyx/shared/network/room_client.dart';
-import 'package:horyx/shared/network/room_discovery.dart';
 import 'package:horyx/shared/network/room_host.dart';
 
-/// 局域网房间集成测试：本机回环真实 TCP/UDP 连接
-/// 覆盖：建房入座、座位广播、满员开局、满员拒绝、玩家退出、房主解散、UDP 房间发现
+/// 局域网房间集成测试：本机回环真实 TCP 连接
+/// 覆盖：建房入座、座位广播、满员开局、满员拒绝、玩家退出、房主解散
 void main() {
   // 轮询等待异步事件（网络消息到达无回调可 await，只能按状态轮询）
   Future<void> until(
@@ -23,13 +22,11 @@ void main() {
   }
 
   test('建房与加入：座位分配、入座广播与满员自动开局', () async {
-    // basePort 0：系统分配临时端口，避免与真实服务端口冲突；
-    // enableDiscovery false：测试并发跑多房间，UDP 固定端口会互相串扰
+    // basePort 0：系统分配临时端口，避免与真实服务端口冲突
     final host = RoomHost(
       gameName: '单词PK',
       capacity: 3,
       basePort: 0,
-      enableDiscovery: false,
     );
     expect(await host.start(), isTrue);
     expect(host.port, greaterThan(0));
@@ -68,7 +65,6 @@ void main() {
       gameName: '单词PK',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
     );
     expect(await host.start(), isTrue);
 
@@ -93,7 +89,6 @@ void main() {
       gameName: '单词PK',
       capacity: 4,
       basePort: 0,
-      enableDiscovery: false,
     );
     expect(await host.start(), isTrue);
 
@@ -123,7 +118,6 @@ void main() {
       gameName: '单词PK',
       capacity: 3,
       basePort: 0,
-      enableDiscovery: false,
     );
     expect(await host.start(), isTrue);
 
@@ -145,33 +139,5 @@ void main() {
     await client.connect();
     expect(client.phase, RoomClientPhase.failed);
     expect(client.failReason, contains('无法连接'));
-  });
-
-  test('UDP 房间发现：探测后收到房主应答，房间关闭后从列表移除', () async {
-    final host = RoomHost(gameName: '五子棋', capacity: 2, basePort: 0);
-    expect(await host.start(), isTrue);
-
-    // 注入 127.0.0.1 作为探测目标做本机回环验证（真实场景为局域网广播）
-    final discovery = RoomDiscovery(
-      probeInterval: const Duration(milliseconds: 200),
-      staleTimeout: const Duration(milliseconds: 600),
-      broadcastTargets: const ['127.0.0.1'],
-    );
-    await discovery.start();
-
-    // 应答字段与建房参数一致（房主自己占 1 号位）
-    await until(() => discovery.rooms.isNotEmpty);
-    final room = discovery.rooms.first;
-    expect(room.gameName, '五子棋');
-    expect(room.players, 1);
-    expect(room.capacity, 2);
-    expect(room.tcpPort, host.port);
-    expect(room.ip, '127.0.0.1');
-
-    // 房间关闭后不再应答，超时未刷新即从列表移除
-    await host.close();
-    await until(() => discovery.rooms.isEmpty);
-
-    discovery.stop();
   });
 }

@@ -59,7 +59,7 @@ class _AppShellState extends State<AppShell> {
               selectedIcon: Icon(Icons.home_rounded),
               label: '首页',
             ),
-            // 联机 tab：局域网房间列表（底部导航常驻入口，非页面跳转进入）
+            // 联机 tab：加入房间页（底部导航常驻入口，非页面跳转进入）
             NavigationDestination(
               icon: Icon(Icons.lan_outlined),
               selectedIcon: Icon(Icons.lan_rounded),

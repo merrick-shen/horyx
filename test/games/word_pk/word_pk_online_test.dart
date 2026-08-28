@@ -38,9 +38,7 @@ void main() {
   }
 
   test('满员开局后轮流提交：全端单词与回合同步一致', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0,
-      enableDiscovery: false,
-    );
+    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -66,7 +64,9 @@ void main() {
 
     // 玩家 2（客户端 A）提交：经房主校验广播，全端轮换到玩家 3
     expect(ctrlA.submitWord('banana'), isTrue);
-    await until(() => ctrlB.entries.length == 2 && hostCtrl.entries.length == 2);
+    await until(
+      () => ctrlB.entries.length == 2 && hostCtrl.entries.length == 2,
+    );
     expect(hostCtrl.currentPlayer, 3);
     expect(ctrlA.currentPlayer, 3);
     expect(ctrlA.entries.first.word, 'banana');
@@ -77,7 +77,9 @@ void main() {
 
     // 当前输入者（玩家 3）提交：全端轮换回玩家 1
     expect(ctrlB.submitWord('cherry'), isTrue);
-    await until(() => hostCtrl.entries.length == 3 && ctrlA.entries.length == 3);
+    await until(
+      () => hostCtrl.entries.length == 3 && ctrlA.entries.length == 3,
+    );
     expect(hostCtrl.currentPlayer, 1);
     expect(ctrlA.currentPlayer, 1);
 
@@ -87,9 +89,7 @@ void main() {
   });
 
   test('校验拒绝：重复与非词表单词由房主回执拒绝原因', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0,
-      enableDiscovery: false,
-    );
+    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);
 
     final client = RoomClient(host: '127.0.0.1', port: host.port);
@@ -121,9 +121,7 @@ void main() {
   });
 
   test('玩家中途退出：轮到的玩家离开后回合跳到下一在线座位', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0,
-      enableDiscovery: false,
-    );
+    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -154,9 +152,7 @@ void main() {
   });
 
   test('开局后加入被拒绝：对局进行中不放新人', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0,
-      enableDiscovery: false,
-    );
+    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -174,9 +170,7 @@ void main() {
   });
 
   test('全员离开终局：只剩房主时对局结束', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0,
-      enableDiscovery: false,
-    );
+    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -200,9 +194,7 @@ void main() {
   });
 
   test('房主解散终局：客户端对局终止并提示', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0,
-      enableDiscovery: false,
-    );
+    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);
 
     final client = RoomClient(host: '127.0.0.1', port: host.port);

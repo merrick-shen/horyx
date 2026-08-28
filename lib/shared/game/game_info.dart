@@ -4,7 +4,7 @@ import 'package:horyx/shared/network/room_client.dart';
 
 /// 游戏注册项：游戏的单一事实来源
 /// 除静态展示数据外，还承载「游戏 → 页面 / 联机对局页」的映射，
-/// 由 [GameData] 统一登记，UI 层（首页卡片、房间列表等）不再各自硬编码跳转
+/// 由 [GameData] 统一登记，UI 层（首页卡片、联机页等）不再各自硬编码跳转
 class GameInfo {
   const GameInfo({
     required this.name,

@@ -51,7 +51,7 @@ abstract final class GameData {
   );
 
   /// 全部已注册游戏（含暂时下架的围棋）
-  /// 按名称查找必须覆盖全量：老版本 App 创建的房间在下架后仍可能被房间列表发现
+  /// 按名称查找必须覆盖全量：加入老版本 App 用已下架游戏创建的房间时仍需正确兜底
   static final List<GameInfo> _registered = [
     wordPk,
     gomoku,
@@ -75,7 +75,7 @@ abstract final class GameData {
   }
 
   /// 按名称取游戏图标（未登记的游戏回退通用图标）
-  /// 房间列表卡片与房间等待页共用，避免各自维护名称匹配
+  /// 房间等待页标识卡等按游戏名取图标的界面共用，避免各自维护名称匹配
   static IconData iconFor(String name) =>
       byName(name)?.icon ?? Icons.sports_esports_rounded;
 }

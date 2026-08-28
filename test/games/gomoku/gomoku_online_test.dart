@@ -40,7 +40,6 @@ void main() {
       gameName: '五子棋',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
       gameStartPayload: startPayload,
     );
     expect(await host.start(), isTrue);
@@ -58,7 +57,6 @@ void main() {
       gameName: '五子棋',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
       gameStartPayload: {'boardSize': 19},
     );
     expect(await host.start(), isTrue);
@@ -99,7 +97,6 @@ void main() {
       gameName: '五子棋',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
       gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
@@ -141,7 +138,6 @@ void main() {
       gameName: '五子棋',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
       gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
@@ -156,10 +152,12 @@ void main() {
 
     // 直接走网络层发 stoneSubmit（模拟恶意/异版客户端绕过本地拦截）：
     // 白方（座位2）在黑方回合提交 -> 房主回执 notYourTurn
-    client.send(const NetMessage(
-      type: NetMessageType.stoneSubmit,
-      payload: {'col': 7, 'row': 7},
-    ));
+    client.send(
+      const NetMessage(
+        type: NetMessageType.stoneSubmit,
+        payload: {'col': 7, 'row': 7},
+      ),
+    );
     await until(() => hints.isNotEmpty);
     expect(hints.last, '还没轮到你落子');
     expect(hostCtrl.moves, isEmpty); // 棋盘未被污染
@@ -173,7 +171,6 @@ void main() {
       gameName: '五子棋',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
       gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
@@ -217,7 +214,6 @@ void main() {
       gameName: '五子棋',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
       gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);
@@ -246,7 +242,6 @@ void main() {
       gameName: '五子棋',
       capacity: 2,
       basePort: 0,
-      enableDiscovery: false,
       gameStartPayload: {'boardSize': 15},
     );
     expect(await host.start(), isTrue);

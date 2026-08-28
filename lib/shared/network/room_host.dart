@@ -1,17 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
 import 'package:horyx/shared/network/net_message.dart';
-import 'package:horyx/shared/network/net_protocol.dart';
 import 'package:horyx/shared/network/net_session.dart';
 
 /// 局域网房间 - 房主端服务
 /// 职责：TCP 监听（端口占用自动顺延）、hello 握手与座位分配、
-/// 座位列表维护、玩家加入/离开广播、满员自动广播开局，
-/// 以及 UDP 房间发现应答（客户端「联机」页的房间列表数据来源）。
+/// 座位列表维护、玩家加入/离开广播、满员自动广播开局。
 /// 房主自己是玩家 1（本机，无网络会话），客户端依次占用玩家 2..N。
 /// 对局消息（单词校验与广播）由步骤 4 的游戏层接入，本类只管房间生命周期。
 class RoomHost extends ChangeNotifier {
@@ -19,18 +16,14 @@ class RoomHost extends ChangeNotifier {
     required this.gameName,
     required this.capacity,
     this.basePort = defaultPort,
-    this.enableDiscovery = true,
     this.gameStartPayload = const {},
   }) : assert(capacity >= 2, '房间至少 2 人');
 
-  /// 游戏名称（等待页与房间列表展示用，如「单词PK」）
+  /// 游戏名称（等待页标识卡展示用，随 joinResponse 发给客户端，如「单词PK」）
   final String gameName;
 
   /// 本局总人数（2-8，含房主）
   final int capacity;
-
-  /// 是否启动 UDP 房间发现应答（测试并发跑多房间时关掉，避免固定端口串扰）
-  final bool enableDiscovery;
 
   /// 满员开局消息的附加载荷（游戏专属数据，随 gameStart 广播给全员）
   /// 如五子棋的棋盘规格；单词PK等无附加数据的游戏保持空
@@ -43,15 +36,7 @@ class RoomHost extends ChangeNotifier {
   /// 默认 TCP 监听端口（避开常见服务端口，减少被占用概率）
   static const int defaultPort = 45654;
 
-  /// 房间发现 UDP 固定端口：客户端只向固定端口广播探测，
-  /// 因此不能像 TCP 那样顺延；同设备建第二个房间时 UDP 起不来，
-  /// 房间仍可正常游玩但不会出现在他人的房间列表中（当前 UI 单房间场景不受影响）
-  static const int discoveryPort = 45655;
-
   ServerSocket? _server;
-
-  /// UDP 发现应答 socket（start 成功后创建）
-  RawDatagramSocket? _discoverySocket;
 
   /// 已入座的客户端：座位号 -> 会话（座位 1 为房主本机，不在此表）
   final Map<int, NetSession> _clients = {};
@@ -91,7 +76,6 @@ class RoomHost extends ChangeNotifier {
         _port = server.port;
         // 只处理接入的连接；监听异常（端口被抢占等极端场景）交由各会话自行断开
         server.listen(_onAccept);
-        if (enableDiscovery) await _startDiscovery();
         notifyListeners();
         return true;
       } on SocketException {
@@ -100,67 +84,6 @@ class RoomHost extends ChangeNotifier {
       }
     }
     return false;
-  }
-
-  /// 启动 UDP 发现应答：监听固定端口，收到探测请求即单播回房间信息
-  /// 监听失败（端口被同设备其他房间占用）时静默降级——房间可玩但不可发现
-  Future<void> _startDiscovery() async {
-    try {
-      final socket = await RawDatagramSocket.bind(
-        '0.0.0.0',
-        discoveryPort,
-      );
-      _discoverySocket = socket;
-      socket.listen((event) {
-        if (event != RawSocketEvent.read) return;
-        final datagram = socket.receive();
-        if (datagram == null) return;
-        _onDiscoveryDatagram(socket, datagram);
-      });
-    } on SocketException {
-      // UDP 端口被占用：放弃发现应答，不影响 TCP 房间功能
-      _discoverySocket = null;
-    }
-  }
-
-  /// 处理发现探测：校验为合法 discoveryRequest 后应答本房间信息
-  /// UDP 包按独立数据报处理（直接 JSON 解码，不走 TCP 分帧器）；
-  /// 坏包/异版消息直接忽略——UDP 本就允许丢包，客户端靠周期重试兜底
-  void _onDiscoveryDatagram(
-    RawDatagramSocket socket,
-    Datagram datagram,
-  ) {
-    try {
-      final json = utf8.decode(datagram.data);
-      final decoded = jsonDecode(json);
-      if (decoded is! Map<String, dynamic>) return;
-      final message = NetMessage.fromJson(decoded);
-      if (message.type != NetMessageType.discoveryRequest) return;
-      socket.send(
-        NetProtocol.encode(
-          NetMessage(
-            type: NetMessageType.discoveryResponse,
-            payload: {
-              'gameName': gameName,
-              'players': seats.length,
-              'capacity': capacity,
-              'tcpPort': _port,
-            },
-          ),
-        ),
-        datagram.address,
-        datagram.port,
-      );
-    } catch (e) {
-      // 解码失败或对端版本不符：忽略该探测包（坏包在局域网常见，仅留痕）
-      debugPrint('RoomHost 忽略无法解码的 UDP 探测包: $e');
-    }
-  }
-
-  /// 停止 UDP 发现应答（随房间关闭）
-  void _stopDiscovery() {
-    _discoverySocket?.close();
-    _discoverySocket = null;
   }
 
   /// 解散房间：断开所有已入座玩家（各自发送 bye），停止监听
@@ -173,7 +96,6 @@ class RoomHost extends ChangeNotifier {
     // 并行关闭：半开连接（对端不回包）下单会话 flush 会挂满超时（默认 5 秒），
     // 串行等待随人数线性叠加（8 人房间最坏约 40 秒），并行后只等最慢的一个
     await Future.wait(sessions.map((session) => session.close()));
-    _stopDiscovery();
     await _server?.close();
     _server = null;
     notifyListeners();
