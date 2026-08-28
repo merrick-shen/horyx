@@ -122,17 +122,22 @@ class _RoomPageState extends State<RoomPage> {
       gameStartPayload: widget.gameStartPayload,
     );
     final ok = await host.start();
-    if (!mounted) return;
+    if (!mounted) {
+      // 创建期间页面已退出：立即关房，避免无 UI 持有的房间残留监听
+      host.close();
+      return;
+    }
     if (!ok) {
       setState(() => _hostStartFailed = true);
       return;
     }
-    // 满员开局 -> 跳转对局页
+    // 满员开局 -> 跳转对局页。先挂监听并赋值再取地址：
+    // 取地址的异步间隙若恰好满员，事件不会被 _onHostChanged 因 _host 未赋值而吞掉
     host.addListener(_onHostChanged);
+    setState(() => _host = host);
     // 房主地址供等待页展示（好友输入该地址加入）；获取失败由等待页降级提示
     _hostAddress = await NetUtils.localIpv4();
-    if (!mounted) return;
-    setState(() => _host = host);
+    if (mounted) setState(() {});
   }
 
   /// 房主侧状态变化：满员开局后跳转对局页并移交连接所有权

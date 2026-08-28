@@ -8,7 +8,7 @@ class NetUtils {
 
   /// 获取本机局域网 IPv4 地址；无可用网卡时返回 null
   /// 取第一个非回环地址——多网卡（VPN/双 Wi-Fi）场景可能取错，
-  /// 调用方（房间发现推导定向广播地址）有有限广播兜底，影响可控
+  /// 调用方（房主等待页地址展示）取错时仅影响展示，好友可手动查询兜底
   static Future<String?> localIpv4() async {
     try {
       final interfaces = await NetworkInterface.list(
