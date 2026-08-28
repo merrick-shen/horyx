@@ -8,6 +8,7 @@ import 'package:horyx/games/word_pk/services/word_validator.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/hint_bar.dart';
+import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/word_pk/widgets/board_view.dart';
@@ -133,17 +134,17 @@ class _WordPkPageState
     // 词法规则（空串/纯字母）统一走 WordValidator，与联机对局同源
     final formatError = WordValidator.validateFormat(raw);
     if (formatError != null) {
-      showPersistentHint(context, formatError);
+      showAlertDialog(context, message: formatError);
       return false;
     }
     // 统一小写后参与重复比较，忽略大小写差异
     final word = raw.trim().toLowerCase();
     if (_entries.any((e) => e.word == word)) {
-      showPersistentHint(context, '单词已重复');
+      showAlertDialog(context, message: '单词已重复');
       return false;
     }
     if (!WordValidator.isValid(word)) {
-      showPersistentHint(context, '不是有效的英文单词');
+      showAlertDialog(context, message: '不是有效的英文单词');
       return false;
     }
 

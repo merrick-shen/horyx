@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/utils/hint_bar.dart';
+import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/end_game_dialog.dart';
@@ -142,11 +143,11 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
     exitPageClean(context);
   }
 
-  /// 展示校验拒绝等提示（沿用本地对局：不自动消失，需手动关闭）
+  /// 展示校验拒绝等提示（沿用本地对局文案，底部长条形式，需手动关闭）
   /// 作为控制器回调挂接，通知可能晚于页面销毁到达，先检查 mounted
   void _showHint(String message) {
     if (!mounted) return;
-    showPersistentHint(context, message);
+    showAlertDialog(context, message: message);
   }
 
   @override
