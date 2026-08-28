@@ -1,0 +1,120 @@
+# AGENTS.md — horyx 项目规则
+
+> 本文件是 AI Agent 在本项目中工作的强制规则。改动代码前必须先读本文件。
+
+## 语言与沟通
+
+- 所有回复、注释、文档均使用中文；
+
+## 项目概览与技术栈
+
+- Flutter 多游戏应用（package 名 `horyx`），支持本地对战与局域网联机。
+- **不支持 Web 平台**（浏览器沙箱限制：无 dart:io、TCP/UDP socket 不可用）。
+- UI 图标一律使用 Material Icons，禁止网络下载或本地图片资源；`pubspec.yaml` 必须保持 `uses-material-design: true`（打包图标字体）。
+
+## 目录结构
+
+- `lib/app/` — 应用外壳与应用级页面（home、more、settings）。
+- `lib/games/<游戏名>/` — feature-first 结构：每个游戏目录下分 `models/ pages/ services/ widgets/`。
+- `lib/shared/` — 跨游戏共享代码（network / widgets / storage / theme / utils）。
+- **导入规范：一律使用 package 绝对导入（`package:horyx/...`），禁止裸文件名相对导入**（会引发解析问题）。
+
+## 编码规范
+
+- 注释使用中文，解释"为什么"、记录业务背景、警示潜在问题；不添加无意义或重复注释，不过度注释。
+- 开发功能或修 bug 前，**优先阅读现有代码逻辑**；新代码与现有风格保持一致。
+- 非必要不重构；不修改无关代码；不擅自改变已有交互逻辑。
+
+## UI 规范（硬约束）
+
+- 使用项目自定义对话框（`lib/shared/widgets/confirm_dialog.dart`），不用系统对话框，保持风格统一。
+- 通知类 UI 显示完整文本，不截断。
+- Android 15+ edge-to-edge 显示：需 SafeArea 处理状态栏；自定义 AppBar 组件（非 Material AppBar）需显式处理状态栏。
+- 底部导航使用 PageView + `_PageKeeper`（基于 KeepAliveNotification）保状态、支持手势切换；**页面必须包在 `_PageKeeper` 内，否则滑出屏幕即丢状态**。
+- 统一顶栏使用 `AppTopBar`（`showBack: true`），返回默认 `maybePop()` 以支持路由拦截。
+
+## 修改纪律与自检
+
+完成功能开发或 bug 修复后，结束任务前必须自检：
+
+- 是否存在明显 bug；
+- 是否影响已有功能；
+- 是否存在报错风险；
+- 是否存在状态不同步问题；
+- 是否存在边界条件问题。
+
+其他纪律：
+
+- 发现历史遗留问题、潜在 bug、不合理实现、技术债、风险逻辑时，**单独说明，不要混入正常修改说明**。
+- 严禁：猜测不存在的功能、编造未确认逻辑、为"看起来完整"而虚构实现、未确认就说"已修复"、未验证就说"没问题"、擅自添加不存在的需求。
+
+## Git / Commit 规范
+
+- **不自动 commit，由用户手动执行**。AI 只提供推荐的 commit message。
+- 默认单行主题：`type: 中文描述`。
+  - type 必须属于闭集：`{feat, ui, fix, refactor, init, style, docs, chore, perf, release, test, build, ci, revert}`。
+  - 描述以动词开头，简洁，可用（）补充细节；风格贴近项目历史 commit
+- 默认不加 body；仅当改动较大（涉及多模块或内容量大）时，空行后用 `- ` 列表（每行一条，中文简洁）。
+- 示例：`feat: 新增主题色彩设置（预设色板与自定义颜色选择器）`。
+
+## 完成任务后的汇报（必做）
+
+每次完成任务后告知用户：
+
+1. 本次修改了什么、为什么这样修改；
+2. 怎么测试功能或验证 bug 修复；
+3. CHANGELOG 建议内容（按下方「CHANGELOG 编写规范」撰写）；
+4. 推荐的 commit message。
+
+## CHANGELOG 编写规范
+
+CHANGELOG.md 面向**用户**，不是开发日志，写作时始终以"用户能感知到什么"为准。
+
+**不记录**的内容（直接告知用户"无 CHANGELOG 条目"）：内部重构、代码整理、无感知优化；开发阶段的内部 bug 修复；开发流程配置。
+
+撰写步骤：确认用户可感知的变化（不确定时问用户，不要猜）→ 归入对应分类 → 写入 `[Unreleased]` 段（首个发布版本为 `[0.1.0] - 2026-08-18`）→ 同类小改动合并为一条。**不修改 pubspec.yaml 的 version**，仅建议级别。
+
+| 分类 | 仅用于 |
+| --- | --- |
+| Added | 新功能、新页面、新入口、新交互能力（普通优化不写这里） |
+| Changed | UI 调整、交互优化、行为变化、性能优化、功能增强 |
+| Fixed | bug 修复、状态修复、显示问题修复、逻辑错误修复 |
+| Removed | 删除功能、删除废弃逻辑、删除旧实现 |
+
+版本号建议（不代用户执行）：**Patch**（1.1.x）＝ bug 修复、小型优化；**Minor**（1.x.0）＝ 新功能、新页面、用户可感知的新能力。不建议大版本升级。
+
+正反示例：
+
+- 反例：`修复 gomoku_online_controller 中 undoState 未重置导致 _onHostStoneSubmit 拒绝落子的问题`（内部命名 + 防御性场景）
+- 正例：`联机五子棋悔棋规则调整：只能悔自己的上一手，轮到对方落子时才可发起悔棋`
+
+**不得把防御性逻辑描述为用户可达场景**——写入前先确认该场景在真实 UI 中是否真的会发生（历史教训：联机五子棋"协商期间对方落子回退"实际不可达，因协商弹窗为模态）。
+
+## 验证与部署
+
+> 适用：所有 `lib/`、`test/`、`pubspec.yaml` 代码改动。纯 `.md` 文档改动跳过本流程。
+
+1. `flutter analyze` — 0 issue 才算通过，任何告警先修复，不得带病进入下一步。
+2. `flutter test` — 全部通过才算通过；UI 文案/占位内容变化时先同步更新对应测试断言再跑。UDP 房间发现相关用例在全量并发时偶发超时（本地时序抖动，非代码问题）：重跑单组确认，仍不过再加大超时或串行执行。
+3. 双端部署（analyze + test 通过后**自动执行，无需询问用户**），两终端并行：
+   - 测试手机：`flutter run -d 192.168.124.3:<port>`
+   - Windows：`flutter run -d windows`
+   - 环境：小米 23113RKC6C（无线 adb）；端口**每次会话都可能变化**，连接失败先 `adb devices` 确认，仍失败请用户提供新端口；adb 路径 `D:\Software\MuMuPlayer\nx_main\adb.exe`。
+4. 部署后（用户明确指示）：执行 `flutter run` 之后**不做任何后续动作**——不轮询日志、不检查运行状态、不等待构建/安装结果；安装确认与真机验证完全由用户处理，直接转入任务汇报。
+
+## 工程约定（架构速览）
+
+- 游戏数据定义在 `lib/shared/game/`（`GameInfo` 模型）。
+- 应用根结构由 `AppShell` 统一管理导航。
+- 游戏状态在页面层集中管理（如 `gomoku_page.dart`），便于归档与恢复；归档基类为 `GameArchiveStateBase`。
+- 单词校验使用本地万字表 `assets/words/english_10k.txt`，Set 缓存 O(1) 查询。
+- 联机对战页复用 `OnlineGamePageShell`，控制器复用 `OnlineGameControllerBase`。
+- `option_block.dart`（OptionBlock / NumberOptionBlock）、`resume_card.dart`（ResumeCard 续玩卡片）为通用组件，优先复用。
+- UI 内容变化时必须同步更新测试断言（如占位文案）。
+
+## 经验教训（勿重蹈覆辙）
+
+- app 级 ScaffoldMessenger 挂的 SnackBar 跨页面持久存在，需手动移除。
+- SnackBar action 回调中使用 context 时页面可能已 dispose，会导致失败。
+- UDP 房间发现测试在全量并发跑测时偶发超时（本地时序抖动）：可加大超时或串行执行该组测试。
+- changelog / commit 中不得把防御性逻辑描述为用户可达场景（先确认真实 UI 中是否可达）。
