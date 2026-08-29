@@ -10,7 +10,8 @@ import 'package:horyx/games/tank/models/tank_player.dart';
 /// 与画布尺寸无关——前后台切换/窗口变化触发画布重建时，
 /// 战场只需按新尺寸重新换算渲染坐标，坦克位置与朝向不丢失。
 /// 操控语义（与原版一致）：始终朝摇杆指向旋转（走最短方向），
-/// 圆钮推出底座边界后同时沿当前朝向前进（转向中前进走弧线）。
+/// 圆钮推出底座边界后同时沿当前朝向前进（转向中前进走弧线），
+/// 前进速度随摇杆超出幅度线性增大（模拟油门，[_forwardSpeed] 为上限）。
 /// 碰撞形状与视觉一致：车体矩形 + 炮管矩形（迷宫单位，随朝向旋转），
 /// 与墙做 SAT 精确相交测试；移动子步进、撞墙即停；
 /// 旋转穿墙沿最小穿透方向弹开（_depenetrate）。
@@ -91,7 +92,7 @@ class Tank extends PositionComponent {
   /// 摇杆驾驶输入；null 表示摇杆回中（停车）
   TankDriveInput? input;
 
-  /// 前进速度（格/秒）
+  /// 最大前进速度（格/秒）：实际速度 = 上限 × 摇杆油门（0~1）
   static const double _forwardSpeed = 2.6;
 
   /// 转向速度（弧度/秒）：原版转向极快，近乎指向即达
@@ -116,9 +117,9 @@ class Tank extends PositionComponent {
     final turn = diff.abs() <= maxTurn ? diff : maxTurn * (diff > 0 ? 1 : -1);
     _turn(turn);
 
-    // 圆钮推出底座边界：沿当前朝向前进（转向中前进即走弧线）
-    if (drive.move) {
-      _move(_forwardSpeed * dt);
+    // 圆钮推出底座边界：沿当前朝向前进，油门（超出幅度）决定速度
+    if (drive.speedFactor > 0) {
+      _move(_forwardSpeed * drive.speedFactor * dt);
     }
   }
 

@@ -6,7 +6,8 @@ import 'package:horyx/games/tank/models/tank_player.dart';
 
 /// 原版同款摇杆：灰色四箭头底座（素材原色）+ 玩家色中心钮（白模染色）。
 /// 原版操控语义：圆钮未超出底座边界时坦克只旋转（转向摇杆指向的角度），
-/// 超出底座边界后坦克沿摇杆指向前进（转向与前进并行，走弧线）；松手回中即停车。
+/// 超出底座边界后坦克沿摇杆指向前进（转向与前进并行，走弧线），
+/// 且前进速度随超出幅度线性增大（模拟油门）；松手回中即停车。
 class TankJoystick extends StatefulWidget {
   const TankJoystick({
     super.key,
@@ -39,24 +40,34 @@ class _TankJoystickState extends State<TankJoystick> {
   /// 即最多半个圆钮露出底座外（"超出底座一半"）
   double get _maxDrag => widget.size / 2;
 
+  /// 前进触发门槛：圆钮边缘刚触及底座边缘
+  double get _moveStart => widget.size / 2 - _knobSize / 2;
+
   /// 死区半径：拖动距离低于此值视为回中（中心附近角度抖动无意义）
   double get _deadZone => widget.size * 0.12;
 
   void _onPanUpdate(DragUpdateDetails details) {
     final raw =
         details.localPosition - Offset(widget.size / 2, widget.size / 2);
-    // 钮的显示位置限制在底座内（超界判定用未收敛的原始向量）
+    // 钮的显示位置限制在最大伸出量内（油门判定用未收敛的原始向量）
     setState(() => _offset = _clampToBase(raw));
 
     if (raw.distance < _deadZone) {
       widget.onDrive(null);
       return;
     }
+
+    // 油门随超出底座边缘的幅度线性增长：
+    // 刚冒头（_moveStart）= 起步慢速，推到最大伸出量（_maxDrag）= 全速
+    final speedFactor = raw.distance <= _moveStart
+        ? 0.0
+        : ((raw.distance - _moveStart) / (_maxDrag - _moveStart))
+            .clamp(0.0, 1.0);
+
     widget.onDrive(
       TankDriveInput(
         targetAngle: math.atan2(raw.dy, raw.dx),
-        // 圆钮边缘刚触及底座边缘即算"超出"（视觉上一冒头就前进）
-        move: raw.distance > widget.size / 2 - _knobSize / 2,
+        speedFactor: speedFactor,
       ),
     );
   }

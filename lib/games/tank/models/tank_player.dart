@@ -18,13 +18,17 @@ enum TankPlayer {
 
 /// 摇杆驾驶输入（原版操控语义）
 class TankDriveInput {
-  const TankDriveInput({required this.targetAngle, required this.move});
+  const TankDriveInput({
+    required this.targetAngle,
+    required this.speedFactor,
+  });
 
   /// 摇杆指向的角度（弧度）：与坦克角度同坐标系，0 朝右、y 向下顺时针为正
   final double targetAngle;
 
-  /// 摇杆圆钮是否超出底座边界（超出时坦克沿指向前进，未超出时仅转向）
-  final bool move;
+  /// 前进油门（0~1）：圆钮超出底座边缘的程度线性归一，
+  /// 0 = 刚冒头（起步慢速），1 = 推到最大伸出量（全速）
+  final double speedFactor;
 }
 
 /// 白模素材染色滤镜：按通道缩放 RGB、保留 Alpha。
