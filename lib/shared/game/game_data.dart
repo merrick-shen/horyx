@@ -4,6 +4,7 @@ import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_page.dart';
 import 'package:horyx/games/scoreboard/pages/scoreboard_page.dart';
+import 'package:horyx/games/tank/pages/tank_page.dart';
 import 'package:horyx/games/weiqi/pages/weiqi_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_page.dart';
@@ -32,6 +33,16 @@ abstract final class GameData {
         GomokuOnlinePage.client(client: client),
   );
 
+  /// 坦克动荡
+  /// 玩法暂未实现：先开放首页入口与对局模式设置（本地/局域网），
+  /// 本地对局视图与联机对局页后续接入（联机满员后停留等待页过渡态）
+  static final GameInfo tank = GameInfo(
+    name: '坦克动荡',
+    description: '驾驶坦克走位射击，与好友一决高下',
+    icon: Icons.gps_fixed_rounded,
+    pageBuilder: (context) => const TankPage(),
+  );
+
   /// 围棋
   /// 暂时下架：不在 [games] 列表中即不展示首页入口，页面与规则代码保留；
   /// 恢复时把 weiqi 加回 [games] 列表即可（入口跳转随注册表自动恢复）
@@ -55,6 +66,7 @@ abstract final class GameData {
   static final List<GameInfo> _registered = [
     wordPk,
     gomoku,
+    tank,
     weiqi,
     scoreboard,
   ];
@@ -63,6 +75,7 @@ abstract final class GameData {
   static final List<GameInfo> games = [
     wordPk,
     gomoku,
+    tank,
     scoreboard,
   ];
 
