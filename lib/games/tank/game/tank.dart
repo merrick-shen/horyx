@@ -82,6 +82,9 @@ class Tank extends PositionComponent {
   /// 坦克中心在迷宫坐标系下的位置（单位=格）
   Vector2 logicalPos;
 
+  /// 对方坦克：互相视为实体障碍，与墙同等参与碰撞
+  Tank? opponent;
+
   /// 碰撞矩形列表（车体中心局部坐标）：(中心偏移, 半长半宽)
   late final List<(Vector2 offset, Vector2 half)> _collisionRects;
 
@@ -139,7 +142,7 @@ class Tank extends PositionComponent {
     }
   }
 
-  /// 沿当前朝向移动 distance：按子步进推进，任一步撞墙则停在墙前
+  /// 沿当前朝向移动 distance：按子步进推进，任一步撞墙/撞对方则停在接触前
   void _move(double distance) {
     final direction = Vector2(math.cos(angle), math.sin(angle));
     var travelled = 0.0;
@@ -147,35 +150,89 @@ class Tank extends PositionComponent {
       final step = (distance - travelled).clamp(-_maxStep, _maxStep)
           .toDouble();
       final next = logicalPos + direction * step;
-      if (_hitWall(next, angle)) return;
+      if (_collides(next, angle)) return;
       logicalPos = next;
       travelled += step;
     }
   }
 
-  /// 任一碰撞矩形与任一墙相交即为撞墙
-  bool _hitWall(Vector2 center, double angle) {
+  /// 任一碰撞矩形与墙或对方坦克相交即为碰撞
+  bool _collides(Vector2 center, double angle) {
     for (final (offset, half) in _collisionRects) {
       final rectCenter = _localToWorld(center, angle, offset);
+
+      // 墙（轴对齐矩形 = 旋转角为 0 的矩形）
       for (final wall in walls) {
-        if (!_separated(rectCenter, angle, half, wall)) return true;
+        if (rectsOverlap(
+          rectCenter,
+          angle,
+          half,
+          Vector2(wall.center.dx, wall.center.dy),
+          0,
+          Vector2(wall.width / 2, wall.height / 2),
+        )) {
+          return true;
+        }
+      }
+
+      // 对方坦克的碰撞矩形
+      final opp = opponent;
+      if (opp != null) {
+        for (final (oOffset, oHalf) in opp._collisionRects) {
+          if (rectsOverlap(
+            rectCenter,
+            angle,
+            half,
+            _localToWorld(opp.logicalPos, opp.angle, oOffset),
+            opp.angle,
+            oHalf,
+          )) {
+            return true;
+          }
+        }
       }
     }
     return false;
   }
 
-  /// 解除车体与墙的重叠：对所有相交的碰撞矩形×墙体，
-  /// 沿各自最小穿透方向推出；墙角处一次推离可能顶到别的墙，迭代 3 次收敛
+  /// 解除车体与墙/对方的重叠：对所有相交的碰撞矩形，
+  /// 沿各自最小穿透方向推出；墙角处一次推离可能顶到别的障碍，迭代 3 次收敛
   void _depenetrate() {
     for (var i = 0; i < 3; i++) {
       var pushed = false;
       for (final (offset, half) in _collisionRects) {
         final rectCenter = _localToWorld(logicalPos, angle, offset);
+
         for (final wall in walls) {
-          final mtv = _rectMtv(rectCenter, angle, half, wall);
+          final mtv = rectMtv(
+            rectCenter,
+            angle,
+            half,
+            Vector2(wall.center.dx, wall.center.dy),
+            0,
+            Vector2(wall.width / 2, wall.height / 2),
+          );
           if (mtv != null) {
             logicalPos += mtv;
             pushed = true;
+          }
+        }
+
+        final opp = opponent;
+        if (opp != null) {
+          for (final (oOffset, oHalf) in opp._collisionRects) {
+            final mtv = rectMtv(
+              rectCenter,
+              angle,
+              half,
+              _localToWorld(opp.logicalPos, opp.angle, oOffset),
+              opp.angle,
+              oHalf,
+            );
+            if (mtv != null) {
+              logicalPos += mtv;
+              pushed = true;
+            }
           }
         }
       }
@@ -194,57 +251,47 @@ class Tank extends PositionComponent {
         );
   }
 
-  /// 单个旋转矩形（中心 c、朝向 angle、半尺寸 half）与墙矩形的
-  /// SAT 分离轴测试：四候选轴（矩形两轴 + 墙 x/y 轴）任一分离即不相交
-  bool _separated(Vector2 c, double angle, Vector2 half, Rect wall) {
-    final cosA = math.cos(angle);
-    final sinA = math.sin(angle);
-    final dx = wall.center.dx - c.x;
-    final dy = wall.center.dy - c.y;
-    final rw = wall.width / 2;
-    final rh = wall.height / 2;
-
-    if ((dx * cosA + dy * sinA).abs() >
-        half.x + rw * cosA.abs() + rh * sinA.abs()) {
-      return true;
+  /// 两个旋转矩形的 SAT 分离轴测试：候选轴为两矩形各自的局部轴，
+  /// 任一轴上投影不重叠即不相交
+  static bool rectsOverlap(
+    Vector2 c1,
+    double a1,
+    Vector2 half1,
+    Vector2 c2,
+    double a2,
+    Vector2 half2,
+  ) {
+    final dx = c2.x - c1.x;
+    final dy = c2.y - c1.y;
+    for (final (ax, ay) in _satAxisList(a1, a2)) {
+      final r1 = _projRadius(a1, half1, ax, ay);
+      final r2 = _projRadius(a2, half2, ax, ay);
+      if ((dx * ax + dy * ay).abs() > r1 + r2) return false;
     }
-    if ((-dx * sinA + dy * cosA).abs() >
-        half.y + rw * sinA.abs() + rh * cosA.abs()) {
-      return true;
-    }
-    if (dx.abs() > rw + half.x * cosA.abs() + half.y * sinA.abs()) {
-      return true;
-    }
-    if (dy.abs() > rh + half.x * sinA.abs() + half.y * cosA.abs()) {
-      return true;
-    }
-    return false;
+    return true;
   }
 
-  /// 单个旋转矩形与墙矩形的最小平移向量（MTV）；未相交返回 null。
+  /// 矩形 1 相对矩形 2 的最小平移向量（把 1 推离 2）；未相交返回 null。
   /// SAT 四轴中最小重叠轴即为推出方向（与中心差方向相反）
-  Vector2? _rectMtv(Vector2 c, double angle, Vector2 half, Rect wall) {
-    final cosA = math.cos(angle);
-    final sinA = math.sin(angle);
-    final dx = wall.center.dx - c.x;
-    final dy = wall.center.dy - c.y;
-    final rw = wall.width / 2;
-    final rh = wall.height / 2;
-
-    // (轴 x, 轴 y, 矩形在该轴的投影半径, 墙在该轴的投影半径)
-    final axes = [
-      (cosA, sinA, half.x, rw * cosA.abs() + rh * sinA.abs()),
-      (-sinA, cosA, half.y, rw * sinA.abs() + rh * cosA.abs()),
-      (1.0, 0.0, half.x * cosA.abs() + half.y * sinA.abs(), rw),
-      (0.0, 1.0, half.x * sinA.abs() + half.y * cosA.abs(), rh),
-    ];
+  static Vector2? rectMtv(
+    Vector2 c1,
+    double a1,
+    Vector2 half1,
+    Vector2 c2,
+    double a2,
+    Vector2 half2,
+  ) {
+    final dx = c2.x - c1.x;
+    final dy = c2.y - c1.y;
 
     var bestOverlap = double.infinity;
     var bestX = 0.0;
     var bestY = 0.0;
-    for (final (ax, ay, rectR, wallR) in axes) {
+    for (final (ax, ay) in _satAxisList(a1, a2)) {
       final dot = dx * ax + dy * ay;
-      final overlap = rectR + wallR - dot.abs();
+      final overlap = _projRadius(a1, half1, ax, ay) +
+          _projRadius(a2, half2, ax, ay) -
+          dot.abs();
       if (overlap <= 0) return null;
       if (overlap < bestOverlap) {
         bestOverlap = overlap;
@@ -254,5 +301,26 @@ class Tank extends PositionComponent {
       }
     }
     return Vector2(bestX, bestY);
+  }
+
+  /// SAT 候选轴：两矩形各自的局部轴（长轴、宽轴）
+  static List<(double, double)> _satAxisList(double a1, double a2) {
+    return [
+      (math.cos(a1), math.sin(a1)),
+      (-math.sin(a1), math.cos(a1)),
+      (math.cos(a2), math.sin(a2)),
+      (-math.sin(a2), math.cos(a2)),
+    ];
+  }
+
+  /// 旋转矩形（朝向 angle、半尺寸 half）在测试轴 (ax, ay) 上的投影半径：
+  /// = half.x*|u·k| + half.y*|v·k|，u/v 为矩形局部轴。
+  /// 注意不能用 half.x*|ax| + half.y*|ay|——那是轴对齐盒的公式，
+  /// 用在旋转矩形上会把长轴算成短轴（坦克朝上下时穿墙的根源）
+  static double _projRadius(double angle, Vector2 half, double ax, double ay) {
+    final c = math.cos(angle);
+    final s = math.sin(angle);
+    return half.x * (c * ax + s * ay).abs() +
+        half.y * (-s * ax + c * ay).abs();
   }
 }

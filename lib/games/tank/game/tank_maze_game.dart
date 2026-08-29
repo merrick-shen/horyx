@@ -100,21 +100,29 @@ class TankMazeGame extends FlameGame {
     final body = _bodySprite!;
     final cannon = _cannonSprite!;
 
-    void spawn(TankPlayer player, Vector2 logicalPos, double angle) {
-      final tank = Tank(
-        walls: _logicalWalls,
-        color: player.color,
-        bodySprite: body,
-        cannonSprite: cannon,
-        logicalPos: logicalPos,
-        angle: angle,
-      );
-      _tanks[player] = tank;
-      add(tank);
-    }
+    final red = Tank(
+      walls: _logicalWalls,
+      color: TankPlayer.red.color,
+      bodySprite: body,
+      cannonSprite: cannon,
+      logicalPos: Vector2(0.5, maze.rows - 0.5),
+      angle: 0,
+    );
+    final green = Tank(
+      walls: _logicalWalls,
+      color: TankPlayer.green.color,
+      bodySprite: body,
+      cannonSprite: cannon,
+      logicalPos: Vector2(maze.cols - 0.5, 0.5),
+      angle: math.pi,
+    );
+    red.opponent = green;
+    green.opponent = red;
 
-    spawn(TankPlayer.red, Vector2(0.5, maze.rows - 0.5), 0);
-    spawn(TankPlayer.green, Vector2(maze.cols - 0.5, 0.5), math.pi);
+    _tanks[TankPlayer.red] = red;
+    _tanks[TankPlayer.green] = green;
+    add(red);
+    add(green);
   }
 
   /// 把坦克逻辑状态换算为渲染坐标（中心像素位置 + 单元格缩放）
