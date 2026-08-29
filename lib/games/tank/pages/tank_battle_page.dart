@@ -1,8 +1,11 @@
 import 'dart:math' as math;
 
+import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:horyx/games/tank/game/tank_maze_game.dart';
+import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
@@ -32,6 +35,10 @@ class _TankBattlePageState extends State<TankBattlePage> {
     TankPlayer.red: null,
     TankPlayer.green: null,
   };
+
+  /// 战场游戏（Flame）：每进入对局页生成一局随机迷宫并渲染；
+  /// 坦克、子弹等实体后续接入该游戏循环
+  late final TankMazeGame _game = TankMazeGame(maze: TankMaze.generate());
 
   @override
   void initState() {
@@ -80,8 +87,8 @@ class _TankBattlePageState extends State<TankBattlePage> {
             child: Row(
               children: [
                 _buildLeftColumn(slotHeight),
-                // 战场区域：迷宫玩法后续接入，本阶段预留空白
-                const Expanded(child: SizedBox.expand()),
+                // 战场区域：Flame 画布渲染本局迷宫
+                Expanded(child: GameWidget(game: _game)),
                 _buildRightColumn(slotHeight),
               ],
             ),
