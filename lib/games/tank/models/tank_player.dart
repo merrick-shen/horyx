@@ -16,8 +16,16 @@ enum TankPlayer {
       };
 }
 
-/// 摇杆方向：坦克控制语义（上前进 / 下后退 / 左右原地转向）
-enum TankMoveDirection { forward, backward, turnLeft, turnRight }
+/// 摇杆驾驶输入（原版操控语义）
+class TankDriveInput {
+  const TankDriveInput({required this.targetAngle, required this.move});
+
+  /// 摇杆指向的角度（弧度）：与坦克角度同坐标系，0 朝右、y 向下顺时针为正
+  final double targetAngle;
+
+  /// 摇杆圆钮是否超出底座边界（超出时坦克沿指向前进，未超出时仅转向）
+  final bool move;
+}
 
 /// 白模素材染色滤镜：按通道缩放 RGB、保留 Alpha。
 /// 白色区域取目标色、黑描边保持黑色、灰色暗部按比例加深。

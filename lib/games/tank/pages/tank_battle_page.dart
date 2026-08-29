@@ -30,8 +30,8 @@ class _TankBattlePageState extends State<TankBattlePage> {
   final int _redScore = 0;
   final int _greenScore = 0;
 
-  /// 双方当前摇杆方向；null 表示摇杆回中
-  final Map<TankPlayer, TankMoveDirection?> _directions = {
+  /// 双方当前摇杆驾驶输入；null 表示摇杆回中（停车）
+  final Map<TankPlayer, TankDriveInput?> _driveInputs = {
     TankPlayer.red: null,
     TankPlayer.green: null,
   };
@@ -58,8 +58,10 @@ class _TankBattlePageState extends State<TankBattlePage> {
     super.dispose();
   }
 
-  void _onDirection(TankPlayer player, TankMoveDirection? direction) {
-    _directions[player] = direction;
+  void _onDrive(TankPlayer player, TankDriveInput? input) {
+    _driveInputs[player] = input;
+    // 驾驶输入实时下发战场游戏，驱动对应坦克转向/前进
+    _game.setDrive(player, input);
   }
 
   /// 开火回调占位：子弹发射随战场实现接入
@@ -79,9 +81,10 @@ class _TankBattlePageState extends State<TankBattlePage> {
           final hCutout =
               insets.left > insets.right ? insets.left : insets.right;
           // 三行等高槽位随屏幕高度收缩（下限 104 防控件过小），
-          // 避免固定槽高在小屏横屏下纵向溢出
+          // 避免固定槽高在小屏横屏下纵向溢出；
+          // 80 = 摇杆列上下留白（_panelPadding）×2
           final slotHeight = math
-              .max(104.0, math.min(140.0, (constraints.maxHeight - 32) / 3));
+              .max(104.0, math.min(140.0, (constraints.maxHeight - 80) / 3));
           return Padding(
             padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
             child: Row(
@@ -98,6 +101,11 @@ class _TankBattlePageState extends State<TankBattlePage> {
     );
   }
 
+  /// 摇杆列四周留白：圆钮推出底座时会越过摇杆区域约半个钮径
+  /// （最大约槽高 12%+，140 槽时约 34px），留白必须覆盖之——
+  /// 否则左侧圆钮会被后绘制的地图区盖住、下方会伸出屏幕外
+  static const double _panelPadding = 40;
+
   /// 等高槽位：较小控件（开火钮/比分）在槽内居中
   Widget _slot(double height, Widget child) => SizedBox(
         height: height,
@@ -107,7 +115,7 @@ class _TankBattlePageState extends State<TankBattlePage> {
   /// 左列控制：绿方开火钮 / 红方比分 / 红方摇杆（复刻原版交叉布局）
   Widget _buildLeftColumn(double slotHeight) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+      padding: const EdgeInsets.all(_panelPadding),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -122,7 +130,7 @@ class _TankBattlePageState extends State<TankBattlePage> {
           TankJoystick(
             color: TankPlayer.red.color,
             size: slotHeight,
-            onDirection: (d) => _onDirection(TankPlayer.red, d),
+            onDrive: (input) => _onDrive(TankPlayer.red, input),
           ),
         ],
       ),
@@ -133,14 +141,14 @@ class _TankBattlePageState extends State<TankBattlePage> {
   /// 结构与左列完全一致（仅控件种类镜像），保证两列宽度与行位置对称
   Widget _buildRightColumn(double slotHeight) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+      padding: const EdgeInsets.all(_panelPadding),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           TankJoystick(
             color: TankPlayer.green.color,
             size: slotHeight,
-            onDirection: (d) => _onDirection(TankPlayer.green, d),
+            onDrive: (input) => _onDrive(TankPlayer.green, input),
           ),
           _slot(
             slotHeight,
