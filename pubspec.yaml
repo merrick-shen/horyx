@@ -35,6 +35,7 @@ dependencies:
   # 读取应用版本号（关于页展示，与 pubspec version 保持同步）
   package_info_plus: ^8.3.0
   flutter_svg: ^2.3.0
+  flame: ^1.38.2
 
 dev_dependencies:
   flutter_test:
