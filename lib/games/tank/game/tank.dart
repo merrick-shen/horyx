@@ -65,6 +65,7 @@ class Tank extends PositionComponent {
     // 碰撞矩形（车体中心局部坐标）：车体矩形 + 炮管矩形
     // （圆顶中心到炮口，宽取炮管厚）
     final muzzle = (125 - 36.5) * cannonScale;
+    muzzleDist = muzzle;
     _collisionRects = [
       (Vector2.zero(), Vector2(hullLength / 2, hullWidth / 2)),
       (
@@ -83,6 +84,14 @@ class Tank extends PositionComponent {
   /// 坦克中心在迷宫坐标系下的位置（单位=格）
   Vector2 logicalPos;
 
+  /// 炮口到车体中心的距离（迷宫单位，子弹出生点用）
+  late final double muzzleDist;
+
+  /// 炮口在迷宫坐标系下的位置（子弹出生点）
+  Vector2 get muzzleLogicalPos =>
+      logicalPos +
+      Vector2(math.cos(angle), math.sin(angle)) * muzzleDist;
+
   /// 对方坦克：互相视为实体障碍，与墙同等参与碰撞
   Tank? opponent;
 
@@ -92,8 +101,9 @@ class Tank extends PositionComponent {
   /// 摇杆驾驶输入；null 表示摇杆回中（停车）
   TankDriveInput? input;
 
-  /// 最大前进速度（格/秒）：实际速度 = 上限 × 摇杆油门（0~1）
-  static const double _forwardSpeed = 2.6;
+  /// 最大前进速度（格/秒）：实际速度 = 上限 × 摇杆油门（0~1）。
+  /// 子弹速度以它为基准（见 Bullet）
+  static const double maxForwardSpeed = 2.6;
 
   /// 转向速度（弧度/秒）：原版转向极快，近乎指向即达
   static const double _turnSpeed = 18.0;
@@ -119,7 +129,7 @@ class Tank extends PositionComponent {
 
     // 圆钮推出底座边界：沿当前朝向前进，油门（超出幅度）决定速度
     if (drive.speedFactor > 0) {
-      _move(_forwardSpeed * drive.speedFactor * dt);
+      _move(maxForwardSpeed * drive.speedFactor * dt);
     }
   }
 

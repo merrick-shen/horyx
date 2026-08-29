@@ -6,6 +6,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:horyx/games/tank/game/bullet.dart';
 import 'package:horyx/games/tank/game/tank.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
@@ -33,6 +34,12 @@ class TankMazeGame extends FlameGame {
   /// 双方坦克（按玩家索引，供摇杆输入下发）
   final Map<TankPlayer, Tank> _tanks = {};
 
+  /// 双方在场子弹（按玩家分组，用于同屏上限计数）
+  final Map<TankPlayer, List<Bullet>> _bulletsByPlayer = {};
+
+  /// 每辆坦克同屏子弹上限：达上限后需等任一子弹消失才能继续发射
+  static const int _maxBulletsPerTank = 5;
+
   /// 已构建的迷宫组件（画布尺寸变化时先清空再重建）
   final List<Component> _mazeComponents = [];
 
@@ -47,6 +54,9 @@ class TankMazeGame extends FlameGame {
   Sprite? _bodySprite;
   Sprite? _cannonSprite;
 
+  /// 子弹白模素材
+  Sprite? _bulletSprite;
+
   /// 画布透明：迷宫底板直接铺在对局页背景色上，
   /// 与原版一致（迷宫面板比页面底色略深一层）
   @override
@@ -55,6 +65,31 @@ class TankMazeGame extends FlameGame {
   /// 对局页摇杆驾驶输入下发（player 对应的坦克执行转向/前进）
   void setDrive(TankPlayer player, TankDriveInput? input) {
     _tanks[player]?.input = input;
+  }
+
+  /// 开火：从炮口沿车身朝向射出子弹。
+  /// 每辆坦克同屏最多 5 发：达到上限后需等任一子弹消失才能继续发射
+  void fire(TankPlayer player) {
+    final tank = _tanks[player];
+    final sprite = _bulletSprite;
+    if (tank == null || sprite == null) return;
+    final bullets = _bulletsByPlayer.putIfAbsent(player, () => []);
+    if (bullets.length >= _maxBulletsPerTank) return;
+
+    final bullet = Bullet(
+      walls: _logicalWalls,
+      color: tank.color,
+      sprite: sprite,
+      logicalPos: tank.muzzleLogicalPos +
+          Vector2(
+            math.cos(tank.angle),
+            math.sin(tank.angle),
+          ) *
+              Bullet.radius,
+      angle: tank.angle,
+    );
+    bullets.add(bullet);
+    add(bullet);
   }
 
   // onGameResize 在首次挂载与每次画布尺寸变化时都会调用。
@@ -73,15 +108,40 @@ class TankMazeGame extends FlameGame {
   Future<void> onLoad() async {
     _bodySprite = Sprite(await _loadImage('assets/tank/tank_body.png'));
     _cannonSprite = Sprite(await _loadImage('assets/tank/tank_cannon.png'));
+    _bulletSprite = Sprite(await _loadImage('assets/tank/bullet.png'));
     _ensureTanks();
     _syncTanks();
   }
 
   @override
   void update(double dt) {
-    // 先让坦克推进迷宫坐标系状态，再按最新状态同步渲染坐标
+    // 先让坦克/子弹推进迷宫坐标系状态，再按最新状态同步渲染坐标
     super.update(dt);
+    _pruneExpiredBullets();
     _syncTanks();
+    _syncBullets();
+  }
+
+  /// 移除到寿命的子弹（组件与同屏计数同步清理）
+  void _pruneExpiredBullets() {
+    for (final entry in _bulletsByPlayer.entries) {
+      for (final bullet in entry.value.where((b) => b.expired)) {
+        bullet.removeFromParent();
+      }
+      entry.value.removeWhere((b) => b.expired);
+    }
+  }
+
+  /// 把子弹逻辑状态换算为渲染坐标（中心像素位置 + 单元格缩放）
+  void _syncBullets() {
+    if (_cell == 0) return;
+    for (final bullets in _bulletsByPlayer.values) {
+      for (final bullet in bullets) {
+        bullet
+          ..position = _boardOffset + bullet.logicalPos * _cell
+          ..scale = Vector2.all(_cell);
+      }
+    }
   }
 
   /// 读取打包素材为 Flame 图片（资产在 assets/tank/，不经 Flame 默认的

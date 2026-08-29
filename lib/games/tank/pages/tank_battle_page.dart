@@ -64,8 +64,8 @@ class _TankBattlePageState extends State<TankBattlePage> {
     _game.setDrive(player, input);
   }
 
-  /// 开火回调占位：子弹发射随战场实现接入
-  void _onFire() {}
+  /// 开火：下发战场游戏（炮口沿车身朝向射出子弹，同屏上限 5 发）
+  void _onFire(TankPlayer player) => _game.fire(player);
 
   @override
   Widget build(BuildContext context) {
@@ -121,7 +121,10 @@ class _TankBattlePageState extends State<TankBattlePage> {
         children: [
           _slot(
             slotHeight,
-            TankFireButton(color: TankPlayer.green.color, onTap: _onFire),
+            TankFireButton(
+              color: TankPlayer.green.color,
+              onTap: () => _onFire(TankPlayer.green),
+            ),
           ),
           _slot(
             slotHeight,
@@ -160,7 +163,10 @@ class _TankBattlePageState extends State<TankBattlePage> {
           ),
           _slot(
             slotHeight,
-            TankFireButton(color: TankPlayer.red.color, onTap: _onFire),
+            TankFireButton(
+              color: TankPlayer.red.color,
+              onTap: () => _onFire(TankPlayer.red),
+            ),
           ),
         ],
       ),
