@@ -10,7 +10,8 @@
 
 - Flutter 多游戏应用（package 名 `horyx`），支持本地对战与局域网联机。
 - **不支持 Web 平台**（浏览器沙箱限制：无 dart:io、TCP/UDP socket 不可用）。
-- UI 图标一律使用 Material Icons，禁止网络下载或本地图片资源；`pubspec.yaml` 必须保持 `uses-material-design: true`（打包图标字体）。
+- UI 图标一律使用 Material Icons，禁止网络下载图片资源；`pubspec.yaml` 必须保持 `uses-material-design: true`（打包图标字体）。
+- **游戏内绘制素材例外**：坦克动荡使用本地图片素材（`assets/tank/`，提取自原版 APK 图集的白色模板，运行时染色）
 
 ## 目录结构
 
