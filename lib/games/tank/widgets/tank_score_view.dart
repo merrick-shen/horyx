@@ -12,6 +12,7 @@ class TankScoreView extends StatelessWidget {
     required this.player,
     required this.score,
     this.mirrored = false,
+    this.numberOverlay,
   });
 
   /// 归属玩家（决定图标染色）
@@ -22,6 +23,10 @@ class TankScoreView extends StatelessWidget {
 
   /// 是否右列（镜像侧）：图标保持素材朝向（朝左），数字在图标左侧
   final bool mirrored;
+
+  /// 数字覆盖层（如得分烟雾特效），精确覆盖在数字上；
+  /// 调用方需自行包 IgnorePointer 避免拦截手势
+  final Widget? numberOverlay;
 
   /// 坦克图标高度（宽随素材 380:204 比例）
   static const double _iconHeight = 36;
@@ -47,12 +52,19 @@ class TankScoreView extends StatelessWidget {
         color: context.palette.textPrimary,
       ),
     );
+    // 覆盖层与数字同尺寸叠放（Stack 以数字为基准定尺寸）
+    final numberWidget = numberOverlay == null
+        ? number
+        : Stack(
+            alignment: Alignment.center,
+            children: [number, Positioned.fill(child: numberOverlay!)],
+          );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: mirrored
-          ? [number, const SizedBox(width: 10), icon]
-          : [icon, const SizedBox(width: 10), number],
+          ? [numberWidget, const SizedBox(width: 10), icon]
+          : [icon, const SizedBox(width: 10), numberWidget],
     );
   }
 }

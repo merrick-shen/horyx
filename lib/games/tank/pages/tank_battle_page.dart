@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:horyx/games/tank/game/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/widgets/score_smoke_effect.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
 import 'package:horyx/games/tank/widgets/tank_score_view.dart';
@@ -30,6 +31,10 @@ class _TankBattlePageState extends State<TankBattlePage> {
   int _redScore = 0;
   int _greenScore = 0;
 
+  /// 双方得分烟雾触发计数（每次得分自增，驱动数字上的烟雾特效）
+  int _redSmokeTick = 0;
+  int _greenSmokeTick = 0;
+
   /// 双方当前摇杆驾驶输入；null 表示摇杆回中（停车）
   final Map<TankPlayer, TankDriveInput?> _driveInputs = {
     TankPlayer.red: null,
@@ -52,13 +57,16 @@ class _TankBattlePageState extends State<TankBattlePage> {
     _game.onScored = _onScored;
   }
 
-  /// 得分回调（战场游戏在坦克被击毁时触发）
+  /// 得分回调（战场游戏在坦克被击毁时触发）：
+  /// 数字变化与烟雾特效同时出现
   void _onScored(TankPlayer player) {
     setState(() {
       if (player == TankPlayer.red) {
         _redScore++;
+        _redSmokeTick++;
       } else {
         _greenScore++;
+        _greenSmokeTick++;
       }
     });
   }
@@ -140,7 +148,13 @@ class _TankBattlePageState extends State<TankBattlePage> {
           ),
           _slot(
             slotHeight,
-            TankScoreView(player: TankPlayer.red, score: _redScore),
+            TankScoreView(
+              player: TankPlayer.red,
+              score: _redScore,
+              numberOverlay: IgnorePointer(
+                child: ScoreSmokeEffect(tick: _redSmokeTick),
+              ),
+            ),
           ),
           TankJoystick(
             color: TankPlayer.red.color,
@@ -171,6 +185,9 @@ class _TankBattlePageState extends State<TankBattlePage> {
               player: TankPlayer.green,
               score: _greenScore,
               mirrored: true,
+              numberOverlay: IgnorePointer(
+                child: ScoreSmokeEffect(tick: _greenSmokeTick),
+              ),
             ),
           ),
           _slot(
