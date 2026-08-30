@@ -21,12 +21,15 @@ enum ConfirmResult {
 /// - 不保存并退出：先 [onDiscard] 清档（放弃当前进度，避免下次误提示可继续），完成后 [onExit]
 /// - 取消：留在当前页面
 ///
+/// [title]/[message] 有统一默认文案，各游戏无需再传；
+/// 场景特殊时（如计分器）可覆盖
+///
 /// [state] 传调用方页面 State：弹窗与存档操作均为异步，
 /// 期间页面可能已卸载，需以 State.mounted 守护后续 context 使用
 Future<void> confirmExitWithArchive(
   State state, {
-  required String title,
-  required String message,
+  String title = '退出对局？',
+  String message = '保存并退出后，下次进入可从当前进度继续',
   required Future<void> Function() onSave,
   required Future<void> Function() onDiscard,
   required VoidCallback onExit,
@@ -36,7 +39,7 @@ Future<void> confirmExitWithArchive(
     title: title,
     message: message,
     confirmLabel: '保存并退出',
-    neutralLabel: '不保存并退出',
+    neutralLabel: '直接退出',
   );
   if (!state.mounted) return;
 

@@ -113,8 +113,6 @@ class _TankBattlePageState extends State<TankBattlePage> {
 
     await confirmExitWithArchive(
       this,
-      title: '退出对战？',
-      message: '保存并退出后，下次进入可从当前比分继续',
       onSave: () => TankStorage.instance.save(
         TankGameState(
           redScore: _redScore,

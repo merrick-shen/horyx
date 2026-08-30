@@ -308,8 +308,6 @@ class _WeiqiPageState
     }
     await confirmExitWithArchive(
       this,
-      title: '退出对局？',
-      message: '保存并退出后，下次进入可从当前进度继续对弈',
       // 持久化完整着手序列后退出（重放架构下恢复即完整还原盘面）
       onSave: () => WeiqiStorage.instance.save(
         WeiqiGameState(

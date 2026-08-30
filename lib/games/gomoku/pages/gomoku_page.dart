@@ -204,8 +204,6 @@ class _GomokuPageState
     }
     await confirmExitWithArchive(
       this,
-      title: '退出对局？',
-      message: '保存并退出后，下次进入可从当前进度继续对弈',
       // 持久化完整对局状态后退出
       onSave: () => GomokuStorage.instance.save(
         GomokuGameState(
