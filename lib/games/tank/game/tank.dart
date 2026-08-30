@@ -92,8 +92,36 @@ class Tank extends PositionComponent {
       logicalPos +
       Vector2(math.cos(angle), math.sin(angle)) * muzzleDist;
 
+  /// 子弹圆形碰撞体是否命中本坦克（车体/炮管任一矩形相交，击毁后无效）。
+  /// 圆心变换到矩形局部系后做圆 vs 轴对齐矩形判定
+  bool hitByCircle(Vector2 bulletCenter, double bulletRadius) {
+    if (destroyed) return false;
+    for (final (offset, half) in _collisionRects) {
+      final rectCenter = _localToWorld(logicalPos, angle, offset);
+      // 圆心差变换到矩形局部系（旋转 -angle）
+      final dx = bulletCenter.x - rectCenter.x;
+      final dy = bulletCenter.y - rectCenter.y;
+      final cosA = math.cos(angle);
+      final sinA = math.sin(angle);
+      final local = Vector2(
+        dx * cosA + dy * sinA,
+        -dx * sinA + dy * cosA,
+      );
+      final closest = Vector2(
+        local.x.clamp(-half.x, half.x).toDouble(),
+        local.y.clamp(-half.y, half.y).toDouble(),
+      );
+      if ((closest - local).length <= bulletRadius) return true;
+    }
+    return false;
+  }
+
   /// 对方坦克：互相视为实体障碍，与墙同等参与碰撞
   Tank? opponent;
+
+  /// 是否已被击毁：击毁后不再渲染、不参与碰撞、忽略驾驶输入，
+  /// 新一局开始时复位
+  bool destroyed = false;
 
   /// 碰撞矩形列表（车体中心局部坐标）：(中心偏移, 半长半宽)
   late final List<(Vector2 offset, Vector2 half)> _collisionRects;
@@ -117,6 +145,10 @@ class Tank extends PositionComponent {
   @override
   void update(double dt) {
     super.update(dt);
+    // 击毁后冻结（隐身由战场在渲染同步时缩放归零处理），
+    // 复位由战场的新一局流程处理
+    if (destroyed) return;
+
     final drive = input;
     if (drive == null) return;
 
@@ -186,9 +218,9 @@ class Tank extends PositionComponent {
         }
       }
 
-      // 对方坦克的碰撞矩形
+      // 对方坦克的碰撞矩形（已击毁的不参与碰撞）
       final opp = opponent;
-      if (opp != null) {
+      if (opp != null && !opp.destroyed) {
         for (final (oOffset, oHalf) in opp._collisionRects) {
           if (rectsOverlap(
             rectCenter,
@@ -230,7 +262,7 @@ class Tank extends PositionComponent {
         }
 
         final opp = opponent;
-        if (opp != null) {
+        if (opp != null && !opp.destroyed) {
           for (final (oOffset, oHalf) in opp._collisionRects) {
             final mtv = rectMtv(
               rectCenter,

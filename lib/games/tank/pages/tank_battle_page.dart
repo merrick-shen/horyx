@@ -26,9 +26,9 @@ class TankBattlePage extends StatefulWidget {
 }
 
 class _TankBattlePageState extends State<TankBattlePage> {
-  /// 双方比分（对局胜负逻辑接入前恒为 0，先行展示布局；接入时改为可变）
-  final int _redScore = 0;
-  final int _greenScore = 0;
+  /// 双方比分（由战场游戏的得分回调驱动刷新）
+  int _redScore = 0;
+  int _greenScore = 0;
 
   /// 双方当前摇杆驾驶输入；null 表示摇杆回中（停车）
   final Map<TankPlayer, TankDriveInput?> _driveInputs = {
@@ -36,8 +36,7 @@ class _TankBattlePageState extends State<TankBattlePage> {
     TankPlayer.green: null,
   };
 
-  /// 战场游戏（Flame）：每进入对局页生成一局随机迷宫并渲染；
-  /// 坦克、子弹等实体后续接入该游戏循环
+  /// 战场游戏（Flame）：每进入对局页生成一局随机迷宫并渲染
   late final TankMazeGame _game = TankMazeGame(maze: TankMaze.generate());
 
   @override
@@ -49,6 +48,19 @@ class _TankBattlePageState extends State<TankBattlePage> {
       DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // 战场得分回调：刷新比分 UI
+    _game.onScored = _onScored;
+  }
+
+  /// 得分回调（战场游戏在坦克被击毁时触发）
+  void _onScored(TankPlayer player) {
+    setState(() {
+      if (player == TankPlayer.red) {
+        _redScore++;
+      } else {
+        _greenScore++;
+      }
+    });
   }
 
   @override

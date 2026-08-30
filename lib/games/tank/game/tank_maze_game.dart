@@ -18,18 +18,25 @@ import 'package:horyx/games/tank/models/tank_player.dart';
 /// 坦克位置与朝向不丢失；仅新生成迷宫（新对局）时回到出生点。
 class TankMazeGame extends FlameGame {
   TankMazeGame({required this.maze}) {
-    // 迷宫碰撞数据（逻辑单位=格）：与画布尺寸无关，构建一次即可。
-    // 墙段两端各延伸半个墙厚（0.05 格）覆盖转角接缝，与渲染一致
-    _logicalWalls = [
-      for (final (x, y, vertical) in maze.walls)
-        vertical
-            ? Rect.fromLTWH(x - 0.05, y - 0.05, 0.10, 1.10)
-            : Rect.fromLTWH(x - 0.05, y - 0.05, 1.10, 0.10),
-    ];
+    _rebuildLogicalWalls();
   }
 
-  /// 本局迷宫
-  final TankMaze maze;
+  /// 本局迷宫（每局开始时重新生成，见 [_startNewRound]）
+  TankMaze maze;
+
+  /// 重建墙体碰撞矩形（迷宫单位）。
+  /// 墙段两端各延伸半个墙厚（0.05 格）覆盖转角接缝，与渲染一致。
+  /// 原地清空重填：坦克持有同一列表引用，换迷宫后自动生效
+  void _rebuildLogicalWalls() {
+    _logicalWalls
+      ..clear()
+      ..addAll([
+        for (final (x, y, vertical) in maze.walls)
+          vertical
+              ? Rect.fromLTWH(x - 0.05, y - 0.05, 0.10, 1.10)
+              : Rect.fromLTWH(x - 0.05, y - 0.05, 1.10, 0.10),
+      ]);
+  }
 
   /// 双方坦克（按玩家索引，供摇杆输入下发）
   final Map<TankPlayer, Tank> _tanks = {};
@@ -43,8 +50,8 @@ class TankMazeGame extends FlameGame {
   /// 已构建的迷宫组件（画布尺寸变化时先清空再重建）
   final List<Component> _mazeComponents = [];
 
-  /// 墙体碰撞矩形（迷宫单位）
-  late final List<Rect> _logicalWalls;
+  /// 墙体碰撞矩形（迷宫单位，原地重填以保持坦克持有的引用有效）
+  final List<Rect> _logicalWalls = [];
 
   /// 画布几何：单元格边长（像素）与迷宫左上角偏移（渲染换算用）
   double _cell = 0;
@@ -57,19 +64,42 @@ class TankMazeGame extends FlameGame {
   /// 子弹白模素材
   Sprite? _bulletSprite;
 
+  /// 双方比分（对方坦克被击中即 +1，经 [onScored] 通知对局页）
+  int redScore = 0;
+  int greenScore = 0;
+
+  /// 得分回调（对局页据此刷新比分 UI）
+  void Function(TankPlayer player)? onScored;
+
+  /// 一方被击毁后到开新一局的状态
+  bool _roundOver = false;
+
+  /// 开新一局倒计时（秒）
+  double _restartCountdown = 0;
+
+  /// 新一局间隔（秒）：展示击毁战果后重开
+  static const double _roundRestartDelay = 1.8;
+
+  /// 最近一次画布尺寸（开新一局重建迷宫用）
+  Vector2? _lastCanvasSize;
+
   /// 画布透明：迷宫底板直接铺在对局页背景色上，
   /// 与原版一致（迷宫面板比页面底色略深一层）
   @override
   Color backgroundColor() => const Color(0x00000000);
 
-  /// 对局页摇杆驾驶输入下发（player 对应的坦克执行转向/前进）
+  /// 对局页摇杆驾驶输入下发（player 对应的坦克执行转向/前进）。
+  /// 击毁战果展示期间（新一局倒计时）不接受输入
   void setDrive(TankPlayer player, TankDriveInput? input) {
+    if (_roundOver) return;
     _tanks[player]?.input = input;
   }
 
   /// 开火：从炮口沿车身朝向射出子弹。
-  /// 每辆坦克同屏最多 5 发：达到上限后需等任一子弹消失才能继续发射
+  /// 每辆坦克同屏最多 5 发：达到上限后需等任一子弹消失才能继续发射。
+  /// 击毁战果展示期间不接受开火
   void fire(TankPlayer player) {
+    if (_roundOver) return;
     final tank = _tanks[player];
     final sprite = _bulletSprite;
     if (tank == null || sprite == null) return;
@@ -99,6 +129,7 @@ class TankMazeGame extends FlameGame {
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
     if (size.x <= 0 || size.y <= 0) return;
+    _lastCanvasSize = size;
     _buildMaze(size);
     _ensureTanks();
     _syncTanks();
@@ -118,8 +149,100 @@ class TankMazeGame extends FlameGame {
     // 先让坦克/子弹推进迷宫坐标系状态，再按最新状态同步渲染坐标
     super.update(dt);
     _pruneExpiredBullets();
+    if (_roundOver) {
+      // 击毁战果展示中，倒计时结束开新一局
+      _restartCountdown -= dt;
+      if (_restartCountdown <= 0) _startNewRound();
+    } else {
+      _checkBulletHits();
+    }
     _syncTanks();
     _syncBullets();
+  }
+
+  /// 命中判定：任一存活子弹命中任一存活坦克（含自己反弹的子弹）
+  /// → 子弹消失、坦克击毁、对方得分，进入下一局倒计时。
+  /// 先扫描收集命中、扫描结束后再统一结算：
+  /// 结算会清空子弹分组列表，绝不能在遍历列表的过程中进行
+  /// （清场与遍历同时发生会抛 concurrent modification 异常打断游戏循环）
+  void _checkBulletHits() {
+    TankPlayer? victim;
+    for (final entry in _bulletsByPlayer.entries.toList()) {
+      for (final bullet in entry.value.toList()) {
+        for (final tankEntry in _tanks.entries) {
+          final tank = tankEntry.value;
+          if (tank.destroyed) continue;
+          if (!tank.hitByCircle(bullet.logicalPos, Bullet.radius)) continue;
+          victim = tankEntry.key;
+          bullet.removeFromParent();
+          entry.value.remove(bullet);
+          break;
+        }
+        if (victim != null) break;
+      }
+      if (victim != null) break;
+    }
+    if (victim != null) _onTankDestroyed(victim);
+  }
+
+  /// 坦克被击毁（此时命中子弹已移除）：隐身并冻结双方输入、
+  /// 清空场上子弹、对方得分（自己反弹的子弹打中自己也是对方得分），
+  /// 进入下一局倒计时
+  void _onTankDestroyed(TankPlayer victim) {
+    for (final entry in _tanks.entries) {
+      entry.value
+        ..input = null
+        ..destroyed = entry.key == victim;
+    }
+    _clearBullets();
+
+    final scorer = victim == TankPlayer.red ? TankPlayer.green : TankPlayer.red;
+    if (scorer == TankPlayer.red) {
+      redScore++;
+    } else {
+      greenScore++;
+    }
+    onScored?.call(scorer);
+
+    _roundOver = true;
+    _restartCountdown = _roundRestartDelay;
+  }
+
+  /// 开新一局：重新生成迷宫、坦克回出生点并复活、清空场上子弹（比分保留）
+  void _startNewRound() {
+    maze = TankMaze.generate();
+    _rebuildLogicalWalls();
+    if (_lastCanvasSize != null) _buildMaze(_lastCanvasSize!);
+    _resetTanks();
+    _clearBullets();
+    _roundOver = false;
+  }
+
+  /// 坦克复位：回出生点、朝向复位、复活并清空输入
+  void _resetTanks() {
+    _tanks[TankPlayer.red]
+      ?..logicalPos = Vector2(0.5, maze.rows - 0.5)
+      ..angle = 0
+      ..input = null
+      ..destroyed = false;
+    _tanks[TankPlayer.green]
+      ?..logicalPos = Vector2(maze.cols - 0.5, 0.5)
+      ..angle = math.pi
+      ..input = null
+      ..destroyed = false;
+    _syncTanks();
+  }
+
+  /// 清空场上全部子弹（新一局开始/击毁结算）。
+  /// 只清各分组列表、保留 map 结构：命中判定正遍历该 map，
+  /// 在遍历中 clear map 会抛 concurrent modification 异常
+  void _clearBullets() {
+    for (final bullets in _bulletsByPlayer.values) {
+      for (final bullet in bullets) {
+        bullet.removeFromParent();
+      }
+      bullets.clear();
+    }
   }
 
   /// 移除到寿命的子弹（组件与同屏计数同步清理）
@@ -185,13 +308,15 @@ class TankMazeGame extends FlameGame {
     add(green);
   }
 
-  /// 把坦克逻辑状态换算为渲染坐标（中心像素位置 + 单元格缩放）
+  /// 把坦克逻辑状态换算为渲染坐标（中心像素位置 + 单元格缩放）。
+  /// 被击毁的坦克缩放归零隐身
   void _syncTanks() {
     if (_cell == 0) return;
-    for (final tank in _tanks.values) {
+    for (final entry in _tanks.entries) {
+      final tank = entry.value;
       tank
         ..position = _boardOffset + tank.logicalPos * _cell
-        ..scale = Vector2.all(_cell);
+        ..scale = Vector2.all(tank.destroyed ? 0.0 : _cell);
     }
   }
 
