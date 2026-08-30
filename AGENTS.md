@@ -8,16 +8,14 @@
 
 ## 项目概览与技术栈
 
-- Flutter 多游戏应用（package 名 `horyx`），支持本地对战与局域网联机。
+- 项目概况、技术栈与目录结构见根目录 [README.md](./README.md)（与本文件重复的内容以 README 为准，AGENTS.md 不再维护）。
 - **目标平台仅 Android（iOS 待定）**：兼容性与技术选型只考虑 Android
 - UI 图标一律使用 Material Icons，禁止网络下载图片资源；`pubspec.yaml` 必须保持 `uses-material-design: true`（打包图标字体）。
 - **游戏内绘制素材例外**：坦克动荡使用本地图片素材（`assets/tank/`，提取自原版 APK 图集的白色模板，运行时染色）
 
 ## 目录结构
 
-- `lib/app/` — 应用外壳与应用级页面（home、more、settings）。
-- `lib/games/<游戏名>/` — feature-first 结构：每个游戏目录下分 `models/ pages/ services/ widgets/`。
-- `lib/shared/` — 跨游戏共享代码（network / widgets / storage / theme / utils）。
+目录树与各层职责见 [README.md](./README.md)。
 - **导入规范：一律使用 package 绝对导入（`package:horyx/...`），禁止裸文件名相对导入**（会引发解析问题）。
 
 ## 编码规范
@@ -107,10 +105,7 @@ CHANGELOG.md 面向**用户**，不是开发日志，写作时始终以"用户�
 
 ## 工程约定（架构速览）
 
-- 游戏数据定义在 `lib/shared/game/`（`GameInfo` 模型）。
-- 应用根结构由 `AppShell` 统一管理导航。
 - 游戏状态在页面层集中管理（如 `gomoku_page.dart`），便于归档与恢复；归档基类为 `GameArchiveStateBase`。
-- 单词校验使用本地万字表 `assets/words/english_10k.txt`，Set 缓存 O(1) 查询。
 - 联机对战页复用 `OnlineGamePageShell`，控制器复用 `OnlineGameControllerBase`。
 - `option_block.dart`（OptionBlock / NumberOptionBlock）、`resume_card.dart`（ResumeCard 续玩卡片）为通用组件，优先复用。
 - UI 内容变化时必须同步更新测试断言（如占位文案）。
