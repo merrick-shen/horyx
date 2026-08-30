@@ -85,10 +85,10 @@ class TankMazeGame extends FlameGame {
   bool _scored = false;
 
   /// 击毁后的结算等待（秒）：期间战场继续，残弹可继续反弹与命中（双杀可能发生）
-  static const double _roundSettleDelay = 2.5;
+  static const double _roundSettleDelay = 3.0;
 
   /// 计分完成后的战场冻结时长（秒）：定格展示后开新一局
-  static const double _roundFreezeDelay = 0.5;
+  static const double _roundFreezeDelay = 1.0;
 
   /// 最近一次画布尺寸（开新一局重建迷宫用）
   Vector2? _lastCanvasSize;
@@ -156,12 +156,10 @@ class TankMazeGame extends FlameGame {
 
   @override
   void update(double dt) {
-    // 先让坦克/子弹推进迷宫坐标系状态，再按最新状态同步渲染坐标
-    super.update(dt);
-    _pruneExpiredBullets();
-
+    // 战场定格阶段：整体冻结（坦克/子弹都不推进，停在原地），
+    // 倒计时到点开新一局；必须先于 super.update 判断，
+    // 否则本帧子组件仍会被推进
     if (_freezeCountdown > 0) {
-      // 计分后的定格阶段：战场整体冻结 0.5 秒后开新一局
       _freezeCountdown -= dt;
       if (_freezeCountdown <= 0) _startNewRound();
       _syncTanks();
@@ -169,6 +167,9 @@ class TankMazeGame extends FlameGame {
       return;
     }
 
+    // 先让坦克/子弹推进迷宫坐标系状态，再按最新状态同步渲染坐标
+    super.update(dt);
+    _pruneExpiredBullets();
     _checkBulletHits();
 
     if (_roundOver) {
