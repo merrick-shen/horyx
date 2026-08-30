@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 新增坦克动荡游戏：本地双人同屏坦克对战（随机迷宫、摇杆驾驶、击毁计分）
 
+### Changed
+
+- 横屏状态下弹窗不再被拉宽（限制最大宽度，居中紧凑显示）
+
 ## [0.4.0] - 2026-08-29
 
 ### Changed

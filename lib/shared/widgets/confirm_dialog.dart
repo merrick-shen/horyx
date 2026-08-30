@@ -104,7 +104,11 @@ class _ConfirmDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Container(
+      // 限制最大宽度：横屏时可用宽度是整个屏幕宽，内容 stretch 会把弹窗
+      // 拉成一条长横幅，观感很差；竖屏手机宽度本就小于该值，不受影响
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(
           color: palette.surfaceBg,
@@ -185,6 +189,7 @@ class _ConfirmDialog extends StatelessWidget {
               ),
             ],
           ],
+        ),
         ),
       ),
     );
