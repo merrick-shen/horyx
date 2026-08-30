@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/game/bullet.dart';
+import 'package:horyx/games/tank/game/effects/bullet_expire_effect.dart';
 import 'package:horyx/games/tank/game/effects/tank_explosion_effect.dart';
 import 'package:horyx/games/tank/game/tank.dart';
 import 'package:horyx/games/tank/game/tank_audio.dart';
@@ -209,6 +210,7 @@ class TankMazeGame extends FlameGame {
           if (tank.destroyed) continue;
           if (!tank.hitByCircle(bullet.logicalPos, Bullet.radius)) continue;
           victim = tankEntry.key;
+          _spawnBulletExpire(bullet.position);
           bullet.removeFromParent();
           entry.value.remove(bullet);
           break;
@@ -289,9 +291,10 @@ class TankMazeGame extends FlameGame {
     _freezeCountdown = 0;
   }
 
-  /// 清除未消散完的爆炸特效（新一局开始时战场应干净）
+  /// 清除未消散完的特效（新一局开始时战场应干净）
   void _clearEffects() {
-    removeWhere((c) => c is TankExplosionEffect);
+    removeWhere(
+        (c) => c is TankExplosionEffect || c is BulletExpireEffect);
   }
 
   /// 坦克复位：回出生点、朝向复位、复活并清空输入
@@ -321,14 +324,30 @@ class TankMazeGame extends FlameGame {
     }
   }
 
-  /// 移除到寿命的子弹（组件与同屏计数同步清理）
+  /// 移除到寿命的子弹（组件与同屏计数同步清理）。
+  /// 射程极限消失时叠加消散特效
   void _pruneExpiredBullets() {
     for (final entry in _bulletsByPlayer.entries) {
       for (final bullet in entry.value.where((b) => b.expired)) {
+        _spawnBulletExpire(bullet.position);
         bullet.removeFromParent();
       }
       entry.value.removeWhere((b) => b.expired);
     }
+  }
+
+  /// 子弹消失消散特效：position 为上帧同步的屏幕坐标。
+  /// 纯渲染叠加组件，不参与碰撞，不影响子弹/坦克逻辑
+  void _spawnBulletExpire(Vector2 screenPos) {
+    final smoke = _smokeSprite;
+    if (smoke == null) return;
+    add(
+      BulletExpireEffect(
+        smokeSprite: smoke,
+        position: screenPos.clone(),
+        sizeScale: _cell / 48,
+      ),
+    );
   }
 
   /// 把子弹逻辑状态换算为渲染坐标（中心像素位置 + 单元格缩放）
