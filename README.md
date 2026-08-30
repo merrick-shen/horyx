@@ -5,6 +5,8 @@
 - [Flutter](https://flutter.dev)（Dart）+ Material 3
 - 状态管理：页面级 State 集中持有（无额外状态管理框架）
 - 游戏规则：各游戏独立规则引擎（纯静态逻辑，本地与联机共用同源判定）
+- 游戏引擎：Flame（坦克动荡实时战场：迷宫、坦克、子弹的循环与渲染）
+- 音效：flutter_soloud（Soloud 引擎，预解码进内存的低延迟游戏音效）
 - 局域网联机：dart:io TCP（NDJSON 分帧协议、房主权威模型，零第三方网络依赖）
 - 持久化：SharedPreferences 单键 JSON 原子写入，读取容错，模型带 version 字段备迁移
 - SVG 渲染：flutter_svg（关于页 Logo 动态着色）
@@ -24,6 +26,7 @@ lib/
 ├── games/                  # 游戏层（一游戏一目录，内分 pages/services/models/widgets）
 │   ├── word_pk/            # 单词PK（页面、联机对局控制器、词表校验、存档）
 │   ├── gomoku/             # 五子棋（规则引擎、联机对局控制器、存档）
+│   ├── tank/               # 坦克动荡（Flame 战场：随机迷宫、原版摇杆驾驶、坦克与子弹碰撞、回合计分；内分 game/ 实体逻辑与音效）
 │   ├── weiqi/              # 围棋（已下架待升级，代码保留）
 │   └── scoreboard/         # 计分器（BO 赛制规则引擎、存档）
 ├── shared/                 # 共享层
@@ -36,6 +39,8 @@ lib/
 test/                       # 单元与集成测试（按 games/、shared/ 与 lib 同构组织）
 assets/
 ├── icon/                   # Logo 源文件与图标生成源图
+├── tank/                   # 坦克动荡白模素材（提取自原版 APK 图集，运行时按玩家色染色）
+│   └── audio/              # 坦克动荡音效（OGG，提取自原版 APK 音频）
 └── words/                  # 单词PK 本地词表（google-10000）
 ```
 
