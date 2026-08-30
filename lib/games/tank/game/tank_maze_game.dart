@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/game/bullet.dart';
+import 'package:horyx/games/tank/game/effects/tank_explosion_effect.dart';
 import 'package:horyx/games/tank/game/tank.dart';
 import 'package:horyx/games/tank/game/tank_audio.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
@@ -64,6 +65,12 @@ class TankMazeGame extends FlameGame {
 
   /// 子弹白模素材
   Sprite? _bulletSprite;
+
+  /// 爆炸特效纹理（提取自坦克动荡 APK 的粒子纹理与图集）：
+  /// 三角碎片白模、圆斑烟雾、爆闪软圆
+  Sprite? _shardSprite;
+  Sprite? _smokeSprite;
+  Sprite? _flashSprite;
 
   /// 双方比分（对方坦克被击中即 +1，经 [onScored] 通知对局页）
   int redScore = 0;
@@ -149,6 +156,9 @@ class TankMazeGame extends FlameGame {
     _bodySprite = Sprite(await _loadImage('assets/tank/tank_body.png'));
     _cannonSprite = Sprite(await _loadImage('assets/tank/tank_cannon.png'));
     _bulletSprite = Sprite(await _loadImage('assets/tank/bullet.png'));
+    _shardSprite = Sprite(await _loadImage('assets/tank/tank_shard.png'));
+    _smokeSprite = Sprite(await _loadImage('assets/tank/explosion_smoke.png'));
+    _flashSprite = Sprite(await _loadImage('assets/tank/explosion_flash.png'));
     await TankAudio.preload();
     _ensureTanks();
     _syncTanks();
@@ -219,6 +229,32 @@ class TankMazeGame extends FlameGame {
       ..destroyed = true
       ..input = null;
 
+    // 在爆点叠加爆炸特效：position 为上帧同步的屏幕坐标（击毁瞬间即最终位置）。
+    // 特效为纯渲染叠加组件，不参与碰撞，不影响子弹/坦克逻辑。
+    // 尺寸换算：素材坐标中坦克体长 48pt，本战场坦克缩放为 _cell 像素（scale=_cell），
+    // 粒子参数（pt）乘 _cell/48 才能与坦克保持一致的比例观感
+    final shard = _shardSprite;
+    final smoke = _smokeSprite;
+    final flash = _flashSprite;
+    if (shard != null && smoke != null && flash != null) {
+      add(
+        TankExplosionEffect(
+          shardSprite: shard,
+          smokeSprite: smoke,
+          flashSprite: flash,
+          position: _tanks[victim]!.position.clone(),
+          color: _tanks[victim]!.color,
+          sizeScale: _cell / 48,
+          // 碎片撞墙查询：屏幕坐标 → 迷宫逻辑坐标，命中任一墙矩形即停
+          hitTest: (p) {
+            final lx = (p.x - _boardOffset.x) / _cell;
+            final ly = (p.y - _boardOffset.y) / _cell;
+            return _logicalWalls.any((w) => w.contains(Offset(lx, ly)));
+          },
+        ),
+      );
+    }
+
     _roundOver = true;
     _settleCountdown = _roundSettleDelay;
   }
@@ -246,10 +282,16 @@ class TankMazeGame extends FlameGame {
     if (_lastCanvasSize != null) _buildMaze(_lastCanvasSize!);
     _resetTanks();
     _clearBullets();
+    _clearEffects();
     _scored = false;
     _roundOver = false;
     _settleCountdown = 0;
     _freezeCountdown = 0;
+  }
+
+  /// 清除未消散完的爆炸特效（新一局开始时战场应干净）
+  void _clearEffects() {
+    removeWhere((c) => c is TankExplosionEffect);
   }
 
   /// 坦克复位：回出生点、朝向复位、复活并清空输入
