@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/game/bullet.dart';
 import 'package:horyx/games/tank/game/tank.dart';
+import 'package:horyx/games/tank/game/tank_audio.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 
@@ -127,6 +128,7 @@ class TankMazeGame extends FlameGame {
     );
     bullets.add(bullet);
     add(bullet);
+    TankAudio.shoot();
   }
 
   // onGameResize 在首次挂载与每次画布尺寸变化时都会调用。
@@ -147,6 +149,7 @@ class TankMazeGame extends FlameGame {
     _bodySprite = Sprite(await _loadImage('assets/tank/tank_body.png'));
     _cannonSprite = Sprite(await _loadImage('assets/tank/tank_cannon.png'));
     _bulletSprite = Sprite(await _loadImage('assets/tank/bullet.png'));
+    await TankAudio.preload();
     _ensureTanks();
     _syncTanks();
   }
@@ -210,6 +213,7 @@ class TankMazeGame extends FlameGame {
   /// 战场继续 2.5 秒（残弹可继续反弹与命中，双杀可能发生），
   /// 到点结算计分（存活方得分；双杀无人得分）→ 冻结 0.5 秒 → 开新一局
   void _onTankDestroyed(TankPlayer victim) {
+    TankAudio.explosion();
     _tanks[victim]!
       ..destroyed = true
       ..input = null;

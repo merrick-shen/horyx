@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/tank/game/tank.dart';
+import 'package:horyx/games/tank/game/tank_audio.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 
 /// 子弹实体：从炮口沿车身朝向射出，无限反弹，发射 9 秒后消失。
@@ -77,6 +78,7 @@ class Bullet extends PositionComponent {
     _life -= dt;
     if (_life <= 0) {
       _expired = true;
+      TankAudio.bulletExpire();
       return;
     }
 
@@ -94,8 +96,10 @@ class Bullet extends PositionComponent {
   /// 上一个子步的位置（圆心进入墙内时回退用）
   Vector2 _previousPos = Vector2.zero();
 
-  /// 圆形碰撞体与墙相交时沿墙面法线反射，并推出重叠
+  /// 圆形碰撞体与墙相交时沿墙面法线反射，并推出重叠。
+  /// 一次扫描可能撞到多面墙（墙角），音效只触发一次
   void _bounceOffWalls() {
+    var bounced = false;
     for (final wall in walls) {
       final closestX =
           logicalPos.x.clamp(wall.left, wall.right).toDouble();
@@ -109,6 +113,7 @@ class Bullet extends PositionComponent {
         // 圆心进入墙内（极端情况）：回退上一步并沿速度主导轴反弹
         _reflectDominantAxis();
         logicalPos = _previousPos.clone();
+        TankAudio.wallBounce();
         return;
       }
 
@@ -122,7 +127,9 @@ class Bullet extends PositionComponent {
         ..y -= 2 * dot * ny;
       // 推出重叠：贴到墙面外
       logicalPos = Vector2(closestX, closestY) + Vector2(nx, ny) * radius;
+      bounced = true;
     }
+    if (bounced) TankAudio.wallBounce();
   }
 
   /// 沿速度主导轴反射（法线不可得的兜底）

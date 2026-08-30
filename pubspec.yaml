@@ -36,7 +36,7 @@ dependencies:
   package_info_plus: ^8.3.0
   flutter_svg: ^2.3.0
   flame: ^1.38.2
-
+  flutter_soloud: ^4.1.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -81,6 +81,8 @@ flutter:
     - assets/icon/logo.svg
     # 坦克动荡游戏素材（提取自原版 APK 图集的白色模板，运行时按玩家色染色）
     - assets/tank/
+    # 坦克动荡音效（提取自原版 APK 音频）
+    - assets/tank/audio/
     # 更新日志（关于页内展示，内容与根目录 CHANGELOG.md 文件保持一致）
     - CHANGELOG.md
 
