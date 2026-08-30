@@ -116,6 +116,10 @@ class TankMazeGame extends FlameGame {
   /// 每辆坦克同屏最多 5 发：达到上限后需等任一子弹消失才能继续发射。
   /// 已击毁的坦克不能再开火
   void fire(TankPlayer player) {
+    // 计分定格期禁止开火：定格语义是全场静止，
+    // 此时打出的子弹渲染一瞬即被新局清场，不该存在
+    // （结算期允许开火是有意设计，残弹可命中制造双杀）
+    if (_freezeCountdown > 0) return;
     final tank = _tanks[player];
     final sprite = _bulletSprite;
     if (tank == null || sprite == null || tank.destroyed) return;
