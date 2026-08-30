@@ -1,16 +1,27 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/games/tank/models/tank_game_state.dart';
 import 'package:horyx/shared/widgets/lan_mode_panel.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
+import 'package:horyx/shared/widgets/resume_card.dart';
 
 /// 坦克动荡 - 对局模式设置视图
-/// 仅提供对局模式选择（本地/局域网），无其他设置项
+/// 提供对局模式选择（本地/局域网）；存在未完成存档时
+/// 在顶部展示「继续上次对战」恢复入口（仅恢复比分）
 class TankSetupView extends StatefulWidget {
   const TankSetupView({
     super.key,
+    required this.savedState,
+    required this.onResume,
     required this.onStart,
     required this.onCreateRoom,
   });
+
+  /// 未完成存档（非空时展示「继续上次对战」恢复入口）
+  final TankGameState? savedState;
+
+  /// 点击恢复入口回调（页面从存档恢复比分进入对局）
+  final VoidCallback onResume;
 
   /// 点击「开始对战」回调（本地模式）
   final VoidCallback onStart;
@@ -28,6 +39,8 @@ class _TankSetupViewState extends State<TankSetupView> {
 
   @override
   Widget build(BuildContext context) {
+    final saved = widget.savedState;
+
     return SizedBox.expand(
       child: Center(
         // 平板/桌面端限制内容宽度，居中展示
@@ -39,6 +52,16 @@ class _TankSetupViewState extends State<TankSetupView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 未完成存档恢复入口：摘要与存档管理页文案保持一致
+                if (saved != null) ...[
+                  ResumeCard(
+                    title: '继续上次对战',
+                    summary:
+                        '当前比分 ${saved.redScore}:${saved.greenScore}',
+                    onTap: widget.onResume,
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 // 对局模式选择面板（坦克动荡当前唯一的设置项）
                 LanModePanel(
                   isLan: _isLan,

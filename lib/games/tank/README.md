@@ -9,9 +9,10 @@
 
 | 目录/文件 | 职责 |
 | --- | --- |
-| `models/` | 纯数据与算法：`TankPlayer`（玩家/染色/驾驶输入）、`TankMaze`（迷宫生成与墙查询） |
-| `pages/` | `tank_page` 设置页（本地/局域网模式选择）、`tank_battle_page` 横屏对局页（比分 UI、输入下发、横屏沉浸） |
+| `models/` | 纯数据与算法：`TankPlayer`（玩家/染色/驾驶输入）、`TankMaze`（迷宫生成与墙查询）、`TankGameState`（比分存档模型） |
+| `pages/` | `tank_page` 设置页（本地/局域网模式选择 + 继续上次对战入口）、`tank_battle_page` 横屏对局页（比分 UI、输入下发、横屏沉浸、退出存档确认） |
 | `widgets/` | UI 组件：四向摇杆（油门）、开火按钮、比分视图（含得分烟雾覆盖层）、模式面板 |
+| `services/` | `tank_storage` 比分存档服务（SharedPreferences 单键 JSON） |
 | `game/` | Flame 游戏核心：`tank_maze_game`（战场：迷宫渲染/回合流程/开火/计分）、`tank`（坦克实体与碰撞）、`bullet`（子弹实体与反弹）、`tank_audio`（音效） |
 | `game/effects/` | 粒子特效：`particle_emitter`（瞬发粒子发射器）、`tank_explosion_effect`（坦克爆炸）、`bullet_expire_effect`（子弹消散） |
 

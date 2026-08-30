@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
+import 'package:horyx/games/tank/services/tank_storage.dart';
 // 围棋暂时下架：存储服务代码保留，恢复入口时取消注释
 // import 'package:horyx/games/weiqi/services/weiqi_storage.dart';
 import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
@@ -41,6 +42,7 @@ class _ArchivePageState extends State<ArchivePage> {
     // 围棋暂时下架：不再读取展示（存档数据保留，恢复入口时取消注释）
     // final weiqi = await WeiqiStorage.instance.load();
     final scoreboard = await ScoreboardStorage.instance.load();
+    final tank = await TankStorage.instance.load();
 
     // 摘要文案与各游戏设置页「继续上次对局」卡片保持一致；
     // clear 绑定对应游戏的存档清除服务，删除时由页面统一调用
@@ -82,6 +84,14 @@ class _ArchivePageState extends State<ArchivePage> {
               '当前局 ${scoreboard.redScore}:${scoreboard.blueScore}',
           savedAt: scoreboard.savedAt,
           clear: ScoreboardStorage.instance.clear,
+        ),
+      if (tank != null)
+        _ArchiveEntry(
+          name: '坦克动荡',
+          icon: Icons.gps_fixed_rounded,
+          summary: '当前比分 ${tank.redScore}:${tank.greenScore}',
+          savedAt: tank.savedAt,
+          clear: TankStorage.instance.clear,
         ),
     ];
 

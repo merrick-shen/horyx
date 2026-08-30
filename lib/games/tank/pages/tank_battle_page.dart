@@ -5,22 +5,33 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/game/tank_maze_game.dart';
+import 'package:horyx/games/tank/models/tank_game_state.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/tank/widgets/score_smoke_effect.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
 import 'package:horyx/games/tank/widgets/tank_score_view.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/widgets/confirm_dialog.dart';
 
 /// 坦克动荡本地对局页（横屏全屏，无顶栏）
 /// 布局复刻原版截图：两列控制呈中心对称，中间为战场区域，适合手机平放桌面对坐——
 /// - 左列（自上而下）：绿方开火钮 / 红方比分 / 红方摇杆
 /// - 右列（自上而下）：绿方摇杆 / 绿方比分 / 红方开火钮
-/// 本阶段完成比分、摇杆与开火钮的界面交互；开火回调与坦克移动逻辑
-/// 随战场（迷宫）实现接入，摇杆方向先记录在 [_directions]
+/// 退出时按当前比分询问存档（仅保存比分；坦克位置、地图等战场状态不保存），
+/// 恢复对战时从存档比分继续累计，战场重开一局随机迷宫
 class TankBattlePage extends StatefulWidget {
-  const TankBattlePage({super.key});
+  const TankBattlePage({
+    super.key,
+    this.initialRedScore = 0,
+    this.initialGreenScore = 0,
+  });
+
+  /// 初始比分（从存档恢复对战时传入，新对局默认 0:0）
+  final int initialRedScore;
+  final int initialGreenScore;
 
   @override
   State<TankBattlePage> createState() => _TankBattlePageState();
@@ -28,8 +39,8 @@ class TankBattlePage extends StatefulWidget {
 
 class _TankBattlePageState extends State<TankBattlePage> {
   /// 双方比分（由战场游戏的得分回调驱动刷新）
-  int _redScore = 0;
-  int _greenScore = 0;
+  late int _redScore = widget.initialRedScore;
+  late int _greenScore = widget.initialGreenScore;
 
   /// 双方得分烟雾触发计数（每次得分自增，驱动数字上的烟雾特效）
   int _redSmokeTick = 0;
@@ -53,7 +64,11 @@ class _TankBattlePageState extends State<TankBattlePage> {
       DeviceOrientation.landscapeRight,
     ]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    // 战场得分回调：刷新比分 UI
+    // 战场得分回调：刷新比分 UI；
+    // 恢复对战时把存档比分同步给战场（战场内部计分从该值继续累计）
+    _game
+      ..redScore = widget.initialRedScore
+      ..greenScore = widget.initialGreenScore;
     _game.onScored = _onScored;
   }
 
@@ -87,36 +102,66 @@ class _TankBattlePageState extends State<TankBattlePage> {
   /// 开火：下发战场游戏（炮口沿车身朝向射出子弹，同屏上限 5 发）
   void _onFire(TankPlayer player) => _game.fire(player);
 
+  /// 退出对局请求：比分 0:0 时无进行中内容，直接返回设置页；
+  /// 否则弹三选项确认（保存并退出 / 不保存并退出 / 取消）。
+  /// 仅保存比分——坦克位置、地图等战场状态本就不跨局保留，无需存档
+  Future<void> _requestExit() async {
+    if (_redScore == 0 && _greenScore == 0) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    await confirmExitWithArchive(
+      this,
+      title: '退出对战？',
+      message: '保存并退出后，下次进入可从当前比分继续',
+      onSave: () => TankStorage.instance.save(
+        TankGameState(
+          redScore: _redScore,
+          greenScore: _greenScore,
+          savedAt: DateTime.now(),
+        ),
+      ),
+      onDiscard: TankStorage.instance.clear,
+      onExit: () => Navigator.of(context).pop(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 对局暂无存档：系统返回直接退出对局页，
-    // 退出确认弹窗待对局存档功能实现后再接入
-    return Scaffold(
-      backgroundColor: context.palette.scaffoldBg,
-      // 不用 SafeArea：横屏挖孔/刘海只在一侧产生 inset，
-      // 两侧取较大避让值才能保证左右操作区到屏幕边缘的距离完全对称
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final insets = MediaQuery.of(context).padding;
-          final hCutout =
-              insets.left > insets.right ? insets.left : insets.right;
-          // 三行等高槽位随屏幕高度收缩（下限 104 防控件过小），
-          // 避免固定槽高在小屏横屏下纵向溢出；
-          // 80 = 摇杆列上下留白（_panelPadding）×2
-          final slotHeight = math
-              .max(104.0, math.min(140.0, (constraints.maxHeight - 80) / 3));
-          return Padding(
-            padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
-            child: Row(
-              children: [
-                _buildLeftColumn(slotHeight),
-                // 战场区域：Flame 画布渲染本局迷宫
-                Expanded(child: GameWidget(game: _game)),
-                _buildRightColumn(slotHeight),
-              ],
-            ),
-          );
-        },
+    // 拦截系统返回走退出确认流程（保存/不保存/取消）
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _requestExit();
+      },
+      child: Scaffold(
+        backgroundColor: context.palette.scaffoldBg,
+        // 不用 SafeArea：横屏挖孔/刘海只在一侧产生 inset，
+        // 两侧取较大避让值才能保证左右操作区到屏幕边缘的距离完全对称
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final insets = MediaQuery.of(context).padding;
+            final hCutout =
+                insets.left > insets.right ? insets.left : insets.right;
+            // 三行等高槽位随屏幕高度收缩（下限 104 防控件过小），
+            // 避免固定槽高在小屏横屏下纵向溢出；
+            // 80 = 摇杆列上下留白（_panelPadding）×2
+            final slotHeight = math.max(
+                104.0, math.min(140.0, (constraints.maxHeight - 80) / 3));
+            return Padding(
+              padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
+              child: Row(
+                children: [
+                  _buildLeftColumn(slotHeight),
+                  // 战场区域：Flame 画布渲染本局迷宫
+                  Expanded(child: GameWidget(game: _game)),
+                  _buildRightColumn(slotHeight),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
