@@ -74,11 +74,20 @@ class TankMazeGame extends FlameGame {
   /// 一方被击毁后到开新一局的状态
   bool _roundOver = false;
 
-  /// 开新一局倒计时（秒）
-  double _restartCountdown = 0;
+  /// 结算倒计时（秒）：击毁后战场继续（残弹可命中），到点结算计分
+  double _settleCountdown = 0;
 
-  /// 新一局间隔（秒）：展示击毁战果后重开
-  static const double _roundRestartDelay = 1.8;
+  /// 战场冻结倒计时（秒）：计分完成后定格展示，到点开新一局
+  double _freezeCountdown = 0;
+
+  /// 本轮是否已计过分（双杀时本轮无人得分）
+  bool _scored = false;
+
+  /// 击毁后的结算等待（秒）：期间战场继续，残弹可继续反弹与命中（双杀可能发生）
+  static const double _roundSettleDelay = 2.5;
+
+  /// 计分完成后的战场冻结时长（秒）：定格展示后开新一局
+  static const double _roundFreezeDelay = 0.5;
 
   /// 最近一次画布尺寸（开新一局重建迷宫用）
   Vector2? _lastCanvasSize;
@@ -89,20 +98,18 @@ class TankMazeGame extends FlameGame {
   Color backgroundColor() => const Color(0x00000000);
 
   /// 对局页摇杆驾驶输入下发（player 对应的坦克执行转向/前进）。
-  /// 击毁战果展示期间（新一局倒计时）不接受输入
+  /// 已击毁的坦克忽略输入（战果展示期内存活坦克仍可正常驾驶）
   void setDrive(TankPlayer player, TankDriveInput? input) {
-    if (_roundOver) return;
     _tanks[player]?.input = input;
   }
 
   /// 开火：从炮口沿车身朝向射出子弹。
   /// 每辆坦克同屏最多 5 发：达到上限后需等任一子弹消失才能继续发射。
-  /// 击毁战果展示期间不接受开火
+  /// 已击毁的坦克不能再开火
   void fire(TankPlayer player) {
-    if (_roundOver) return;
     final tank = _tanks[player];
     final sprite = _bulletSprite;
-    if (tank == null || sprite == null) return;
+    if (tank == null || sprite == null || tank.destroyed) return;
     final bullets = _bulletsByPlayer.putIfAbsent(player, () => []);
     if (bullets.length >= _maxBulletsPerTank) return;
 
@@ -149,13 +156,27 @@ class TankMazeGame extends FlameGame {
     // 先让坦克/子弹推进迷宫坐标系状态，再按最新状态同步渲染坐标
     super.update(dt);
     _pruneExpiredBullets();
-    if (_roundOver) {
-      // 击毁战果展示中，倒计时结束开新一局
-      _restartCountdown -= dt;
-      if (_restartCountdown <= 0) _startNewRound();
-    } else {
-      _checkBulletHits();
+
+    if (_freezeCountdown > 0) {
+      // 计分后的定格阶段：战场整体冻结 0.5 秒后开新一局
+      _freezeCountdown -= dt;
+      if (_freezeCountdown <= 0) _startNewRound();
+      _syncTanks();
+      _syncBullets();
+      return;
     }
+
+    _checkBulletHits();
+
+    if (_roundOver) {
+      // 击毁战果展示期：残弹继续反弹与命中，倒计时结束结算计分
+      _settleCountdown -= dt;
+      if (_settleCountdown <= 0) {
+        _settleScoring();
+        _freezeCountdown = _roundFreezeDelay;
+      }
+    }
+
     _syncTanks();
     _syncBullets();
   }
@@ -185,27 +206,32 @@ class TankMazeGame extends FlameGame {
     if (victim != null) _onTankDestroyed(victim);
   }
 
-  /// 坦克被击毁（此时命中子弹已移除）：隐身并冻结双方输入、
-  /// 清空场上子弹、对方得分（自己反弹的子弹打中自己也是对方得分），
-  /// 进入下一局倒计时
+  /// 坦克被击毁（此时命中子弹已移除）：受害者隐身并冻结其输入，
+  /// 战场继续 2.5 秒（残弹可继续反弹与命中，双杀可能发生），
+  /// 到点结算计分（存活方得分；双杀无人得分）→ 冻结 0.5 秒 → 开新一局
   void _onTankDestroyed(TankPlayer victim) {
-    for (final entry in _tanks.entries) {
-      entry.value
-        ..input = null
-        ..destroyed = entry.key == victim;
-    }
-    _clearBullets();
+    _tanks[victim]!
+      ..destroyed = true
+      ..input = null;
 
-    final scorer = victim == TankPlayer.red ? TankPlayer.green : TankPlayer.red;
-    if (scorer == TankPlayer.red) {
+    _roundOver = true;
+    _settleCountdown = _roundSettleDelay;
+  }
+
+  /// 结算计分：存活方得一分；双方都阵亡（展示期内残弹双杀）则本轮无人得分
+  void _settleScoring() {
+    if (_scored) return;
+    final bothDead = _tanks.values.every((t) => t.destroyed);
+    if (bothDead) return;
+
+    final survivor = _tanks.entries.firstWhere((e) => !e.value.destroyed).key;
+    if (survivor == TankPlayer.red) {
       redScore++;
     } else {
       greenScore++;
     }
-    onScored?.call(scorer);
-
-    _roundOver = true;
-    _restartCountdown = _roundRestartDelay;
+    onScored?.call(survivor);
+    _scored = true;
   }
 
   /// 开新一局：重新生成迷宫、坦克回出生点并复活、清空场上子弹（比分保留）
@@ -215,7 +241,10 @@ class TankMazeGame extends FlameGame {
     if (_lastCanvasSize != null) _buildMaze(_lastCanvasSize!);
     _resetTanks();
     _clearBullets();
+    _scored = false;
     _roundOver = false;
+    _settleCountdown = 0;
+    _freezeCountdown = 0;
   }
 
   /// 坦克复位：回出生点、朝向复位、复活并清空输入
