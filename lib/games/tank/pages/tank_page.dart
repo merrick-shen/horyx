@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/tank/models/tank_game_state.dart';
 import 'package:horyx/games/tank/pages/tank_battle_page.dart';
+import 'package:horyx/games/tank/pages/tank_online_page.dart';
 import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/tank/widgets/tank_setup_view.dart';
 import 'package:horyx/shared/game/game_data.dart';
@@ -12,7 +13,7 @@ import 'package:horyx/shared/widgets/app_top_bar.dart';
 
 /// 坦克动荡游戏页
 /// 设置视图提供对局模式选择（本地/局域网）：本地对战进入横屏对局页；
-/// 联机对局页尚未接入，满员后停留在等待页「即将开始」过渡态
+/// 局域网创建房间满员后跳转联机对局页（房主 = 红方）
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 /// 存档仅保存双方比分（战场状态不保存）：退出对局时询问保存，
 /// 存在存档时设置视图展示「继续上次对战」恢复入口
@@ -64,13 +65,16 @@ class _TankPageState
     _openBattle(saved: saved);
   }
 
-  /// 局域网模式：创建房间并进入等待页（固定 2 人，自己为玩家 1）
+  /// 局域网模式：创建房间并进入等待页（固定 2 人，自己为玩家 1）；
+  /// 满员开局后跳转联机对局页接管房间（本页 = 房主 = 红方）
   void _createRoom() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
           gameName: GameData.tank.name,
           capacity: 2,
+          hostGameBuilder: (context, host) =>
+              TankOnlinePage.host(host: host),
         ),
       ),
     );

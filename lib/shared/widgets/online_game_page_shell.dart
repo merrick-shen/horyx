@@ -27,6 +27,8 @@ class OnlineGamePageShell<TController extends OnlineGameControllerBase>
     required this.createController,
     required this.buildGameView,
     this.onGameEvent,
+    this.showTopBar = true,
+    this.onBeforeExit,
   });
 
   /// 顶栏标题（如「五子棋 · 联机」）
@@ -52,6 +54,15 @@ class OnlineGamePageShell<TController extends OnlineGameControllerBase>
   /// 返回 true 表示本次通知已消费（如弹出了悔棋请求弹窗），跳过终局判定。
   final bool Function(TController controller, VoidCallback markEndShown)?
       onGameEvent;
+
+  /// 是否显示顶栏：坦克等横屏沉浸对局页与本地布局一致无顶栏，
+  /// 退出仅经系统返回手势触发确认流程
+  final bool showTopBar;
+
+  /// 退出页面前回调（对局中确认退出与终局弹窗确认退出共用出口）：
+  /// 横屏页在此先还原竖屏与系统 UI 再 pop，使系统旋转与转场动画
+  /// 并行执行（无延迟退出）；未覆盖的 pop 路径由页面 dispose 兜底
+  final VoidCallback? onBeforeExit;
 
   @override
   State<OnlineGamePageShell<TController>> createState() =>
@@ -137,9 +148,10 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
     }
   }
 
-  /// 退出页面：先移除未关闭的错误提示再返回
+  /// 退出页面：先执行页面退出前回调（横屏还原方向等）再返回
   void _exitPage() {
     if (!mounted) return;
+    widget.onBeforeExit?.call();
     exitPageClean(context);
   }
 
@@ -164,26 +176,35 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
         _requestExit();
       },
       child: Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              AppTopBar(
-                title: widget.title,
-                showBack: true,
-                onBack: _requestExit,
-              ),
-              Expanded(
-                // 对局视图随控制器状态实时重建（提交广播/终局判定）
-                child: ListenableBuilder(
-                  listenable: _controller,
-                  builder: (context, _) =>
-                      widget.buildGameView(context, _controller, _requestExit),
+        // 无顶栏（横屏沉浸对局，如坦克联机）不包 SafeArea：本地同类对局页
+        // 自行做挖孔对称避让（左右取较大 inset），SafeArea 的单侧消费会
+        // 造成操作区到屏幕边缘距离不对称、布局与本地不一致
+        body: widget.showTopBar
+            ? SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    AppTopBar(
+                      title: widget.title,
+                      showBack: true,
+                      onBack: _requestExit,
+                    ),
+                    Expanded(
+                      // 对局视图随控制器状态实时重建（提交广播/终局判定）
+                      child: ListenableBuilder(
+                        listenable: _controller,
+                        builder: (context, _) => widget.buildGameView(
+                            context, _controller, _requestExit),
+                      ),
+                    ),
+                  ],
                 ),
+              )
+            : ListenableBuilder(
+                listenable: _controller,
+                builder: (context, _) =>
+                    widget.buildGameView(context, _controller, _requestExit),
               ),
-            ],
-          ),
-        ),
       ),
     );
   }

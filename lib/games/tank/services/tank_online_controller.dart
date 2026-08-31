@@ -123,6 +123,18 @@ class TankOnlineController extends OnlineGameControllerBase {
     client!.send(tankFireMessage());
   }
 
+  /// 房主开火：执行本地发射，成功即广播开火事件——客户端的发射音效
+  /// 完全依赖该事件（房主自己开火也必须广播，否则客户端听不到）；
+  /// 被同屏上限/结算期拒绝时不广播（客户端不多响一声）
+  void hostFire() {
+    if (gameEndedText != null) return;
+    final game = _game;
+    if (game == null) return;
+    if (game.fire(TankPlayer.red)) {
+      host?.broadcast(tankFireEventMessage(TankPlayer.red));
+    }
+  }
+
   /// 摇杆输入是否与上次等价（角度/油门均在阈值内视为未变化；
   /// 空与非空必然不等——停车与行驶是硬状态切换）
   static bool _sameInput(TankDriveInput? a, TankDriveInput? b) {

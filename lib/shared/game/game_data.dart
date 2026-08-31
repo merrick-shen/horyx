@@ -4,6 +4,7 @@ import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_page.dart';
 import 'package:horyx/games/scoreboard/pages/scoreboard_page.dart';
+import 'package:horyx/games/tank/pages/tank_online_page.dart';
 import 'package:horyx/games/tank/pages/tank_page.dart';
 import 'package:horyx/games/weiqi/pages/weiqi_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
@@ -34,13 +35,16 @@ abstract final class GameData {
   );
 
   /// 坦克动荡
-  /// 玩法暂未实现：先开放首页入口与对局模式设置（本地/局域网），
-  /// 本地对局视图与联机对局页后续接入（联机满员后停留等待页过渡态）
+  /// 随机迷宫实时对战：被击毁后结算计分，持续对分（无总局数上限）。
+  /// 联机为房主权威模拟 + 状态快照广播（客户端影子战场），详见
+  /// lib/games/tank/services/tank_online_controller.dart
   static final GameInfo tank = GameInfo(
     name: '坦克动荡',
     description: '驾驶坦克走位射击，与好友一决高下',
     icon: Icons.gps_fixed_rounded,
     pageBuilder: (context) => const TankPage(),
+    onlineClientBuilder: (context, client) =>
+        TankOnlinePage.client(client: client),
   );
 
   /// 围棋
