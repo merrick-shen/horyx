@@ -10,7 +10,7 @@
 
 - 项目概况、技术栈与目录结构见根目录 [README.md](./README.md)（与本文件重复的内容以 README 为准，AGENTS.md 不再维护）。
 - **目标平台仅 Android（iOS 待定）**：兼容性与技术选型只考虑 Android
-- UI 图标一律使用 Material Icons，禁止网络下载图片资源；`pubspec.yaml` 必须保持 `uses-material-design: true`（打包图标字体）。
+- `pubspec.yaml` 必须保持 `uses-material-design: true`（打包图标字体）。
 - **游戏内绘制素材例外**：坦克动荡使用本地图片素材（`assets/tank/`，提取自原版 APK 图集的白色模板，运行时染色）
 
 ## 目录结构
