@@ -243,8 +243,12 @@ class TankMazeGame extends FlameGame {
     // 渲染同步照常执行；比分/阶段由快照直接写入
     if (remote) {
       // 先算本帧快照年龄并写入子弹（super.update 会驱动子组件推进，
-      // 顺序颠倒会让子弹用到上一帧的年龄，产生恒定一帧的渲染滞后）
-      final age = math.min(_nowSec() - _lastSnapshotAt, _maxExtrapolateAge);
+      // 顺序颠倒会让子弹用到上一帧的年龄，产生恒定一帧的渲染滞后）。
+      // 冻结期语义是全场精确定格：快照位置静止而年龄持续增长会让外推
+      // 把坦克/子弹推到快照位置前方，故冻结期年龄视为 0（不做外推）
+      final age = _phase == TankBattlePhase.frozen
+          ? 0.0
+          : math.min(_nowSec() - _lastSnapshotAt, _maxExtrapolateAge);
       for (final bullet in _remoteBullets.values) {
         bullet.snapshotAge = age;
       }
