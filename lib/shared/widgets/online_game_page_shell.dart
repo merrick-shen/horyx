@@ -15,8 +15,9 @@ import 'package:horyx/shared/widgets/end_game_dialog.dart';
 /// - [createController]：游戏控制器工厂（host/client 模式由页面判定）
 /// - [buildGameView]：对局视图构建（随控制器状态实时重建）
 /// - [onGameEvent]：游戏特有事件钩子（如五子棋悔棋请求弹窗、胜负弹窗）
-/// 终局语义：[OnlineGameControllerBase.gameEndedText] 非空即弹通用终局弹窗
-/// 并标记终局（系统返回放行、退出免确认）；胜负类终局由游戏在
+/// 终局语义：控制器经 [OnlineGameControllerBase.endGame] 置终局后
+/// 弹通用终局弹窗（文案/图标由弹窗按原因内聚生成）并标记终局
+/// （系统返回放行、退出免确认）；胜负类终局由游戏在
 /// [onGameEvent] 中自行弹窗并调用 markEndShown 标记。
 class OnlineGamePageShell<TController extends OnlineGameControllerBase>
     extends StatefulWidget {
@@ -104,10 +105,10 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
   void _onControllerChanged() {
     if (widget.onGameEvent?.call(_controller, _markEndShown) ?? false) return;
     if (_endDialogShown) return;
-    final text = _controller.gameEndedText;
-    if (text == null) return;
+    final reason = _controller.gameEndReason;
+    if (reason == null) return;
     _endDialogShown = true;
-    _showEndDialog(text);
+    _showEndDialog(reason);
   }
 
   /// 游戏钩子标记终局已展示（见 [OnlineGamePageShell.onGameEvent]）
@@ -115,13 +116,14 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
     _endDialogShown = true;
   }
 
-  /// 终局弹窗：不可点遮罩关闭（对局已终止，无内容可继续）
-  Future<void> _showEndDialog(String message) async {
+  /// 终局弹窗：不可点遮罩关闭（对局已终止，无内容可继续）；
+  /// 文案与图标由弹窗按 [EndGameReason] 内聚生成
+  Future<void> _showEndDialog(EndGameReason reason) async {
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => EndGameDialog(
-        message: message,
+        reason: reason,
         onConfirm: () {
           Navigator.of(dialogContext).pop();
           _exitPage();

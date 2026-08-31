@@ -9,6 +9,7 @@ import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/widgets/end_game_dialog.dart';
 
 /// 坦克动荡联机对局控制器（房主权威 + 状态快照广播，见 tank_online_plan.md）
 ///
@@ -267,7 +268,7 @@ class TankOnlineController extends OnlineGameControllerBase {
   @override
   void onSeatLeft(int seat) {
     if (gameEndedText != null) return;
-    gameEndedText = '其他玩家均已离开，对局结束';
+    endGame(EndGameReason.peerLeft);
     _snapshotTimer?.cancel();
     _snapshotTimer = null;
     notifyListeners();

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/widgets/end_game_dialog.dart';
 
 /// 联机对局控制器公共基类（房主权威模型）
 /// 统一各联机游戏的公共骨架：持有 host/client 连接、挂接房间回调、
@@ -34,10 +35,21 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
   /// 校验拒绝等提示回调（页面接 SnackBar 展示；拒绝理由来自房主）
   void Function(String message)? onHint;
 
-  /// 对局终止说明（对方离开/房主解散/连接断开等无胜负的终止）；
+  /// 对局终止信号（对方离开/房主解散/连接断开等无胜负的终止）；
   /// 胜负结果不走此字段（各游戏自行建模，如五子棋的 winnerSeat）。
-  /// 非 null 时页面弹窗告知并结束，之后不再恢复
+  /// 非 null 时页面弹窗告知并结束，之后不再恢复；
+  /// 文本由 [endGame] 按 [EndGameReason] 统一生成，调用方不写文案
   String? gameEndedText;
+
+  /// 对局终止原因（终局弹窗的文案/图标来源，与 [gameEndedText] 同时置位）
+  EndGameReason? gameEndReason;
+
+  /// 置为无胜负终局（各控制器统一的终局入口）：
+  /// 原因供终局弹窗展示文案与图标，文本同时写入 [gameEndedText] 作信号位
+  void endGame(EndGameReason reason) {
+    gameEndReason = reason;
+    gameEndedText = reason.text;
+  }
 
   /// 提交回执的消息类型（子类提供：stoneResult / wordResult）
   @protected
@@ -80,7 +92,11 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
   void _onClientChanged() {
     if (client?.phase == RoomClientPhase.disconnected &&
         gameEndedText == null) {
-      gameEndedText = client!.disconnectText;
+      endGame(
+        client!.hostDismissed
+            ? EndGameReason.hostDismissed
+            : EndGameReason.disconnected,
+      );
       notifyListeners();
     }
   }

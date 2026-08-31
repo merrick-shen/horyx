@@ -2,6 +2,7 @@ import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/widgets/end_game_dialog.dart';
 import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 
 /// 悔棋协商状态机
@@ -54,7 +55,7 @@ class GomokuOnlineController extends OnlineGameControllerBase {
       mySeat: client.mySeat ?? 2,
     )..attachClient();
     if (!valid) {
-      controller.gameEndedText = '对局数据异常（棋盘规格无效），对局结束';
+      controller.endGame(EndGameReason.dataError);
     }
     return controller;
   }
@@ -333,7 +334,7 @@ class GomokuOnlineController extends OnlineGameControllerBase {
   @override
   void onSeatLeft(int seat) {
     if (gameEndedText != null || winnerSeat != null) return;
-    gameEndedText = '其他玩家均已离开，对局结束';
+    endGame(EndGameReason.peerLeft);
     notifyListeners();
   }
 

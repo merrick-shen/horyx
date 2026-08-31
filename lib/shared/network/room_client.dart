@@ -73,6 +73,10 @@ class RoomClient extends ChangeNotifier {
   String get disconnectText =>
       _byeReceived ? '房主已解散房间' : '与房间的连接已断开，请检查网络';
 
+  /// 断开是否因房主解散（收到过 bye）；否则是网络原因断连。
+  /// 对局层据此区分终局原因（文案由终局弹窗按原因内聚生成）
+  bool get hostDismissed => _byeReceived;
+
   /// 自己的座位号（加入成功后有效；房主固定 1 号位）
   int? mySeat;
 
