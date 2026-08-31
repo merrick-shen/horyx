@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- 坦克动荡新增「局域网」模式：创建者为红方，双人实时对战，规则与本地一致，对方退出或断线时对局结束
+
+### Changed
+
+- 联机对局结束弹窗按结束原因显示对应图标（玩家离开/房主解散/网络断开等）
+
 ## [0.5.0] - 2026-08-31
 
 ### Added
