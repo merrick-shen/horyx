@@ -242,11 +242,13 @@ class TankMazeGame extends FlameGame {
     // 坦克与远程子弹朝按年龄外推的移动目标渲染（快照晚到不停滞），
     // 渲染同步照常执行；比分/阶段由快照直接写入
     if (remote) {
-      super.update(dt);
+      // 先算本帧快照年龄并写入子弹（super.update 会驱动子组件推进，
+      // 顺序颠倒会让子弹用到上一帧的年龄，产生恒定一帧的渲染滞后）
       final age = math.min(_nowSec() - _lastSnapshotAt, _maxExtrapolateAge);
       for (final bullet in _remoteBullets.values) {
         bullet.snapshotAge = age;
       }
+      super.update(dt);
       _smoothTanks(dt, age);
       _syncTanks();
       _syncBullets();
