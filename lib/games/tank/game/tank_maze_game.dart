@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -81,6 +82,10 @@ class TankMazeGame extends FlameGame {
   /// 20Hz 快照下滞后 ≈ 速度/系数（满速 2.6 格/秒约滞后 0.13 格，小于车宽）
   static const double _remoteSmoothK = 20.0;
 
+  /// 新回合开始回调（本地模式自动开新局时触发；房主联机控制器挂接
+  /// 以广播回合种子，本地双人/客户端模式无人挂接为 null）
+  void Function()? onRoundStart;
+
   /// 已构建的迷宫组件（画布尺寸变化时先清空再重建）
   final List<Component> _mazeComponents = [];
 
@@ -146,21 +151,31 @@ class TankMazeGame extends FlameGame {
     _tanks[player]?.input = input;
   }
 
+  /// 联机快照组装所需：指定玩家的坦克（只读访问；素材加载前为 null）
+  Tank? tank(TankPlayer player) => _tanks[player];
+
+  /// 联机快照组装所需：按发射方分组的在场子弹（只读视图；
+  /// 列表内容仅由战场内部维护，外部只遍历）
+  Map<TankPlayer, List<Bullet>> get bulletsByPlayer =>
+      UnmodifiableMapView(_bulletsByPlayer);
+
   /// 开火：从炮口沿车身朝向射出子弹。
   /// 每辆坦克同屏最多 5 发：达到上限后需等任一子弹消失才能继续发射。
   /// 已击毁的坦克不能再开火。
-  /// 远程模式下开火同样不落地（子弹由房主快照同步），直接忽略
-  void fire(TankPlayer player) {
-    if (remote) return;
+  /// 远程模式下开火同样不落地（子弹由房主快照同步）。
+  /// 返回是否实际发射（联机房主据此决定是否广播开火事件，
+  /// 客户端按键但被上限/结算期拒绝时不多响一声）
+  bool fire(TankPlayer player) {
+    if (remote) return false;
     // 计分定格期禁止开火：定格语义是全场静止，
     // 此时打出的子弹渲染一瞬即被新局清场，不该存在
     // （结算期允许开火是有意设计，残弹可命中制造双杀）
-    if (_freezeCountdown > 0) return;
+    if (_freezeCountdown > 0) return false;
     final tank = _tanks[player];
     final sprite = _bulletSprite;
-    if (tank == null || sprite == null || tank.destroyed) return;
+    if (tank == null || sprite == null || tank.destroyed) return false;
     final bullets = _bulletsByPlayer.putIfAbsent(player, () => []);
-    if (bullets.length >= _maxBulletsPerTank) return;
+    if (bullets.length >= _maxBulletsPerTank) return false;
 
     final bullet = Bullet(
       walls: _logicalWalls,
@@ -177,6 +192,7 @@ class TankMazeGame extends FlameGame {
     bullets.add(bullet);
     add(bullet);
     TankAudio.shoot();
+    return true;
   }
 
   // onGameResize 在首次挂载与每次画布尺寸变化时都会调用。
@@ -335,6 +351,8 @@ class TankMazeGame extends FlameGame {
   /// 开新一局：重新生成迷宫、坦克回出生点并复活、清空场上子弹（比分保留）
   void _startNewRound() {
     _applyNewMaze(TankMaze.generate());
+    // 联机房主监听新局事件以广播回合种子（本地双人无挂接，null 跳过）
+    onRoundStart?.call();
   }
 
   /// 应用新迷宫并复位战场：本地新回合与远程回合开始（[startRemoteRound]）
@@ -369,7 +387,7 @@ class TankMazeGame extends FlameGame {
       TankMaze.generate(
         cols: round.cols,
         rows: round.rows,
-        random: math.Random(round.seed),
+        seed: round.seed,
       ),
     );
     redScore = round.redScore;

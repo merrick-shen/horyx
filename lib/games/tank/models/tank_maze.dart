@@ -12,15 +12,22 @@ typedef MazeWall = (int, int, bool);
 /// 采用递归回溯（随机深度优先）生成完美迷宫：全图连通、无环路，
 /// 与原版树状迷宫风格一致；外边界墙永不打通。
 class TankMaze {
-  TankMaze._(this.cols, this.rows, this._walls);
+  TankMaze._(this.cols, this.rows, this.seed, this._walls);
 
   /// 生成一局随机迷宫
+  ///
+  /// [seed] 指定随机种子（联机同步：双端同种子生成同一迷宫）；
+  /// 缺省时自生成并记录在 [seed] 字段（本地对局不影响随机性，
+  /// 联机房主可读取该种子随回合开始消息广播）。
+  /// [random] 为显式随机源（测试注入），优先于种子派生的随机源。
   factory TankMaze.generate({
     int cols = 10,
     int rows = 7,
     Random? random,
+    int? seed,
   }) {
-    final rng = random ?? Random();
+    final actualSeed = seed ?? Random().nextInt(1 << 31);
+    final rng = random ?? Random(actualSeed);
 
     // 初始所有墙（含外边界）全部存在
     final walls = <MazeWall>{
@@ -59,12 +66,16 @@ class TankMaze {
       stack.add(next);
     }
 
-    return TankMaze._(cols, rows, walls);
+    return TankMaze._(cols, rows, actualSeed, walls);
   }
 
   /// 网格列数 / 行数
   final int cols;
   final int rows;
+
+  /// 本局迷宫的随机种子（联机同步用：随回合开始消息广播，
+  /// 客户端以 `Random(seed)` 复现同一迷宫）
+  final int seed;
 
   /// 当前存在的墙（只读视图）
   final Set<MazeWall> _walls;

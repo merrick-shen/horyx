@@ -65,6 +65,10 @@ class Bullet extends PositionComponent {
   bool get expired => _expired;
   bool _expired = false;
 
+  /// 当前飞行朝向（弧度，含反弹后的实际方向）：
+  /// 联机快照上报用（渲染旋转不跟随反弹，不可作为飞行方向）
+  double get heading => math.atan2(_direction.y, _direction.x);
+
   /// 飞行方向（单位向量）
   late Vector2 _direction;
 
