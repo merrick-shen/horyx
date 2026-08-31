@@ -92,4 +92,29 @@ void main() {
       );
     });
   });
+
+  group('最短角度差（转向与远程平滑共用）', () {
+    test('同向小角度差直接返回', () {
+      expect(Tank.angleDelta(0.3, 0.5), closeTo(0.2, 1e-9));
+      expect(Tank.angleDelta(0.5, 0.3), closeTo(-0.2, 1e-9));
+    });
+
+    test('跨越 ±π 边界时走最短弧', () {
+      // 179° → -179°：差 358°，最短弧应为 +2°（跨过 π 而非绕远路）
+      expect(Tank.angleDelta(179 * pi / 180, -179 * pi / 180),
+          closeTo(2 * pi / 180, 1e-9));
+      // 反向同理
+      expect(Tank.angleDelta(-179 * pi / 180, 179 * pi / 180),
+          closeTo(-2 * pi / 180, 1e-9));
+    });
+
+    test('目标角超出 [-π, π]（摇杆 atan2 或 2π 归一后）仍正确', () {
+      // 目标 2π - 0.1（等价 -0.1），当前 0.1：应走 -0.2 的短弧
+      expect(Tank.angleDelta(0.1, 2 * pi - 0.1), closeTo(-0.2, 1e-9));
+    });
+
+    test('相等角度差为零', () {
+      expect(Tank.angleDelta(1.23, 1.23), 0);
+    });
+  });
 }

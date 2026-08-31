@@ -154,7 +154,7 @@ class Tank extends PositionComponent {
 
     // 朝摇杆指向旋转（走最短方向）；角度差小于本帧转向量时直接对齐。
     // 旋转同样参与碰撞：任一角度步导致穿墙则沿最小穿透方向弹开
-    final diff = _angleDelta(drive.targetAngle);
+    final diff = angleDelta(angle, drive.targetAngle);
     final maxTurn = _turnSpeed * dt;
     final turn = diff.abs() <= maxTurn ? diff : maxTurn * (diff > 0 ? 1 : -1);
     _turn(turn);
@@ -165,9 +165,11 @@ class Tank extends PositionComponent {
     }
   }
 
-  /// 当前朝向到目标角的最短角度差（-π..π）
-  double _angleDelta(double target) {
-    var diff = (target - angle) % (2 * math.pi);
+  /// 当前朝向 current 到目标角 target 的最短角度差（-π..π）。
+  /// 坦克转向与远程快照的朝向平滑（tank_online）共用，
+  /// 保证「走最短方向」的语义两处一致
+  static double angleDelta(double current, double target) {
+    var diff = (target - current) % (2 * math.pi);
     if (diff > math.pi) diff -= 2 * math.pi;
     if (diff < -math.pi) diff += 2 * math.pi;
     return diff;

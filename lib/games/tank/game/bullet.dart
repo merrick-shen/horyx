@@ -51,8 +51,9 @@ class Bullet extends PositionComponent {
   /// 子弹半径（格）：素材 30px，按车长 135px=0.5 格换算
   static const double radius = 15 / 135 * 0.50;
 
-  /// 飞行速度（格/秒）：坦克最大速的 1.2 倍
-  static const double _speed = Tank.maxForwardSpeed * 1.2;
+  /// 飞行速度（格/秒）：坦克最大速的 1.2 倍。
+  /// 公开供远程子弹渲染平滑使用（与真实速度一致避免追不上快照）
+  static const double speed = Tank.maxForwardSpeed * 1.2;
 
   /// 存活时长（秒）：发射 9 秒后消失
   static const double _lifetime = 9.0;
@@ -83,7 +84,7 @@ class Bullet extends PositionComponent {
     }
 
     // 子步进推进：每步不超过墙厚的一半，撞墙即反弹（不限次数）
-    var remaining = _speed * dt;
+    var remaining = speed * dt;
     while (remaining > 0) {
       final step = math.min(_maxStep, remaining);
       remaining -= step;
