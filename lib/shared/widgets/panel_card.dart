@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 
-/// 通用面板卡片：游戏设置项的容器样式（卡片底 + 描边 + 圆角）
-/// 单词PK、五子棋等游戏的设置视图复用，保证视觉统一
+/// 通用面板卡片：卡片底 + 描边 + 圆角的统一容器样式
+/// 游戏设置视图与设置页/更多页等各处卡片复用，保证视觉统一
 class PanelCard extends StatelessWidget {
   const PanelCard({super.key, required this.child, this.padding});
 

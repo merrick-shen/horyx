@@ -4,6 +4,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/theme/theme_controller.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/color_picker_dialog.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 主题模式选项定义：模式 + 图标 + 名称 + 描述
 typedef _ModeOptionData = ({
@@ -96,13 +97,8 @@ class ThemeSettingsPage extends StatelessWidget {
     BuildContext context,
     ThemeController controller,
   ) {
-    return Container(
+    return PanelCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.palette.surfaceBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.palette.stroke),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -131,13 +127,8 @@ class ThemeSettingsPage extends StatelessWidget {
     BuildContext context,
     ThemeController controller,
   ) {
-    return Container(
+    return PanelCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.palette.surfaceBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.palette.stroke),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

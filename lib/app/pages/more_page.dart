@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
 import 'package:horyx/shared/widgets/setting_tile.dart';
 import 'settings/about_page.dart';
 import 'settings/archive_page.dart';
@@ -107,12 +108,9 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.palette.surfaceBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.palette.stroke),
-      ),
+    // 卡片容器样式复用 PanelCard；设置行自带内边距，故面板整体 padding 归零
+    return PanelCard(
+      padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -9,6 +9,7 @@ import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 存档管理页
 /// 聚合展示各游戏的未完成对局存档（列表形式），支持单个删除
@@ -212,13 +213,8 @@ class _ArchiveTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return Container(
+    return PanelCard(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: palette.surfaceBg,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: palette.stroke),
-      ),
       child: Row(
         children: [
           // 主题色淡底图标容器（与设置行图标风格一致）
