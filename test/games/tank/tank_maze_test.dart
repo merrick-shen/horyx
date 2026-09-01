@@ -41,12 +41,51 @@ void main() {
       }
     });
 
-    test('是完美迷宫：墙数恰为 生成树规模（总墙数 - 单元格数 + 1）', () {
+    test('是编织迷宫：墙数不多于生成树规模，且存在环路', () {
       final maze = TankMaze.generate(cols: cols, rows: rows);
-      // 完美迷宫打通 单元格数-1 面墙，无多余环路
+      // 完美迷宫打通 单元格数-1 面墙；编织后在此基础上额外打通（补环）
+      final totalWalls = cols * (rows + 1) + rows * (cols + 1);
+      final spanningTree = totalWalls - (cols * rows - 1);
+      expect(maze.walls.length, lessThanOrEqualTo(spanningTree));
+      // 默认 braidFactor=0.8 下死胡同大量存在被补环的概率，
+      // 墙数严格小于生成树规模（退化为完美迷宫的概率可忽略）
+      expect(maze.walls.length, lessThan(spanningTree));
+    });
+
+    test('braidFactor 为 0 时退化为完美迷宫（墙数恰为生成树规模）', () {
+      final maze = TankMaze.generate(
+        cols: cols,
+        rows: rows,
+        braidFactor: 0,
+      );
       final totalWalls = cols * (rows + 1) + rows * (cols + 1);
       final expected = totalWalls - (cols * rows - 1);
       expect(maze.walls.length, expected);
+    });
+
+    test('编织后死胡同比例显著下降', () {
+      // 多个种子统计死胡同格（开放内墙方向恰为 1）占比：
+      // braidFactor=0.8 时仅约两成死胡同未被补环，预期占比远低于完美迷宫
+      var totalDeadEnds = 0;
+      const samples = 20;
+      for (var i = 0; i < samples; i++) {
+        final maze = TankMaze.generate(cols: cols, rows: rows, seed: i);
+        for (var row = 0; row < rows; row++) {
+          for (var col = 0; col < cols; col++) {
+            var open = 0;
+            for (final (dx, dy) in [(0, -1), (0, 1), (-1, 0), (1, 0)]) {
+              final nx = col + dx;
+              final ny = row + dy;
+              if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
+              if (!maze.hasWallBetween(col, row, dx, dy)) open++;
+            }
+            if (open == 1) totalDeadEnds++;
+          }
+        }
+      }
+      final ratio = totalDeadEnds / (samples * cols * rows);
+      expect(ratio, lessThan(0.15),
+          reason: '补环后死胡同占比应远低于完美迷宫的约 30%');
     });
 
     test('相同随机种子生成相同迷宫（联机同步预留下的确定性）', () {

@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 单词PK词库从约 1 万词扩容至约 37 万词，大幅减少正常单词被误判无效的情况
 - 应用启动不再等待词表加载完成
+- 坦克动荡迷宫生成优化：迷宫中出现环路，双方出生点之间存在多条进攻路线
 
 ## [0.6.0] - 2026-09-01
 
