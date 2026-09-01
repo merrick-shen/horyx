@@ -267,6 +267,8 @@ class _ScoreboardPageState
           redScore: _redScore,
           blueScore: _blueScore,
           history: List.of(_history),
+          // 本局已结束时如实入档：恢复后点击计分区应「开下一局」而非错误加分
+          gameOver: _gameOver,
           savedAt: DateTime.now(),
         ),
       ),
@@ -303,7 +305,7 @@ class _ScoreboardPageState
       _history
         ..clear()
         ..addAll(saved.history);
-      _gameOver = false;
+      _gameOver = saved.gameOver;
       _winner = null;
       savedState = null;
       _playing = true;

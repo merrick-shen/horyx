@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 联机对局结束弹窗按结束原因显示对应图标（玩家离开/房主解散/网络断开等）
 
+### Fixed
+
+- 修复计分器在本局结束后保存退出，恢复存档后首次点击计分区会错误加分并多记一局的问题
+
 ## [0.5.0] - 2026-08-31
 
 ### Added

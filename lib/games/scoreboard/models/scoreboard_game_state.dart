@@ -10,6 +10,7 @@ class ScoreboardGameState {
     required this.redScore,
     required this.blueScore,
     required this.history,
+    required this.gameOver,
     required this.savedAt,
   });
 
@@ -37,6 +38,10 @@ class ScoreboardGameState {
   /// 撤销快照栈：每次加分前记录 [红局, 蓝局, 红分, 蓝分]
   final List<List<int>> history;
 
+  /// 本局已分出胜负（局分已计入，等待开始下一局）
+  /// 不保存会导致恢复后首次点击计分区走加分分支而非「开下一局」，错误重复判分
+  final bool gameOver;
+
   /// 存档时间
   final DateTime savedAt;
 
@@ -54,6 +59,7 @@ class ScoreboardGameState {
         'redScore': redScore,
         'blueScore': blueScore,
         'history': history,
+        'gameOver': gameOver,
         'savedAt': savedAt.toIso8601String(),
       };
 
@@ -70,6 +76,8 @@ class ScoreboardGameState {
           for (final snapshot in json['history'] as List)
             List<int>.from(snapshot as List),
         ],
+        // gameOver 后加入的字段：旧存档缺失时按「局进行中」处理，保持兼容
+        gameOver: (json['gameOver'] as bool?) ?? false,
         savedAt: DateTime.parse(json['savedAt'] as String),
       );
 }
