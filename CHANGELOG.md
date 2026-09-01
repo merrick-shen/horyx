@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - 修复计分器在本局结束后保存退出，恢复存档后首次点击计分区会错误加分并多记一局的问题
+- 修复存储异常时「保存并退出」无响应的问题：现在会提示保存失败，并允许选择仍要退出或留在本页
 
 ## [0.5.0] - 2026-08-31
 

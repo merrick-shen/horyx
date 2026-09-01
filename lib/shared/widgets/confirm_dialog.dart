@@ -17,7 +17,8 @@ enum ConfirmResult {
 
 /// 「保存并退出」三选项公共流程（各游戏对局页共用）
 /// 弹出确认弹窗并分发动作：
-/// - 保存并退出：先 [onSave] 持久化，完成后 [onExit]
+/// - 保存并退出：先 [onSave] 持久化，完成后 [onExit]；保存失败时弹窗告知，
+///   由用户选择「仍要退出」或留在本页
 /// - 不保存并退出：先 [onDiscard] 清档（放弃当前进度，避免下次误提示可继续），完成后 [onExit]
 /// - 取消：留在当前页面
 ///
@@ -45,10 +46,30 @@ Future<void> confirmExitWithArchive(
 
   switch (result) {
     case ConfirmResult.confirm:
-      await onSave();
+      // 写盘失败（磁盘满、插件异常等）不能沿 async 链上抛：否则异常无人捕获，
+      // 且 onExit 不执行导致用户点「保存并退出」后页面毫无反馈也无法退出
+      try {
+        await onSave();
+      } catch (_) {
+        if (!state.mounted) return;
+        // 保存失败必须告知（用户以为进度已存，实际下次进入会丢失），
+        // 并由用户决定是否放弃保存直接退出
+        final forceExit = await showConfirmDialog(
+          state.context,
+          title: '保存失败',
+          message: '进度未能保存，退出后本次进度将丢失，是否仍要退出？',
+          confirmLabel: '仍要退出',
+        );
+        if (!state.mounted || forceExit != ConfirmResult.confirm) return;
+      }
       if (state.mounted) onExit();
     case ConfirmResult.neutral:
-      await onDiscard();
+      try {
+        await onDiscard();
+      } catch (_) {
+        // 清档失败不阻断退出：本次进度本就未保存，旧档残留仅导致
+        // 下次进入时提示恢复旧进度，属可接受的降级，无需打断用户
+      }
       if (state.mounted) onExit();
     case ConfirmResult.cancel:
       // 留在当前页面
