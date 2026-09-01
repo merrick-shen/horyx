@@ -2,14 +2,14 @@ import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 
 /// 单词真实性校验服务
-/// 基于本地词表（google-10000 常用英文词表，约 1 万词）离线校验：
-/// 无网络请求、毫秒级响应，满足「检测响应不超过 1 秒」的质量标准
+/// 基于本地词表（约 37 万词）离线校验：无网络请求、毫秒级响应，
+/// 满足「检测响应不超过 1 秒」的质量标准
 class WordValidator {
   /// 工具类禁止实例化
   WordValidator._();
 
   /// 词表资源路径
-  static const String _assetPath = 'assets/words/english_10k.txt';
+  static const String _assetPath = 'assets/words/english_words.txt';
 
   /// 词表 Set 缓存（小写存储，单次查询 O(1)）
   static Set<String>? _dictionary;
@@ -27,7 +27,7 @@ class WordValidator {
         for (final line in text.split('\n')) line.trim().toLowerCase(),
       };
     } catch (e) {
-      // 保留失败痕迹（release 下自动静音），便于排查「所有单词都判无效」类问题
+      // 保留失败痕迹（release 下自动静音），便于排查「单词全判无效」类问题
       debugPrint('WordValidator: 词表加载失败，降级为空词表 —— $e');
       _dictionary = const <String>{};
     }

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- 单词PK词库从约 1 万词扩容至约 37 万词，大幅减少正常单词被误判无效的情况
+- 应用启动不再等待词表加载完成
+
 ## [0.6.0] - 2026-09-01
 
 ### Added
