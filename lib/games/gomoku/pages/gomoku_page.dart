@@ -85,7 +85,7 @@ class _GomokuPageState
     final blackMoved = _moves.length.isOdd;
     if (GomokuRules.hasFiveInRow(_moves, _boardSize, col, row, blackMoved)) {
       setState(() => _winner = blackMoved ? '黑方' : '白方');
-      // 对局已分胜负，立即清除存档：避免重进页面恢复出已结束的局面（与围棋终局处理一致）
+      // 对局已分胜负，立即清除存档：避免重进页面恢复出已结束的局面
       GomokuStorage.instance.clear();
       _showWinDialog();
     }

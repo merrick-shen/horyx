@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
 import 'package:horyx/games/tank/services/tank_storage.dart';
-// 围棋暂时下架：存储服务代码保留，恢复入口时取消注释
-// import 'package:horyx/games/weiqi/services/weiqi_storage.dart';
 import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
@@ -41,8 +39,6 @@ class _ArchivePageState extends State<ArchivePage> {
     // 本地存储读取极快，顺序读取即可（混合类型不宜用 Future.wait）
     final wordPk = await WordPkStorage.instance.load();
     final gomoku = await GomokuStorage.instance.load();
-    // 围棋暂时下架：不再读取展示（存档数据保留，恢复入口时取消注释）
-    // final weiqi = await WeiqiStorage.instance.load();
     final scoreboard = await ScoreboardStorage.instance.load();
     final tank = await TankStorage.instance.load();
 
@@ -69,16 +65,6 @@ class _ArchivePageState extends State<ArchivePage> {
           savedAt: gomoku.savedAt,
           clear: GomokuStorage.instance.clear,
         ),
-      // 围棋条目（暂时下架，恢复入口时取消注释）
-      // if (weiqi != null)
-      //   _ArchiveEntry(
-      //     name: '围棋',
-      //     icon: Icons.blur_on_rounded,
-      //     summary: '${weiqi.boardSize}×${weiqi.boardSize} 对局 · '
-      //         '已下 ${weiqi.moves.length} 手',
-      //     savedAt: weiqi.savedAt,
-      //     clear: WeiqiStorage.instance.clear,
-      //   ),
       if (scoreboard != null)
         _ArchiveEntry(
           name: '计分器',

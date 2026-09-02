@@ -29,8 +29,8 @@ class StoneTurnCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 终局图标色跟随胜方棋子颜色（五子棋胜方即最后一手方，围棋数子判胜，
-    // 两者的 winner 文本均直接对应棋子颜色，推导可统一）
+    // 终局图标色跟随胜方棋子颜色（五子棋胜方即最后一手方，
+    // winner 文本直接对应棋子颜色，推导可统一）
     final title = isOver ? '$winner胜利' : (blackToMove ? '黑方' : '白方');
     return TurnCard(
       icon: Icons.circle_rounded,

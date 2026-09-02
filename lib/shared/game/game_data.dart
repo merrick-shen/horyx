@@ -6,7 +6,6 @@ import 'package:horyx/games/gomoku/pages/gomoku_page.dart';
 import 'package:horyx/games/scoreboard/pages/scoreboard_page.dart';
 import 'package:horyx/games/tank/pages/tank_online_page.dart';
 import 'package:horyx/games/tank/pages/tank_page.dart';
-import 'package:horyx/games/weiqi/pages/weiqi_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_page.dart';
 
@@ -47,16 +46,6 @@ abstract final class GameData {
         TankOnlinePage.client(client: client),
   );
 
-  /// 围棋
-  /// 暂时下架：不在 [games] 列表中即不展示首页入口，页面与规则代码保留；
-  /// 恢复时把 weiqi 加回 [games] 列表即可（入口跳转随注册表自动恢复）
-  static final GameInfo weiqi = GameInfo(
-    name: '围棋',
-    description: '黑白围地博弈，气尽提子，地多者胜',
-    icon: Icons.blur_on_rounded,
-    pageBuilder: (context) => const WeiqiPage(),
-  );
-
   /// 计分器（纯本地工具，无联机对局页）
   static final GameInfo scoreboard = GameInfo(
     name: '计分器',
@@ -65,17 +54,7 @@ abstract final class GameData {
     pageBuilder: (context) => const ScoreboardPage(),
   );
 
-  /// 全部已注册游戏（含暂时下架的围棋）
-  /// 按名称查找必须覆盖全量：加入老版本 App 用已下架游戏创建的房间时仍需正确兜底
-  static final List<GameInfo> _registered = [
-    wordPk,
-    gomoku,
-    tank,
-    weiqi,
-    scoreboard,
-  ];
-
-  /// 首页游戏列表（围棋暂时下架，恢复时把 weiqi 加回列表即可）
+  /// 首页游戏列表（全部已上架游戏）
   static final List<GameInfo> games = [
     wordPk,
     gomoku,
@@ -83,9 +62,9 @@ abstract final class GameData {
     scoreboard,
   ];
 
-  /// 按名称查找游戏（含下架游戏）；未登记返回 null
+  /// 按名称查找游戏；未登记返回 null
   static GameInfo? byName(String name) {
-    for (final game in _registered) {
+    for (final game in games) {
       if (game.name == name) return game;
     }
     return null;

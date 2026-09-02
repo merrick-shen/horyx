@@ -5,7 +5,7 @@ import 'package:horyx/shared/widgets/primary_button.dart';
 /// 落子确认按钮行：棋盘有预选棋子时显示「取消/下棋」
 ///
 /// 固定 48px 高度：按钮显隐切换时不挤压上方棋盘布局；
-/// AnimatedSwitcher 提供淡入淡出过渡。三个棋盘视图（五子棋本地/联机、围棋）共用
+/// AnimatedSwitcher 提供淡入淡出过渡。五子棋本地/联机棋盘视图共用
 class ConfirmMoveRow extends StatelessWidget {
   const ConfirmMoveRow({
     super.key,

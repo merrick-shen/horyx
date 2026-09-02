@@ -5,11 +5,11 @@ import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 棋盘上的一颗棋子：位置 + 颜色
 /// 颜色需显式存储而非按落子顺序推导：
-/// 围棋存在提子，落子序列无法从奇偶推断黑白
+/// 为提子等无法从奇偶推断黑白的规则场景预留
 typedef Stone = (int col, int row, bool black);
 
 /// 黑白棋子棋盘通用组件：网格线 + 星位 + 棋子绘制，支持点击交叉点
-/// 五子棋 / 围棋等落子类棋盘游戏共用
+/// 落子类棋盘游戏共用
 /// 预选棋子（落子确认前）以半透明展示
 class StoneBoard extends StatelessWidget {
   const StoneBoard({
@@ -20,7 +20,7 @@ class StoneBoard extends StatelessWidget {
     this.onCellTap,
   });
 
-  /// 棋盘路数（9/13/19 围棋、15/19 五子棋等）
+  /// 棋盘路数（15/19 五子棋等）
   final int size;
 
   /// 已确认的棋子集合（颜色显式）
