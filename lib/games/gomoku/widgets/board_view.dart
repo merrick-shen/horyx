@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/stone_board.dart';
 import 'package:horyx/shared/widgets/stone_turn_card.dart';
@@ -56,68 +57,58 @@ class GomokuBoardView extends StatelessWidget {
     final blackTurn = moves.length.isEven;
 
     return SizedBox.expand(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 对局中提示执子方（图标颜色对应棋子）；终局提示胜方
-                StoneTurnCard(
-                  isOver: isOver,
-                  blackToMove: blackTurn,
-                  winner: winner,
-                  subtitle: '当前执子',
-                ),
-                const SizedBox(height: 16),
-                // 棋盘占据剩余空间，正方形自适应宽高较小者
-                Expanded(
-                  child: Center(
-                    // 五子棋无提子，落子序列奇偶即可推导颜色（先手黑）
-                    // 转换为显式颜色棋子集合供通用棋盘组件绘制
-                    child: StoneBoard(
-                      size: boardSize,
-                      stones: [
-                        for (int i = 0; i < moves.length; i++)
-                          (moves[i].$1, moves[i].$2, i.isEven),
-                      ],
-                      pending: pending == null
-                          ? null
-                          : (
-                              pending!.$1,
-                              pending!.$2,
-                              moves.length.isEven,
-                            ),
-                      onCellTap: onCellTap,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ConfirmMoveRow(
-                  visible: hasPending,
-                  onCancelMove: onCancelMove,
-                  onConfirmMove: onConfirmMove,
-                ),
-                const SizedBox(height: 12),
-                if (isOver)
-                  // 终局：悔棋替换为再来一局，方便查看棋型后重开
-                  PrimaryButton(
-                    label: '再来一局',
-                    icon: Icons.refresh_rounded,
-                    onPressed: onRestart,
-                  )
-                else
-                  // 对局中：无子可悔时按钮禁用（灰底不可点击）
-                  PrimaryButton(
-                    label: '悔棋',
-                    icon: Icons.undo_rounded,
-                    onPressed: moves.isEmpty ? null : onUndo,
-                  ),
-              ],
+      child: PageContent(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 对局中提示执子方（图标颜色对应棋子）；终局提示胜方
+            StoneTurnCard(
+              isOver: isOver,
+              blackToMove: blackTurn,
+              winner: winner,
+              subtitle: '当前执子',
             ),
-          ),
+            const SizedBox(height: 16),
+            // 棋盘占据剩余空间，正方形自适应宽高较小者
+            Expanded(
+              child: Center(
+                // 五子棋无提子，落子序列奇偶即可推导颜色（先手黑）
+                // 转换为显式颜色棋子集合供通用棋盘组件绘制
+                child: StoneBoard(
+                  size: boardSize,
+                  stones: [
+                    for (int i = 0; i < moves.length; i++)
+                      (moves[i].$1, moves[i].$2, i.isEven),
+                  ],
+                  pending: pending == null
+                      ? null
+                      : (pending!.$1, pending!.$2, moves.length.isEven),
+                  onCellTap: onCellTap,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ConfirmMoveRow(
+              visible: hasPending,
+              onCancelMove: onCancelMove,
+              onConfirmMove: onConfirmMove,
+            ),
+            const SizedBox(height: 12),
+            if (isOver)
+              // 终局：悔棋替换为再来一局，方便查看棋型后重开
+              PrimaryButton(
+                label: '再来一局',
+                icon: Icons.refresh_rounded,
+                onPressed: onRestart,
+              )
+            else
+              // 对局中：无子可悔时按钮禁用（灰底不可点击）
+              PrimaryButton(
+                label: '悔棋',
+                icon: Icons.undo_rounded,
+                onPressed: moves.isEmpty ? null : onUndo,
+              ),
+          ],
         ),
       ),
     );

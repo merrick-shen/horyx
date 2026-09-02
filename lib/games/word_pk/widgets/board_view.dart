@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/word_pk/models/word_entry.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
 
@@ -68,151 +69,139 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
     final palette = context.palette;
 
     return SizedBox.expand(
-      child: Center(
-        // 平板/桌面端限制内容宽度，居中展示
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: PageContent(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 当前输入者卡片（通用回合卡组件；联机时输入者是自己展示「你」）
+            TurnCard(
+              icon: Icons.keyboard_rounded,
+              subtitle: '当前输入者',
+              title: widget.currentPlayer == widget.selfSeat
+                  ? '你'
+                  : '玩家 ${widget.currentPlayer}',
+              titleKey: ValueKey(widget.currentPlayer),
+            ),
+            const SizedBox(height: 16),
+            _PlayerSequence(
+              playerCount: widget.playerCount,
+              currentIndex: widget.currentPlayer,
+            ),
+            const SizedBox(height: 16),
+            // 单词输入行：输入框 + 提交按钮
+            Row(
               children: [
-                // 当前输入者卡片（通用回合卡组件；联机时输入者是自己展示「你」）
-                TurnCard(
-                  icon: Icons.keyboard_rounded,
-                  subtitle: '当前输入者',
-                  title: widget.currentPlayer == widget.selfSeat
-                      ? '你'
-                      : '玩家 ${widget.currentPlayer}',
-                  titleKey: ValueKey(widget.currentPlayer),
-                ),
-                const SizedBox(height: 16),
-                _PlayerSequence(
-                  playerCount: widget.playerCount,
-                  currentIndex: widget.currentPlayer,
-                ),
-                const SizedBox(height: 16),
-                // 单词输入行：输入框 + 提交按钮
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _inputController,
-                        focusNode: _focusNode,
-                        // 非本人回合禁输（联机对局），禁用态提示等待对象
-                        enabled: widget.inputEnabled,
-                        // 键盘「完成」同样触发提交
-                        onSubmitted: (_) => _submit(),
-                        // 英文单词输入场景关闭联想与自动纠正
-                        autocorrect: false,
-                        enableSuggestions: false,
-                        textInputAction: TextInputAction.done,
-                        decoration: InputDecoration(
-                          hintText: widget.inputEnabled
-                              ? '输入英文单词'
-                              : '等待玩家 ${widget.currentPlayer} 输入…',
-                          hintStyle: TextStyle(
-                            color: palette.textSecondary,
-                          ),
-                          filled: true,
-                          fillColor: palette.surfaceBg,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: palette.stroke,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                              color: palette.primary,
-                              width: 1.4,
-                            ),
-                          ),
+                Expanded(
+                  child: TextField(
+                    controller: _inputController,
+                    focusNode: _focusNode,
+                    // 非本人回合禁输（联机对局），禁用态提示等待对象
+                    enabled: widget.inputEnabled,
+                    // 键盘「完成」同样触发提交
+                    onSubmitted: (_) => _submit(),
+                    // 英文单词输入场景关闭联想与自动纠正
+                    autocorrect: false,
+                    enableSuggestions: false,
+                    textInputAction: TextInputAction.done,
+                    decoration: InputDecoration(
+                      hintText: widget.inputEnabled
+                          ? '输入英文单词'
+                          : '等待玩家 ${widget.currentPlayer} 输入…',
+                      hintStyle: TextStyle(color: palette.textSecondary),
+                      filled: true,
+                      fillColor: palette.surfaceBg,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(color: palette.stroke),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        borderSide: BorderSide(
+                          color: palette.primary,
+                          width: 1.4,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    PrimaryButton(
-                      label: '提交',
-                      icon: Icons.send_rounded,
-                      // 非本人回合禁用提交（联机对局）
-                      onPressed: widget.inputEnabled ? _submit : null,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // 已验证单词列表：占据剩余空间，超出滚动
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                    decoration: BoxDecoration(
-                      color: palette.surfaceBg,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: palette.stroke),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              '已验证单词',
-                              style: TextStyle(
-                                color: palette.textPrimary,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // 数量徽标随列表数据自动变化
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: palette.scaffoldBg,
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: palette.stroke),
-                              ),
-                              child: Text(
-                                '${widget.entries.length} 个',
-                                style: TextStyle(
-                                  color: palette.textSecondary,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: widget.entries.isEmpty
-                              ? const _EmptyState()
-                              : ListView.separated(
-                                  padding: EdgeInsets.zero,
-                                  itemCount: widget.entries.length,
-                                  separatorBuilder: (_, _) =>
-                                      const SizedBox(height: 10),
-                                  itemBuilder: (context, index) => _WordChip(
-                                    word: widget.entries[index].word,
-                                    playerIndex:
-                                        widget.entries[index].playerIndex,
-                                  ),
-                                ),
-                        ),
-                      ],
-                    ),
                   ),
+                ),
+                const SizedBox(width: 12),
+                PrimaryButton(
+                  label: '提交',
+                  icon: Icons.send_rounded,
+                  // 非本人回合禁用提交（联机对局）
+                  onPressed: widget.inputEnabled ? _submit : null,
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 16),
+            // 已验证单词列表：占据剩余空间，超出滚动
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                decoration: BoxDecoration(
+                  color: palette.surfaceBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: palette.stroke),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          '已验证单词',
+                          style: TextStyle(
+                            color: palette.textPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        // 数量徽标随列表数据自动变化
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: palette.scaffoldBg,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(color: palette.stroke),
+                          ),
+                          child: Text(
+                            '${widget.entries.length} 个',
+                            style: TextStyle(
+                              color: palette.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: widget.entries.isEmpty
+                          ? const _EmptyState()
+                          : ListView.separated(
+                              padding: EdgeInsets.zero,
+                              itemCount: widget.entries.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) => _WordChip(
+                                word: widget.entries[index].word,
+                                playerIndex: widget.entries[index].playerIndex,
+                              ),
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -258,8 +247,9 @@ class _PlayerSequence extends StatelessWidget {
                     ? palette.primary
                     : palette.textSecondary,
                 fontSize: 12.5,
-                fontWeight:
-                    i == currentIndex ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: i == currentIndex
+                    ? FontWeight.w700
+                    : FontWeight.w500,
               ),
             ),
           ),
@@ -340,10 +330,7 @@ class _WordChip extends StatelessWidget {
           ),
           Text(
             '玩家 $playerIndex',
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 11.5,
-            ),
+            style: TextStyle(color: palette.textSecondary, fontSize: 11.5),
           ),
         ],
       ),

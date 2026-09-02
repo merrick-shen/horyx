@@ -11,6 +11,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 
 /// 局域网房间等待页（所有游戏通用）
@@ -31,17 +32,14 @@ class RoomPage extends StatefulWidget {
     required this.capacity,
     this.gameStartPayload = const {},
     this.hostGameBuilder,
-  })  : address = null,
-        port = null;
+  }) : address = null,
+       port = null;
 
-  const RoomPage.client({
-    super.key,
-    required this.address,
-    required this.port,
-  })  : gameName = null,
-        capacity = 0,
-        gameStartPayload = const {},
-        hostGameBuilder = null;
+  const RoomPage.client({super.key, required this.address, required this.port})
+    : gameName = null,
+      capacity = 0,
+      gameStartPayload = const {},
+      hostGameBuilder = null;
 
   /// 游戏名称（仅房主模式；等待页顶部标识卡展示，如「单词PK」。
   /// 客户端模式加入前未知，改为取握手应答中的 gameName 展示）
@@ -166,9 +164,7 @@ class _RoomPageState extends State<RoomPage> {
     if (builder == null) return;
     _transferred = true;
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => builder(context, client),
-      ),
+      MaterialPageRoute(builder: (context) => builder(context, client)),
     );
   }
 
@@ -227,11 +223,7 @@ class _RoomPageState extends State<RoomPage> {
           bottom: false,
           child: Column(
             children: [
-              AppTopBar(
-                title: '房间',
-                showBack: true,
-                onBack: _requestExit,
-              ),
+              AppTopBar(title: '房间', showBack: true, onBack: _requestExit),
               Expanded(child: _buildBody()),
             ],
           ),
@@ -261,8 +253,9 @@ class _RoomPageState extends State<RoomPage> {
           mySeat: 1,
           // 加入地址（IP:端口，与加入页输入格式一致）独立成卡展示；
           // IP 获取失败时降级为手动查询提示
-          joinAddress:
-              _hostAddress == null ? null : '$_hostAddress:${host.port}',
+          joinAddress: _hostAddress == null
+              ? null
+              : '$_hostAddress:${host.port}',
           hint: _hostAddress == null
               ? '未能获取本机 IP，请手动查询后与端口 ${host.port} 一并告知好友'
               : '复制上方地址发给好友，在联机页输入即可加入本房间',
@@ -341,11 +334,7 @@ class _RoomPageState extends State<RoomPage> {
               ),
             ),
             const SizedBox(height: 24),
-            PrimaryButton(
-              label: '返回',
-              outlined: true,
-              onPressed: _requestExit,
-            ),
+            PrimaryButton(label: '返回', outlined: true, onPressed: _requestExit),
           ],
         ),
       ),
@@ -364,49 +353,39 @@ class _RoomPageState extends State<RoomPage> {
     final remaining = capacity - seats.length;
     final full = remaining <= 0;
     return SizedBox.expand(
-      child: Center(
-        // 平板/桌面端限制内容宽度，居中展示
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildGameCard(capacity: capacity),
-                if (joinAddress != null) ...[
-                  const SizedBox(height: 16),
-                  _buildJoinAddressCard(joinAddress),
-                ],
-                const SizedBox(height: 16),
-                _buildSeatCard(
-                  capacity: capacity,
-                  seats: seats,
-                  mySeat: mySeat,
-                ),
-                const SizedBox(height: 16),
-                // 等待状态文案：满员与否二态展示
-                Text(
-                  full ? '全部玩家已就位，即将开始' : '等待 $remaining 名玩家加入…',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: context.palette.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                // 模式提示文案：房主为加入引导，客户端为座位与开局提示
-                Text(
-                  hint,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: context.palette.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
+      child: PageContent(
+        scrollable: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildGameCard(capacity: capacity),
+            if (joinAddress != null) ...[
+              const SizedBox(height: 16),
+              _buildJoinAddressCard(joinAddress),
+            ],
+            const SizedBox(height: 16),
+            _buildSeatCard(capacity: capacity, seats: seats, mySeat: mySeat),
+            const SizedBox(height: 16),
+            // 等待状态文案：满员与否二态展示
+            Text(
+              full ? '全部玩家已就位，即将开始' : '等待 $remaining 名玩家加入…',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: context.palette.textSecondary,
+                fontSize: 13,
+              ),
             ),
-          ),
+            const SizedBox(height: 10),
+            // 模式提示文案：房主为加入引导，客户端为座位与开局提示
+            Text(
+              hint,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: context.palette.textSecondary,
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -421,8 +400,8 @@ class _RoomPageState extends State<RoomPage> {
     final name = widget.isHost
         ? widget.gameName!
         : (clientGameName == null || clientGameName.isEmpty)
-            ? '游戏房间'
-            : clientGameName;
+        ? '游戏房间'
+        : clientGameName;
     final icon = GameData.iconFor(name);
 
     return PanelCard(
@@ -589,11 +568,7 @@ class _RoomPageState extends State<RoomPage> {
 
 /// 单个座位行：座位号圆标 + 玩家标识（房主/你）或等待占位
 class _SeatTile extends StatelessWidget {
-  const _SeatTile({
-    required this.seat,
-    required this.taken,
-    this.mySeat,
-  });
+  const _SeatTile({required this.seat, required this.taken, this.mySeat});
 
   /// 座位号（1..N，1 号固定为房主）
   final int seat;
@@ -643,9 +618,7 @@ class _SeatTile extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              taken
-                  ? '玩家 $seat${seat == 1 ? ' · 房主' : ''}'
-                  : '等待加入…',
+              taken ? '玩家 $seat${seat == 1 ? ' · 房主' : ''}' : '等待加入…',
               style: TextStyle(
                 color: taken ? palette.textPrimary : palette.textSecondary,
                 fontSize: 14,
@@ -656,10 +629,7 @@ class _SeatTile extends StatelessWidget {
           // 自己座位的「你」徽标
           if (isMe)
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 3,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
                 color: palette.primary,
                 borderRadius: BorderRadius.circular(8),

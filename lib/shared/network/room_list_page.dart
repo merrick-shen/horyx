@@ -5,6 +5,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 
 /// 局域网加入房间页（「联机」tab 常驻页）
@@ -40,10 +41,8 @@ class _RoomListPageState extends State<RoomListPage> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => RoomPage.client(
-          address: address.host,
-          port: address.port,
-        ),
+        builder: (_) =>
+            RoomPage.client(address: address.host, port: address.port),
       ),
     );
   }
@@ -90,106 +89,98 @@ class _RoomListPageState extends State<RoomListPage> {
           children: [
             const AppTopBar(title: '加入房间'),
             Expanded(
-              child: Center(
-                // 平板/桌面端限制内容宽度，居中展示
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        // 顶部视觉锚点：主题色淡底圆角图标块（与房间卡图标同风格）
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: palette.primary.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Icon(
-                            Icons.lan_rounded,
-                            color: palette.primary,
-                            size: 32,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          '输入房主地址加入对局',
-                          style: TextStyle(
-                            color: palette.textPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          '与好友连接同一 Wi-Fi，地址可在房主的房间等待页一键复制',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: palette.textSecondary,
-                            fontSize: 13,
-                            height: 1.5,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        PanelCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                '房主地址',
-                                style: TextStyle(
-                                  color: palette.textPrimary,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              TextField(
-                                controller: _addressController,
-                                // 地址输入无联想与纠错需求，回车直接提交
-                                autocorrect: false,
-                                enableSuggestions: false,
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (_) => _join(),
-                                decoration: InputDecoration(
-                                  hintText: '例如 192.168.124.3:45654',
-                                  hintStyle: TextStyle(
-                                    color: palette.textSecondary,
-                                  ),
-                                  filled: true,
-                                  fillColor: palette.scaffoldBg,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 14,
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: palette.stroke,
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                    borderSide: BorderSide(
-                                      color: palette.primary,
-                                      width: 1.4,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              PrimaryButton(
-                                label: '加入房间',
-                                icon: Icons.login_rounded,
-                                onPressed: _join,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+              child: PageContent(
+                scrollable: true,
+                child: Column(
+                  children: [
+                    // 顶部视觉锚点：主题色淡底圆角图标块（与房间卡图标同风格）
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: palette.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        Icons.lan_rounded,
+                        color: palette.primary,
+                        size: 32,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 16),
+                    Text(
+                      '输入房主地址加入对局',
+                      style: TextStyle(
+                        color: palette.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '与好友连接同一 Wi-Fi，地址可在房主的房间等待页一键复制',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 13,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    PanelCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '房主地址',
+                            style: TextStyle(
+                              color: palette.textPrimary,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          TextField(
+                            controller: _addressController,
+                            // 地址输入无联想与纠错需求，回车直接提交
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _join(),
+                            decoration: InputDecoration(
+                              hintText: '例如 192.168.124.3:45654',
+                              hintStyle: TextStyle(
+                                color: palette.textSecondary,
+                              ),
+                              filled: true,
+                              fillColor: palette.scaffoldBg,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: palette.stroke),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color: palette.primary,
+                                  width: 1.4,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          PrimaryButton(
+                            label: '加入房间',
+                            icon: Icons.login_rounded,
+                            onPressed: _join,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

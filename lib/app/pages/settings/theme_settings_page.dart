@@ -4,6 +4,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/theme/theme_controller.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/color_picker_dialog.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 主题模式选项定义：模式 + 图标 + 名称 + 描述
@@ -67,21 +68,14 @@ class ThemeSettingsPage extends StatelessWidget {
             AppTopBar(title: '主题设置', showBack: true),
             Expanded(
               child: SingleChildScrollView(
-                child: Center(
-                  // 平板/桌面端限制内容宽度，居中展示
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _buildModeCard(context, controller),
-                          const SizedBox(height: 14),
-                          _buildColorCard(context, controller),
-                        ],
-                      ),
-                    ),
+                child: PageContent(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildModeCard(context, controller),
+                      const SizedBox(height: 14),
+                      _buildColorCard(context, controller),
+                    ],
                   ),
                 ),
               ),
@@ -93,10 +87,7 @@ class ThemeSettingsPage extends StatelessWidget {
   }
 
   /// 「主题模式」分组卡片
-  Widget _buildModeCard(
-    BuildContext context,
-    ThemeController controller,
-  ) {
+  Widget _buildModeCard(BuildContext context, ThemeController controller) {
     return PanelCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -123,10 +114,7 @@ class ThemeSettingsPage extends StatelessWidget {
   }
 
   /// 「主题色彩」分组卡片：预设色板 + 自定义入口
-  Widget _buildColorCard(
-    BuildContext context,
-    ThemeController controller,
-  ) {
+  Widget _buildColorCard(BuildContext context, ThemeController controller) {
     return PanelCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -370,11 +358,7 @@ class _CustomColorTile extends StatelessWidget {
                 color: palette.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(11),
               ),
-              child: Icon(
-                Icons.tune_rounded,
-                size: 20,
-                color: currentColor,
-              ),
+              child: Icon(Icons.tune_rounded, size: 20, color: currentColor),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -396,10 +380,7 @@ class _CustomColorTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: palette.textSecondary,
-            ),
+            Icon(Icons.chevron_right_rounded, color: palette.textSecondary),
           ],
         ),
       ),

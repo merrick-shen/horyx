@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// 游戏设置视图骨架：内容限宽居中（maxWidth 520，平板/桌面端）+ 统一边距
-/// 各游戏 setup_view 共用的外层结构；
-/// 设置面板较多时（如计分器）启用 [scrollable] 允许小屏滚动，
-/// 否则以最小高度在页面垂直居中
+import 'package:horyx/shared/widgets/page_content.dart';
+
+/// 游戏设置视图骨架：内容限宽居中 + 统一页边距（复用 [PageContent]），
+/// 以最小高度在页面垂直居中；面板较多的页面（如计分器）启用 [scrollable]
+/// 允许小屏滚动查看全部设置项
 class SetupScaffold extends StatelessWidget {
   const SetupScaffold({
     super.key,
@@ -19,24 +20,13 @@ class SetupScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final content = Column(
-      mainAxisSize: scrollable ? MainAxisSize.max : MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: children,
-    );
     return SizedBox.expand(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: scrollable
-              ? SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: content,
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: content,
-                ),
+      child: PageContent(
+        scrollable: scrollable,
+        child: Column(
+          mainAxisSize: scrollable ? MainAxisSize.max : MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: children,
         ),
       ),
     );

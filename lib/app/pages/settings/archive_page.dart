@@ -9,6 +9,7 @@ import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 存档管理页
@@ -52,7 +53,8 @@ class _ArchivePageState extends State<ArchivePage> {
         _ArchiveEntry(
           name: '单词PK',
           icon: Icons.spellcheck_rounded,
-          summary: '${wordPk.playerCount} 人对局 · '
+          summary:
+              '${wordPk.playerCount} 人对局 · '
               '已验证 ${wordPk.entries.length} 个单词',
           savedAt: wordPk.savedAt,
           clear: WordPkStorage.instance.clear,
@@ -61,7 +63,8 @@ class _ArchivePageState extends State<ArchivePage> {
         _ArchiveEntry(
           name: '五子棋',
           icon: Icons.grid_on_rounded,
-          summary: '${gomoku.boardSize}×${gomoku.boardSize} 对局 · '
+          summary:
+              '${gomoku.boardSize}×${gomoku.boardSize} 对局 · '
               '已落子 ${gomoku.moves.length} 手',
           savedAt: gomoku.savedAt,
           clear: GomokuStorage.instance.clear,
@@ -80,7 +83,8 @@ class _ArchivePageState extends State<ArchivePage> {
         _ArchiveEntry(
           name: '计分器',
           icon: Icons.score_rounded,
-          summary: 'BO${scoreboard.bestOf} · '
+          summary:
+              'BO${scoreboard.bestOf} · '
               '大比分 ${scoreboard.redGames}:${scoreboard.blueGames} · '
               '当前局 ${scoreboard.redScore}:${scoreboard.blueScore}',
           savedAt: scoreboard.savedAt,
@@ -140,48 +144,38 @@ class _ArchivePageState extends State<ArchivePage> {
             AppTopBar(title: '存档管理', showBack: true),
             Expanded(
               child: SingleChildScrollView(
-                child: Center(
-                  // 平板/桌面端限制内容宽度，居中展示
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (_entries.isNotEmpty) ...[
-                            // 说明文案：存档来源
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: 4,
-                                bottom: 12,
-                              ),
-                              child: Text(
-                                '各游戏的未完成对局存档，删除后无法恢复',
-                                style: TextStyle(
-                                  color: palette.textSecondary,
-                                  fontSize: 12.5,
-                                ),
-                              ),
+                child: PageContent(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_entries.isNotEmpty) ...[
+                        // 说明文案：存档来源
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4, bottom: 12),
+                          child: Text(
+                            '各游戏的未完成对局存档，删除后无法恢复',
+                            style: TextStyle(
+                              color: palette.textSecondary,
+                              fontSize: 12.5,
                             ),
-                            // 存档条目列表
-                            for (final entry in _entries) ...[
-                              _ArchiveTile(
-                                entry: entry,
-                                timeText: _formatTime(entry.savedAt),
-                                onDelete: () => _confirmRemove(entry),
-                              ),
-                              const SizedBox(height: 12),
-                            ],
-                          ] else if (_loaded) ...[
-                            // 无存档空状态
-                            _EmptyView(),
-                          ],
-                          // 加载中阶段（_loaded 为 false）不渲染内容，
-                          // 本地存储读取很快，无需专门 loading 指示
+                          ),
+                        ),
+                        // 存档条目列表
+                        for (final entry in _entries) ...[
+                          _ArchiveTile(
+                            entry: entry,
+                            timeText: _formatTime(entry.savedAt),
+                            onDelete: () => _confirmRemove(entry),
+                          ),
+                          const SizedBox(height: 12),
                         ],
-                      ),
-                    ),
+                      ] else if (_loaded) ...[
+                        // 无存档空状态
+                        _EmptyView(),
+                      ],
+                      // 加载中阶段（_loaded 为 false）不渲染内容，
+                      // 本地存储读取很快，无需专门 loading 指示
+                    ],
                   ),
                 ),
               ),
@@ -302,10 +296,7 @@ class _EmptyView extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '游戏中保存并退出后，未完成的对局会出现在这里',
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: palette.textSecondary, fontSize: 13),
           ),
         ],
       ),

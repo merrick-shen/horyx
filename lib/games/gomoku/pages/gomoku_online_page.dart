@@ -7,6 +7,7 @@ import 'package:horyx/shared/utils/hint_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/stone_board.dart';
 import 'package:horyx/shared/widgets/stone_turn_card.dart';
@@ -28,8 +29,8 @@ class GomokuOnlinePage extends StatefulWidget {
   }) : client = null;
 
   const GomokuOnlinePage.client({super.key, required this.client})
-      : host = null,
-        boardSize = 0;
+    : host = null,
+      boardSize = 0;
 
   /// 房主连接（房主模式；与本页生命周期绑定，dispose 时关闭即解散房间）
   final RoomHost? host;
@@ -97,9 +98,7 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
 
   /// 对方悔棋请求的应答弹窗：同意/拒绝后复位弹窗标志
   /// 同意则棋盘随广播回退，拒绝则对方收到提示
-  Future<void> _showUndoRequestDialog(
-    GomokuOnlineController controller,
-  ) async {
+  Future<void> _showUndoRequestDialog(GomokuOnlineController controller) async {
     final result = await showConfirmDialog(
       context,
       title: '对方请求悔棋',
@@ -285,84 +284,69 @@ class _BoardView extends StatelessWidget {
     // 终局后无预选
     final isOver = winnerSeat != null;
     final blackTurn = moves.length.isEven;
-    final winner = winnerSeat == null
-        ? null
-        : (winnerSeat == 1 ? '黑方' : '白方');
+    final winner = winnerSeat == null ? null : (winnerSeat == 1 ? '黑方' : '白方');
 
     return SizedBox.expand(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 对局中提示执子方与等待对象；终局提示胜方（图标色对应棋子）
-                StoneTurnCard(
-                  isOver: isOver,
-                  blackToMove: blackTurn,
-                  winner: winner,
-                  subtitle: isMyTurn ? '轮到你落子' : '等待对方落子',
-                ),
-                const SizedBox(height: 16),
-                // 棋盘占据剩余空间，正方形自适应宽高较小者
-                Expanded(
-                  child: Center(
-                    child: StoneBoard(
-                      size: boardSize,
-                      stones: [
-                        for (int i = 0; i < moves.length; i++)
-                          (moves[i].$1, moves[i].$2, i.isEven),
-                      ],
-                      pending: pending == null
-                          ? null
-                          : (
-                              pending!.$1,
-                              pending!.$2,
-                              moves.length.isEven,
-                            ),
-                      onCellTap: onCellTap,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ConfirmMoveRow(
-                  visible: hasPending,
-                  onCancelMove: onCancelMove,
-                  onConfirmMove: onConfirmMove,
-                ),
-                const SizedBox(height: 12),
-                if (isOver)
-                  // 终局：退出对局（再来一局暂未支持）
-                  PrimaryButton(
-                    label: '退出对局',
-                    icon: Icons.logout_rounded,
-                    onPressed: onExit,
-                  )
-                else ...[
-                  // 悔棋：仅对方回合可发起（悔自己的上一手），
-                  // 等对方应答期间/无子可悔/轮到自己落子时禁用
-                  PrimaryButton(
-                    label: undoState == UndoState.awaitingPeer
-                        ? '等待对方应答…'
-                        : '悔棋',
-                    icon: Icons.undo_rounded,
-                    onPressed:
-                        undoState == UndoState.idle && hasMoves && !isMyTurn
-                        ? onRequestUndo
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
-                  PrimaryButton(
-                    label: '认输',
-                    icon: Icons.flag_rounded,
-                    onPressed: onResign,
-                  ),
-                ],
-              ],
+      child: PageContent(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 对局中提示执子方与等待对象；终局提示胜方（图标色对应棋子）
+            StoneTurnCard(
+              isOver: isOver,
+              blackToMove: blackTurn,
+              winner: winner,
+              subtitle: isMyTurn ? '轮到你落子' : '等待对方落子',
             ),
-          ),
+            const SizedBox(height: 16),
+            // 棋盘占据剩余空间，正方形自适应宽高较小者
+            Expanded(
+              child: Center(
+                child: StoneBoard(
+                  size: boardSize,
+                  stones: [
+                    for (int i = 0; i < moves.length; i++)
+                      (moves[i].$1, moves[i].$2, i.isEven),
+                  ],
+                  pending: pending == null
+                      ? null
+                      : (pending!.$1, pending!.$2, moves.length.isEven),
+                  onCellTap: onCellTap,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ConfirmMoveRow(
+              visible: hasPending,
+              onCancelMove: onCancelMove,
+              onConfirmMove: onConfirmMove,
+            ),
+            const SizedBox(height: 12),
+            if (isOver)
+              // 终局：退出对局（再来一局暂未支持）
+              PrimaryButton(
+                label: '退出对局',
+                icon: Icons.logout_rounded,
+                onPressed: onExit,
+              )
+            else ...[
+              // 悔棋：仅对方回合可发起（悔自己的上一手），
+              // 等对方应答期间/无子可悔/轮到自己落子时禁用
+              PrimaryButton(
+                label: undoState == UndoState.awaitingPeer ? '等待对方应答…' : '悔棋',
+                icon: Icons.undo_rounded,
+                onPressed: undoState == UndoState.idle && hasMoves && !isMyTurn
+                    ? onRequestUndo
+                    : null,
+              ),
+              const SizedBox(height: 12),
+              PrimaryButton(
+                label: '认输',
+                icon: Icons.flag_rounded,
+                onPressed: onResign,
+              ),
+            ],
+          ],
         ),
       ),
     );
