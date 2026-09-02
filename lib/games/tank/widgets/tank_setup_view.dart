@@ -4,6 +4,7 @@ import 'package:horyx/games/tank/models/tank_game_state.dart';
 import 'package:horyx/shared/widgets/lan_mode_panel.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/resume_card.dart';
+import 'package:horyx/shared/widgets/setup_scaffold.dart';
 
 /// 坦克动荡 - 对局模式设置视图
 /// 提供对局模式选择（本地/局域网）；存在未完成存档时
@@ -41,49 +42,36 @@ class _TankSetupViewState extends State<TankSetupView> {
   Widget build(BuildContext context) {
     final saved = widget.savedState;
 
-    return SizedBox.expand(
-      child: Center(
-        // 平板/桌面端限制内容宽度，居中展示
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 未完成存档恢复入口：摘要与存档管理页文案保持一致
-                if (saved != null) ...[
-                  ResumeCard(
-                    title: '继续上次对战',
-                    summary:
-                        '当前比分 ${saved.redScore}:${saved.greenScore}',
-                    onTap: widget.onResume,
-                  ),
-                  const SizedBox(height: 24),
-                ],
-                // 对局模式选择面板（坦克动荡当前唯一的设置项）
-                LanModePanel(
-                  isLan: _isLan,
-                  onChanged: (v) => setState(() => _isLan = v),
-                  description:
-                      '本地同屏对战；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
-                ),
-                const SizedBox(height: 24),
-                PrimaryButton(
-                  // 局域网模式按钮变为「创建房间」，进入房间等待页（自己为玩家 1）
-                  label: _isLan ? '创建房间' : '开始对战',
-                  icon: _isLan
-                      ? Icons.wifi_tethering_rounded
-                      : Icons.local_fire_department_rounded,
-                  onPressed:
-                      _isLan ? widget.onCreateRoom : widget.onStart,
-                ),
-              ],
-            ),
+    return SetupScaffold(
+      children: [
+        // 未完成存档恢复入口：摘要与存档管理页文案保持一致
+        if (saved != null) ...[
+          ResumeCard(
+            title: '继续上次对战',
+            summary:
+                '当前比分 ${saved.redScore}:${saved.greenScore}',
+            onTap: widget.onResume,
           ),
+          const SizedBox(height: 24),
+        ],
+        // 对局模式选择面板（坦克动荡当前唯一的设置项）
+        LanModePanel(
+          isLan: _isLan,
+          onChanged: (v) => setState(() => _isLan = v),
+          description:
+              '本地同屏对战；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
         ),
-      ),
+        const SizedBox(height: 24),
+        PrimaryButton(
+          // 局域网模式按钮变为「创建房间」，进入房间等待页（自己为玩家 1）
+          label: _isLan ? '创建房间' : '开始对战',
+          icon: _isLan
+              ? Icons.wifi_tethering_rounded
+              : Icons.local_fire_department_rounded,
+          onPressed:
+              _isLan ? widget.onCreateRoom : widget.onStart,
+        ),
+      ],
     );
   }
 }

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/scoreboard/models/scoreboard_game_state.dart';
-import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/option_block.dart';
-import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/option_panel.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/resume_card.dart';
+import 'package:horyx/shared/widgets/setup_scaffold.dart';
 
 /// 计分器 - 比分设置视图
 /// 顶部展示未完成计分的恢复入口（存在存档时），
@@ -98,129 +98,83 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
   Widget build(BuildContext context) {
     final saved = widget.savedState;
 
-    return SizedBox.expand(
-      child: Center(
-        // 平板/桌面端限制内容宽度，居中展示
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          // 面板较多，允许小屏设备滚动
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 存在未完成计分时展示恢复入口
-                if (saved != null) ...[
-                  ResumeCard(
-                    title: '继续上次计分',
-                    summary:
-                        'BO${saved.bestOf} · '
-                        '大比分 ${saved.redGames}:${saved.blueGames}'
-                        ' · 当前局 ${saved.redScore}:${saved.blueScore}',
-                    onTap: widget.onResume,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                _buildSettingPanel(
-                  title: '赛制',
-                  subtitle:
-                      '先赢得多数局数的一方获得整场胜利，输入局数（$_bestOfMin-$_bestOfMax）',
-                  child: NumberOptionBlock(
-                    key: const Key('bestOfInput'),
-                    controller: _bestOfController,
-                    focusNode: _bestOfFocus,
-                    hintText: '输入局数',
-                    min: _bestOfMin,
-                    max: _bestOfMax,
-                    onValid: (v) => setState(() => _bestOf = v),
-                    onCleared: () => setState(
-                      () => _bestOf = ScoreboardSetupView.bestOfDefault,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildSettingPanel(
-                  title: '每局胜利比分',
-                  subtitle:
-                      '每局先达到该比分的一方赢下本局，输入分值（$_winScoreMin-$_winScoreMax）',
-                  child: NumberOptionBlock(
-                    key: const Key('winScoreInput'),
-                    controller: _winScoreController,
-                    focusNode: _winScoreFocus,
-                    hintText: '输入分值',
-                    min: _winScoreMin,
-                    max: _winScoreMax,
-                    onValid: (v) => setState(() => _winScore = v),
-                    onCleared: () => setState(
-                      () => _winScore = ScoreboardSetupView.winScoreDefault,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildSettingPanel(
-                  title: '领先获胜规则',
-                  subtitle:
-                      '到达局点后需拉开该分差才能分出胜负，0 为到分即胜（$_leadMin-$_leadMax）',
-                  child: NumberOptionBlock(
-                    key: const Key('leadInput'),
-                    controller: _leadController,
-                    focusNode: _leadFocus,
-                    hintText: '输入分差',
-                    min: _leadMin,
-                    max: _leadMax,
-                    onValid: (v) => setState(() => _leadBy = v),
-                    onCleared: () => setState(
-                      () => _leadBy = ScoreboardSetupView.leadByDefault,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                PrimaryButton(
-                  label: '开始计分',
-                  icon: Icons.sports_score_rounded,
-                  // 上报当前生效配置（非法输入不生效，保持上次值）
-                  onPressed: () => widget.onStart(_bestOf, _winScore, _leadBy),
-                ),
-              ],
+    // 面板较多，启用滚动允许小屏设备查看全部设置项
+    return SetupScaffold(
+      scrollable: true,
+      children: [
+        // 存在未完成计分时展示恢复入口
+        if (saved != null) ...[
+          ResumeCard(
+            title: '继续上次计分',
+            summary:
+                'BO${saved.bestOf} · '
+                '大比分 ${saved.redGames}:${saved.blueGames}'
+                ' · 当前局 ${saved.redScore}:${saved.blueScore}',
+            onTap: widget.onResume,
+          ),
+          const SizedBox(height: 16),
+        ],
+        OptionPanel(
+          title: '赛制',
+          description:
+              '先赢得多数局数的一方获得整场胜利，输入局数（$_bestOfMin-$_bestOfMax）',
+          child: NumberOptionBlock(
+            key: const Key('bestOfInput'),
+            controller: _bestOfController,
+            focusNode: _bestOfFocus,
+            hintText: '输入局数',
+            min: _bestOfMin,
+            max: _bestOfMax,
+            onValid: (v) => setState(() => _bestOf = v),
+            onCleared: () => setState(
+              () => _bestOf = ScoreboardSetupView.bestOfDefault,
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  /// 构建设置面板：标题 + 说明 + 输入块
-  Widget _buildSettingPanel({
-    required String title,
-    required String subtitle,
-    required Widget child,
-  }) {
-    final palette = context.palette;
-
-    return PanelCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(
-              color: palette.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
+        const SizedBox(height: 16),
+        OptionPanel(
+          title: '每局胜利比分',
+          description:
+              '每局先达到该比分的一方赢下本局，输入分值（$_winScoreMin-$_winScoreMax）',
+          child: NumberOptionBlock(
+            key: const Key('winScoreInput'),
+            controller: _winScoreController,
+            focusNode: _winScoreFocus,
+            hintText: '输入分值',
+            min: _winScoreMin,
+            max: _winScoreMax,
+            onValid: (v) => setState(() => _winScore = v),
+            onCleared: () => setState(
+              () => _winScore = ScoreboardSetupView.winScoreDefault,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 13,
+        ),
+        const SizedBox(height: 16),
+        OptionPanel(
+          title: '领先获胜规则',
+          description:
+              '到达局点后需拉开该分差才能分出胜负，0 为到分即胜（$_leadMin-$_leadMax）',
+          child: NumberOptionBlock(
+            key: const Key('leadInput'),
+            controller: _leadController,
+            focusNode: _leadFocus,
+            hintText: '输入分差',
+            min: _leadMin,
+            max: _leadMax,
+            onValid: (v) => setState(() => _leadBy = v),
+            onCleared: () => setState(
+              () => _leadBy = ScoreboardSetupView.leadByDefault,
             ),
           ),
-          const SizedBox(height: 18),
-          child,
-        ],
-      ),
+        ),
+        const SizedBox(height: 24),
+        PrimaryButton(
+          label: '开始计分',
+          icon: Icons.sports_score_rounded,
+          // 上报当前生效配置（非法输入不生效，保持上次值）
+          onPressed: () => widget.onStart(_bestOf, _winScore, _leadBy),
+        ),
+      ],
     );
   }
 }

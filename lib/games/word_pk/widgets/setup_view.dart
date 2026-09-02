@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/word_pk/models/word_pk_game_state.dart';
-import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/lan_mode_panel.dart';
 import 'package:horyx/shared/widgets/option_block.dart';
-import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/option_panel.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/resume_card.dart';
+import 'package:horyx/shared/widgets/setup_scaffold.dart';
 
 /// 单词PK - 人数设置视图
 /// 顶部展示未完成对局的恢复入口（存在存档时），
@@ -50,94 +50,60 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
   @override
   Widget build(BuildContext context) {
     final saved = widget.savedState;
-    final palette = context.palette;
 
-    return SizedBox.expand(
-      child: Center(
-        // 平板/桌面端限制内容宽度，居中展示
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 存在未完成对局时展示恢复入口
-                if (saved != null) ...[
-                  ResumeCard(
-                    summary:
-                        '${saved.playerCount} 人对局 · '
-                        '已验证 ${saved.entries.length} 个单词',
-                    onTap: widget.onResume,
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                // 对局模式选择面板
-                LanModePanel(
-                  isLan: _isLan,
-                  onChanged: (v) => setState(() => _isLan = v),
-                  description:
-                      '本地同屏轮流输入；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
+    return SetupScaffold(
+      children: [
+        // 存在未完成对局时展示恢复入口
+        if (saved != null) ...[
+          ResumeCard(
+            summary:
+                '${saved.playerCount} 人对局 · '
+                '已验证 ${saved.entries.length} 个单词',
+            onTap: widget.onResume,
+          ),
+          const SizedBox(height: 16),
+        ],
+        // 对局模式选择面板
+        LanModePanel(
+          isLan: _isLan,
+          onChanged: (v) => setState(() => _isLan = v),
+          description:
+              '本地同屏轮流输入；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
+        ),
+        const SizedBox(height: 16),
+        // 人数选择面板
+        OptionPanel(
+          title: '参与人数',
+          description: '选择参与 PK 的人数（至少 2 人），玩家将按顺序轮流输入单词',
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (int n = WordPkSetupView.minPlayers;
+                  n <= WordPkSetupView.maxPlayers;
+                  n++)
+                OptionBlock(
+                  label: '$n',
+                  // 数字方块保持等宽排列
+                  fixedWidth: 56,
+                  selected: n == _selected,
+                  onTap: () => setState(() => _selected = n),
                 ),
-                const SizedBox(height: 16),
-                // 人数选择面板
-                PanelCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '参与人数',
-                        style: TextStyle(
-                          color: palette.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '选择参与 PK 的人数（至少 2 人），玩家将按顺序轮流输入单词',
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          for (int n = WordPkSetupView.minPlayers;
-                              n <= WordPkSetupView.maxPlayers;
-                              n++)
-                            OptionBlock(
-                              label: '$n',
-                              // 数字方块保持等宽排列
-                              fixedWidth: 56,
-                              selected: n == _selected,
-                              onTap: () => setState(() => _selected = n),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                PrimaryButton(
-                  // 局域网模式按钮变为「创建房间」，进入房间等待页（自己为玩家 1）
-                  label: _isLan ? '创建房间' : '开始 PK',
-                  icon: _isLan
-                      ? Icons.wifi_tethering_rounded
-                      : Icons.local_fire_department_rounded,
-                  onPressed: _isLan
-                      ? () => widget.onCreateRoom(_selected)
-                      : () => widget.onStart(_selected),
-                ),
-              ],
-            ),
+            ],
           ),
         ),
-      ),
+        const SizedBox(height: 24),
+        PrimaryButton(
+          // 局域网模式按钮变为「创建房间」，进入房间等待页（自己为玩家 1）
+          label: _isLan ? '创建房间' : '开始 PK',
+          icon: _isLan
+              ? Icons.wifi_tethering_rounded
+              : Icons.local_fire_department_rounded,
+          onPressed: _isLan
+              ? () => widget.onCreateRoom(_selected)
+              : () => widget.onStart(_selected),
+        ),
+      ],
     );
   }
 }

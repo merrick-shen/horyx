@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/option_block.dart';
-import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/option_panel.dart';
 
 /// 对局模式选择面板：本地对战 / 局域网对战二选一
 ///
-/// 五子棋与单词PK设置页共用。选中状态由调用方持有并传入：
+/// 五子棋、单词PK与坦克动荡设置页共用。选中状态由调用方持有并传入：
 /// 底部主按钮（开始对局/创建房间）同样依赖该状态，若面板自持状态
 /// 会形成两份需同步的数据源
 class LanModePanel extends StatelessWidget {
@@ -28,44 +27,22 @@ class LanModePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return PanelCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return OptionPanel(
+      title: '对局模式',
+      description: description,
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
         children: [
-          Text(
-            '对局模式',
-            style: TextStyle(
-              color: palette.textPrimary,
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-            ),
+          OptionBlock(
+            label: '本地对战',
+            selected: !isLan,
+            onTap: () => onChanged(false),
           ),
-          const SizedBox(height: 6),
-          Text(
-            description,
-            style: TextStyle(
-              color: palette.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 18),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              OptionBlock(
-                label: '本地对战',
-                selected: !isLan,
-                onTap: () => onChanged(false),
-              ),
-              OptionBlock(
-                label: '局域网对战',
-                selected: isLan,
-                onTap: () => onChanged(true),
-              ),
-            ],
+          OptionBlock(
+            label: '局域网对战',
+            selected: isLan,
+            onTap: () => onChanged(true),
           ),
         ],
       ),
