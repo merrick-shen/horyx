@@ -109,6 +109,9 @@ class _WordPkPageState
       // 非法提交的提示仍挂在 messenger 上，回设置视图前清理
       clearHint(context);
       setState(() => _started = false);
+      // 重新加载存档刷新恢复入口——开局时入口已被置空（savedState = null），
+      // 未提交即退出时磁盘上的旧存档仍在，回设置后应重新展示
+      loadSavedState();
       return;
     }
     await confirmExitWithArchive(

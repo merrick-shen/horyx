@@ -126,7 +126,9 @@ class _GomokuPageState
     });
   }
 
-  /// 返回设置视图：清盘后重新选择规格
+  /// 返回设置视图：清盘后重新选择规格；
+  /// 同时重新加载存档刷新恢复入口——开局时入口已被置空（savedState = null），
+  /// 未落子即退出时磁盘上的旧存档仍在，回设置后应重新展示
   void _backToSetup() {
     setState(() {
       _moves.clear();
@@ -135,6 +137,7 @@ class _GomokuPageState
       _winner = null;
       _started = false;
     });
+    loadSavedState();
   }
 
   /// 悔棋：撤回最后一颗确认棋子，执子方回退

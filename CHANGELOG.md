@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 应用启动不再等待词表加载完成
 - 坦克动荡迷宫生成优化：迷宫中出现环路，双方出生点之间存在多条进攻路线
 
+### Fixed
+
+- 修复开局后未进行任何操作就退出时，设置页的存档恢复入口消失的问题（五子棋与单词PK）
+
 ## [0.6.0] - 2026-09-01
 
 ### Added
