@@ -84,8 +84,10 @@ class _ScoreboardPageState
 
   @override
   void dispose() {
-    // 离开页面恢复竖屏，防止横屏锁定泄漏到其他页面
+    // 离开页面恢复竖屏，防止横屏锁定泄漏到其他页面；
+    // 沉浸式还原与坦克对局页一致：正常退出已在 _exitPlaying 还原，此处兜底其余 pop 路径
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -221,12 +223,14 @@ class _ScoreboardPageState
 
   // ---- 阶段切换与存档 ----
 
-  /// 开始计分：记录设置视图上报的配置，重置为新一场，锁定横屏并切换到计分板
+  /// 开始计分：记录设置视图上报的配置，重置为新一场，
+  /// 锁定横屏并进入沉浸式（隐藏状态栏/导航栏，与坦克对局页一致）后切换到计分板
   void _startPlaying(int bestOf, int winScore, int leadBy) {
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     setState(() {
       _bestOf = bestOf;
       _winScore = winScore;
@@ -277,9 +281,10 @@ class _ScoreboardPageState
     );
   }
 
-  /// 退出计分：恢复竖屏并回到设置视图，刷新恢复入口（保存退出后需展示）
+  /// 退出计分：恢复竖屏与系统 UI 模式并回到设置视图，刷新恢复入口（保存退出后需展示）
   void _exitPlaying() {
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     setState(() => _playing = false);
     loadSavedState();
   }
@@ -294,6 +299,7 @@ class _ScoreboardPageState
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
     ]);
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     setState(() {
       _bestOf = saved.bestOf;
       _winScore = saved.winScore;
