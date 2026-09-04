@@ -113,6 +113,12 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
     // 页面销毁即退出对局：关闭底层房间连接
     // （房主解散会通知全员；客户端退出由各游戏的房主侧 onSeatLeft 处理）
     client?.removeListener(_onClientChanged);
+    // 关闭连接前先切断游戏消息回调：close 不等待（bye flush 最长数秒），
+    // 窗口期内对端消息仍会进入并分发到已 dispose 的控制器，
+    // 触发 notifyListeners 的 "used after being disposed" 断言
+    host?.onGameMessage = null;
+    host?.onSeatLeft = null;
+    client?.onGameMessage = null;
     host?.close();
     client?.close();
     super.dispose();
