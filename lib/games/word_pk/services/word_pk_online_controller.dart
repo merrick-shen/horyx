@@ -43,12 +43,14 @@ class WordPkOnlineController extends OnlineGameControllerBase {
   /// 已生效单词（最新置顶，与本地对局展示一致）
   final List<WordEntry> entries = [];
 
-  /// 是否轮到自己输入
-  bool get isMyTurn => currentPlayer == mySeat;
+  /// 是否轮到自己输入（终局后禁止继续，与 gomoku 联机控制器防线一致）
+  bool get isMyTurn => currentPlayer == mySeat && gameEndedText == null;
 
   /// 提交单词（页面输入框调用；返回 true 表示输入合法、可清空输入框）
   /// 客户端的词法校验在本地完成（省一次往返），真实性仍由房主裁决
   bool submitWord(String raw) {
+    // 终局后拒绝提交（gomoku submitStone 同款入口拦截：不提示、不受理）
+    if (gameEndedText != null) return false;
     // 词法规则（空串/纯字母）统一走 WordValidator，与本地对局同源
     final formatError = WordValidator.validateFormat(raw);
     if (formatError != null) {

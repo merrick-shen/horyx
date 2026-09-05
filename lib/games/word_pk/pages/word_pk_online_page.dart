@@ -38,9 +38,8 @@ class WordPkOnlinePage extends StatelessWidget {
         currentPlayer: controller.currentPlayer,
         entries: controller.entries,
         onSubmit: controller.submitWord,
-        // 终局后禁输（连接已断，提交无处可去）
-        inputEnabled:
-            controller.isMyTurn && controller.gameEndedText == null,
+        // isMyTurn 已含终局判断：终局后禁输（连接已断，提交无处可去）
+        inputEnabled: controller.isMyTurn,
         selfSeat: controller.mySeat,
       ),
     );
