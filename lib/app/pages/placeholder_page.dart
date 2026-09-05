@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 
 /// 通用占位页
 /// 功能待开发的页面统一使用：顶栏 + 居中「功能开发中」提示
@@ -18,33 +18,25 @@ class PlaceholderPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
+    return AppPageScaffold(
+      title: title,
+      showBack: true,
+      child: Center(
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            AppTopBar(title: title, showBack: true),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      // 未指定图标时使用默认问号
-                      icon ?? Icons.help_outline_rounded,
-                      color: context.palette.textSecondary,
-                      size: 36,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '功能开发中，敬请期待',
-                      style: TextStyle(
-                        color: context.palette.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
+            Icon(
+              // 未指定图标时使用默认问号
+              icon ?? Icons.help_outline_rounded,
+              color: context.palette.textSecondary,
+              size: 36,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '功能开发中，敬请期待',
+              style: TextStyle(
+                color: context.palette.textSecondary,
+                fontSize: 13,
               ),
             ),
           ],

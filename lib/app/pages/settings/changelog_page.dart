@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 
 /// 更新日志页
 /// 内容直接读取打包进应用的 CHANGELOG.md 资源，与仓库文件保持一致：
@@ -39,18 +39,10 @@ class _ChangelogPageState extends State<ChangelogPage> {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            AppTopBar(title: '更新日志', showBack: true),
-            Expanded(
-              child: _buildBody(palette),
-            ),
-          ],
-        ),
-      ),
+    return AppPageScaffold(
+      title: '更新日志',
+      showBack: true,
+      child: _buildBody(palette),
     );
   }
 

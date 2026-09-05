@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/setting_tile.dart';
@@ -16,74 +16,65 @@ class MorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const AppTopBar(title: '更多'),
-            Expanded(
-              child: SingleChildScrollView(
-                child: PageContent(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // 「设置」模块：应用个性化配置
-                      _SectionCard(
-                        header: '设置',
-                        children: [
-                          SettingTile(
-                            icon: Icons.palette_rounded,
-                            title: '主题',
-                            subtitle: '主题模式与色彩定制',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const ThemeSettingsPage(),
-                                ),
-                              );
-                            },
-                          ),
-                          // 存档管理：查看并清除各游戏未完成对局
-                          SettingTile(
-                            icon: Icons.inventory_2_rounded,
-                            title: '存档管理',
-                            subtitle: '查看并清除未完成对局',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const ArchivePage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      // 「其他」模块：辅助信息
-                      _SectionCard(
-                        header: '其他',
-                        children: [
-                          SettingTile(
-                            icon: Icons.info_outline_rounded,
-                            title: '关于',
-                            subtitle: '应用信息与版本号',
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const AboutPage(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
+    return AppPageScaffold(
+      title: '更多',
+      child: SingleChildScrollView(
+        child: PageContent(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 「设置」模块：应用个性化配置
+              _SectionCard(
+                header: '设置',
+                children: [
+                  SettingTile(
+                    icon: Icons.palette_rounded,
+                    title: '主题',
+                    subtitle: '主题模式与色彩定制',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ThemeSettingsPage(),
+                        ),
+                      );
+                    },
                   ),
-                ),
+                  // 存档管理：查看并清除各游戏未完成对局
+                  SettingTile(
+                    icon: Icons.inventory_2_rounded,
+                    title: '存档管理',
+                    subtitle: '查看并清除未完成对局',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ArchivePage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              // 「其他」模块：辅助信息
+              _SectionCard(
+                header: '其他',
+                children: [
+                  SettingTile(
+                    icon: Icons.info_outline_rounded,
+                    title: '关于',
+                    subtitle: '应用信息与版本号',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const AboutPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

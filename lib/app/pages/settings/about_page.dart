@@ -3,7 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/app/pages/settings/changelog_page.dart';
 
 /// 关于页
@@ -43,119 +43,111 @@ class _AboutPageState extends State<AboutPage> {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            AppTopBar(title: '关于', showBack: true),
-            Expanded(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
+    return AppPageScaffold(
+      title: '关于',
+      showBack: true,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 应用标识：主题色 Logo
+              // （SVG 源文件为黑色填充，经 colorFilter 重着色，
+              //   颜色实时跟随用户选择的主题色）
+              SvgPicture.asset(
+                'assets/icon/logo.svg',
+                width: 90,
+                height: 90,
+                colorFilter: ColorFilter.mode(
+                  palette.primary,
+                  BlendMode.srcIn,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Horyx',
+                style: TextStyle(
+                  color: palette.textPrimary,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '游戏合集，随时开局的掌上游戏厅',
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 13.5,
+                ),
+              ),
+              if (_version.isNotEmpty) ...[
+                const SizedBox(height: 22),
+                Text(
+                  'v$_version 开发版',
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 26),
+              // 更新日志入口：内容较长，跳转独立页滚动浏览
+              // （内容读取自打包的 CHANGELOG.md，与仓库文件一致）
+              InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ChangelogPage(),
+                  ),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: palette.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 应用标识：主题色 Logo
-                      // （SVG 源文件为黑色填充，经 colorFilter 重着色，
-                      //   颜色实时跟随用户选择的主题色）
-                      SvgPicture.asset(
-                        'assets/icon/logo.svg',
-                        width: 90,
-                        height: 90,
-                        colorFilter: ColorFilter.mode(
-                          palette.primary,
-                          BlendMode.srcIn,
-                        ),
+                      Icon(
+                        Icons.article_outlined,
+                        size: 18,
+                        color: palette.primary,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(width: 6),
                       Text(
-                        'Horyx',
+                        '更新日志',
                         style: TextStyle(
-                          color: palette.textPrimary,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
+                          color: palette.primary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '游戏合集，随时开局的掌上游戏厅',
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 13.5,
-                        ),
-                      ),
-                      if (_version.isNotEmpty) ...[
-                        const SizedBox(height: 22),
-                        Text(
-                          'v$_version 开发版',
-                          style: TextStyle(
-                            color: palette.textSecondary,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 26),
-                      // 更新日志入口：内容较长，跳转独立页滚动浏览
-                      // （内容读取自打包的 CHANGELOG.md，与仓库文件一致）
-                      InkWell(
-                        borderRadius: BorderRadius.circular(10),
-                        onTap: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ChangelogPage(),
-                          ),
-                        ),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: palette.primary.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.article_outlined,
-                                size: 18,
-                                color: palette.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '更新日志',
-                                style: TextStyle(
-                                  color: palette.primary,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 18,
-                                color: palette.primary,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                      Text(
-                        '开发者：Merrick Shen',
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 12,
-                        ),
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.chevron_right_rounded,
+                        size: 18,
+                        color: palette.primary,
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 30),
+              Text(
+                '开发者：Merrick Shen',
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

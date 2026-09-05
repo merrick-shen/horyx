@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/app/widgets/game_grid.dart';
 
 /// 主页：导航栏 + 游戏列表
@@ -10,21 +10,12 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const AppTopBar(title: 'Horyx'),
-            // 内容可能超出一屏（游戏卡片分多行），需要滚动容器承载
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: const GameGrid(),
-              ),
-            ),
-          ],
-        ),
+    return AppPageScaffold(
+      title: 'Horyx',
+      // 内容可能超出一屏（游戏卡片分多行），需要滚动容器承载
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: const GameGrid(),
       ),
     );
   }

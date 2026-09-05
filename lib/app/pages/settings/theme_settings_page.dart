@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/theme/theme_controller.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/color_picker_dialog.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
@@ -60,27 +60,19 @@ class ThemeSettingsPage extends StatelessWidget {
     // InheritedNotifier 依赖：主题状态变化时本页自动重建，选中态即时刷新
     final controller = ThemeScope.of(context);
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            AppTopBar(title: '主题设置', showBack: true),
-            Expanded(
-              child: SingleChildScrollView(
-                child: PageContent(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildModeCard(context, controller),
-                      const SizedBox(height: 14),
-                      _buildColorCard(context, controller),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+    return AppPageScaffold(
+      title: '主题设置',
+      showBack: true,
+      child: SingleChildScrollView(
+        child: PageContent(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildModeCard(context, controller),
+              const SizedBox(height: 14),
+              _buildColorCard(context, controller),
+            ],
+          ),
         ),
       ),
     );

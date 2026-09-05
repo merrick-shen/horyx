@@ -5,7 +5,7 @@ import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
 import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
+import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
@@ -122,51 +122,43 @@ class _ArchivePageState extends State<ArchivePage> {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            AppTopBar(title: '存档管理', showBack: true),
-            Expanded(
-              child: SingleChildScrollView(
-                child: PageContent(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_entries.isNotEmpty) ...[
-                        // 说明文案：存档来源
-                        Padding(
-                          padding: const EdgeInsets.only(left: 4, bottom: 12),
-                          child: Text(
-                            '各游戏的未完成对局存档，删除后无法恢复',
-                            style: TextStyle(
-                              color: palette.textSecondary,
-                              fontSize: 12.5,
-                            ),
-                          ),
-                        ),
-                        // 存档条目列表
-                        for (final entry in _entries) ...[
-                          _ArchiveTile(
-                            entry: entry,
-                            timeText: _formatTime(entry.savedAt),
-                            onDelete: () => _confirmRemove(entry),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                      ] else if (_loaded) ...[
-                        // 无存档空状态
-                        _EmptyView(),
-                      ],
-                      // 加载中阶段（_loaded 为 false）不渲染内容，
-                      // 本地存储读取很快，无需专门 loading 指示
-                    ],
+    return AppPageScaffold(
+      title: '存档管理',
+      showBack: true,
+      child: SingleChildScrollView(
+        child: PageContent(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_entries.isNotEmpty) ...[
+                // 说明文案：存档来源
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 12),
+                  child: Text(
+                    '各游戏的未完成对局存档，删除后无法恢复',
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 12.5,
+                    ),
                   ),
                 ),
-              ),
-            ),
-          ],
+                // 存档条目列表
+                for (final entry in _entries) ...[
+                  _ArchiveTile(
+                    entry: entry,
+                    timeText: _formatTime(entry.savedAt),
+                    onDelete: () => _confirmRemove(entry),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ] else if (_loaded) ...[
+                // 无存档空状态
+                _EmptyView(),
+              ],
+              // 加载中阶段（_loaded 为 false）不渲染内容，
+              // 本地存储读取很快，无需专门 loading 指示
+            ],
+          ),
         ),
       ),
     );
