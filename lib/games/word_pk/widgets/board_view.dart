@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/word_pk/models/word_entry.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/widgets/app_text_field.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
@@ -103,28 +104,12 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
                     autocorrect: false,
                     enableSuggestions: false,
                     textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
+                    decoration: buildAppTextFieldDecoration(
+                      palette,
                       hintText: widget.inputEnabled
                           ? '输入英文单词'
                           : '等待玩家 ${widget.currentPlayer} 输入…',
-                      hintStyle: TextStyle(color: palette.textSecondary),
-                      filled: true,
                       fillColor: palette.surfaceBg,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(color: palette.stroke),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        borderSide: BorderSide(
-                          color: palette.primary,
-                          width: 1.4,
-                        ),
-                      ),
                     ),
                   ),
                 ),
