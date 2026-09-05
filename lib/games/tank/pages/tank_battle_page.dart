@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/game/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_game_state.dart';
@@ -14,6 +13,7 @@ import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
 import 'package:horyx/games/tank/widgets/tank_score_view.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/utils/landscape_immersive_mixin.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 
 /// 坦克动荡本地对局页（横屏全屏，无顶栏）
@@ -37,7 +37,8 @@ class TankBattlePage extends StatefulWidget {
   State<TankBattlePage> createState() => _TankBattlePageState();
 }
 
-class _TankBattlePageState extends State<TankBattlePage> {
+class _TankBattlePageState extends State<TankBattlePage>
+    with LandscapeImmersiveMixin {
   /// 双方比分（由战场游戏的得分回调驱动刷新）
   late int _redScore = widget.initialRedScore;
   late int _greenScore = widget.initialGreenScore;
@@ -58,12 +59,8 @@ class _TankBattlePageState extends State<TankBattlePage> {
   @override
   void initState() {
     super.initState();
-    // 对局页强制横屏 + 沉浸式（隐藏状态栏/导航栏），退出页面时在 dispose 还原
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // 对局页强制横屏 + 沉浸式（隐藏状态栏/导航栏），退出还原由 mixin 兜底
+    enterLandscapeImmersive();
     // 战场得分回调：刷新比分 UI；
     // 恢复对战时把存档比分同步给战场（战场内部计分从该值继续累计）
     _game
@@ -86,13 +83,6 @@ class _TankBattlePageState extends State<TankBattlePage> {
     });
   }
 
-  @override
-  void dispose() {
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    super.dispose();
-  }
-
   void _onDrive(TankPlayer player, TankDriveInput? input) {
     _driveInputs[player] = input;
     // 驾驶输入实时下发战场游戏，驱动对应坦克转向/前进
@@ -105,10 +95,9 @@ class _TankBattlePageState extends State<TankBattlePage> {
   /// 退出到设置页：先发起竖屏与 UI 模式恢复、再 pop——
   /// 系统旋转与转场动画并行执行；若等转场结束（dispose）才开始旋转，
   /// 两个耗时串行叠加，退出后要明显多等约半秒才回到竖屏。
-  /// dispose 中的同款调用保留作兜底（覆盖未经本方法的 pop 路径）
+  /// （dispose 的还原由 mixin 兜底，覆盖未经本方法的 pop 路径）
   void _exitToSetup() {
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    restorePortrait();
     Navigator.of(context).pop();
   }
 

@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/game/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
@@ -14,6 +13,7 @@ import 'package:horyx/games/tank/widgets/tank_joystick.dart';
 import 'package:horyx/games/tank/widgets/tank_score_view.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/utils/landscape_immersive_mixin.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';
 
 /// 坦克动荡联机对局页（横屏沉浸，无顶栏）
@@ -42,7 +42,8 @@ class TankOnlinePage extends StatefulWidget {
   State<TankOnlinePage> createState() => _TankOnlinePageState();
 }
 
-class _TankOnlinePageState extends State<TankOnlinePage> {
+class _TankOnlinePageState extends State<TankOnlinePage>
+    with LandscapeImmersiveMixin {
   /// 我方角色：房主 = 红方（座位 1），客户端 = 绿方（座位 2）
   TankPlayer get _myPlayer =>
       widget.host != null ? TankPlayer.red : TankPlayer.green;
@@ -70,26 +71,8 @@ class _TankOnlinePageState extends State<TankOnlinePage> {
   @override
   void initState() {
     super.initState();
-    // 横屏 + 沉浸式（同本地对局页），退出页面时在 dispose 还原
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-  }
-
-  /// 还原竖屏与系统 UI：退出确认/终局弹窗后先还原再 pop（旋转与
-  /// 转场动画并行，退出无延迟——同本地对局页的退出处理）；
-  /// dispose 中同样调用作兜底（覆盖未经确认弹窗的 pop 路径）
-  void _restoreOrientation() {
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  }
-
-  @override
-  void dispose() {
-    _restoreOrientation();
-    super.dispose();
+    // 横屏 + 沉浸式（同本地对局页），退出还原由 mixin 兜底
+    enterLandscapeImmersive();
   }
 
   /// 控制器工厂（shell initState 调用一次）：创建后立即挂接战场——
@@ -152,9 +135,9 @@ class _TankOnlinePageState extends State<TankOnlinePage> {
       exitMessage: '退出后将断开与房间的连接，对局将结束',
       createController: _createController,
       // 与本地对局页一致：横屏沉浸无顶栏（退出经系统返回触发确认流程）；
-      // 退出确认/终局弹窗后先还原竖屏再 pop（无延迟退出）
+      // 退出确认/终局弹窗后先还原竖屏再 pop（旋转与转场动画并行，无延迟退出）
       showTopBar: false,
-      onBeforeExit: _restoreOrientation,
+      onBeforeExit: restorePortrait,
       buildGameView: (context, controller, requestExit) {
         // 控制器通知（含比分变化）驱动的重建时机：先 diff 得分瞬间
         // 再构建视图，保证比分数字与烟雾特效同步出现

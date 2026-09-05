@@ -6,6 +6,7 @@ import 'package:horyx/games/scoreboard/services/scoreboard_rules.dart';
 import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
+import 'package:horyx/shared/utils/landscape_immersive_mixin.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/scoreboard/widgets/scoreboard_view.dart';
@@ -24,7 +25,8 @@ class ScoreboardPage extends StatefulWidget {
 }
 
 class _ScoreboardPageState
-    extends GameArchiveStateBase<ScoreboardPage, ScoreboardGameState> {
+    extends GameArchiveStateBase<ScoreboardPage, ScoreboardGameState>
+    with LandscapeImmersiveMixin {
   /// 是否处于计分阶段（横屏计分板）
   bool _playing = false;
 
@@ -80,15 +82,6 @@ class _ScoreboardPageState
     // 进入页面即锁定竖屏，避免携横屏状态进入设置视图
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     loadSavedState();
-  }
-
-  @override
-  void dispose() {
-    // 离开页面恢复竖屏，防止横屏锁定泄漏到其他页面；
-    // 沉浸式还原与坦克对局页一致：正常退出已在 _exitPlaying 还原，此处兜底其余 pop 路径
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    super.dispose();
   }
 
   // ---- 计分核心逻辑 ----
@@ -224,13 +217,9 @@ class _ScoreboardPageState
   // ---- 阶段切换与存档 ----
 
   /// 开始计分：记录设置视图上报的配置，重置为新一场，
-  /// 锁定横屏并进入沉浸式（隐藏状态栏/导航栏，与坦克对局页一致）后切换到计分板
+  /// 进入横屏沉浸式（隐藏状态栏/导航栏，与坦克对局页一致）后切换到计分板
   void _startPlaying(int bestOf, int winScore, int leadBy) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    enterLandscapeImmersive();
     setState(() {
       _bestOf = bestOf;
       _winScore = winScore;
@@ -281,10 +270,9 @@ class _ScoreboardPageState
     );
   }
 
-  /// 退出计分：恢复竖屏与系统 UI 模式并回到设置视图，刷新恢复入口（保存退出后需展示）
+  /// 退出计分：还原竖屏并回到设置视图，刷新恢复入口（保存退出后需展示）
   void _exitPlaying() {
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    restorePortrait();
     setState(() => _playing = false);
     loadSavedState();
   }
@@ -295,11 +283,7 @@ class _ScoreboardPageState
     final saved = savedState;
     if (saved == null) return;
 
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    enterLandscapeImmersive();
     setState(() {
       _bestOf = saved.bestOf;
       _winScore = saved.winScore;
