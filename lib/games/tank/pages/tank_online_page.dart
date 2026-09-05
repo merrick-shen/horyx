@@ -8,7 +8,7 @@ import 'package:horyx/games/tank/game/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_online_controller.dart';
-import 'package:horyx/games/tank/widgets/score_smoke_effect.dart';
+import 'package:horyx/games/tank/widgets/tank_control_column.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
 import 'package:horyx/games/tank/widgets/tank_score_view.dart';
@@ -159,145 +159,58 @@ class _TankOnlinePageState extends State<TankOnlinePage> {
         // 控制器通知（含比分变化）驱动的重建时机：先 diff 得分瞬间
         // 再构建视图，保证比分数字与烟雾特效同步出现
         _diffScores();
-        return _BattleView(
-          game: _game,
-          myPlayer: _myPlayer,
-          redSmokeTick: _redSmokeTick,
-          greenSmokeTick: _greenSmokeTick,
-          onDrive: _onDrive,
-          onFire: _onFire,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // 挖孔/刘海在横屏下只产生单侧 inset，取较大值避让，
+            // 保证左右操作区到屏幕边缘的距离完全对称（同本地对局页）
+            final insets = MediaQuery.of(context).padding;
+            final hCutout = math.max(insets.left, insets.right);
+            final slotHeight =
+                TankControlColumn.slotHeightFor(constraints.maxHeight);
+            // 布局复刻本地对局页（两列三槽、比分原位）；联机双方各自正持
+            // 设备看同一方向战场，己方控件统一落位本地红方的操作位（左列
+            // 底部摇杆 + 右列底部开火钮），仅以颜色区分角色（房主红 / 客户端
+            // 绿），本地绿方控件的原位槽留空保位（null 空槽）：
+            // - 左列（自上而下）：空槽（本地绿方开火钮位）/ 红方比分 / 己方摇杆
+            // - 右列（自上而下）：空槽（本地绿方摇杆位）/ 绿方比分 / 己方开火钮
+            return Padding(
+              padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
+              child: Row(
+                children: [
+                  TankControlColumn(
+                    slotHeight: slotHeight,
+                    middle: TankScoreView.smoke(
+                      player: TankPlayer.red,
+                      score: _game.redScore,
+                      smokeTick: _redSmokeTick,
+                    ),
+                    bottom: TankJoystick(
+                      color: _myPlayer.color,
+                      size: slotHeight,
+                      onDrive: _onDrive,
+                    ),
+                  ),
+                  // 战场区域：Flame 画布渲染本局迷宫（房主模拟/影子战场）
+                  Expanded(child: GameWidget(game: _game)),
+                  TankControlColumn(
+                    slotHeight: slotHeight,
+                    middle: TankScoreView.smoke(
+                      player: TankPlayer.green,
+                      score: _game.greenScore,
+                      smokeTick: _greenSmokeTick,
+                      mirrored: true,
+                    ),
+                    bottom: TankFireButton(
+                      color: _myPlayer.color,
+                      onTap: _onFire,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
-    );
-  }
-}
-
-/// 联机战场视图：布局复刻本地对局页（两列控制、三行等高槽位、比分原位）；
-/// 联机双方各自正持设备看同一方向战场，己方控件统一落位本地红方的
-/// 操作位（左列底部摇杆 + 右列底部开火钮），仅以颜色区分角色
-/// （房主红 / 客户端绿），本地绿方控件的原位槽留空保位：
-/// - 左列（自上而下）：空槽（本地绿方开火钮位）/ 红方比分 / 己方摇杆
-/// - 右列（自上而下）：空槽（本地绿方摇杆位）/ 绿方比分 / 己方开火钮
-class _BattleView extends StatelessWidget {
-  const _BattleView({
-    required this.game,
-    required this.myPlayer,
-    required this.redSmokeTick,
-    required this.greenSmokeTick,
-    required this.onDrive,
-    required this.onFire,
-  });
-
-  /// 联机战场（比分读取源；坦克/子弹由 Flame 内部渲染）
-  final TankMazeGame game;
-
-  /// 我方角色（决定我方控件落位，对方控件槽位留空）
-  final TankPlayer myPlayer;
-
-  /// 双方得分烟雾触发计数
-  final int redSmokeTick;
-  final int greenSmokeTick;
-
-  /// 驾驶/开火回调（页面上报路由见 [_TankOnlinePageState]）
-  final ValueChanged<TankDriveInput?> onDrive;
-  final VoidCallback onFire;
-
-  /// 摇杆列四周留白：圆钮推出底座时会越过摇杆区域约半个钮径
-  /// （最大约槽高 12%+，140 槽时约 34px），留白必须覆盖之——
-  /// 否则圆钮会被后绘制的地图区盖住、伸出屏幕外（同本地对局页）
-  static const double _panelPadding = 40;
-
-  /// 等高槽位：较小控件（开火钮/比分）在槽内居中
-  Widget _slot(double height, Widget? child) => SizedBox(
-        height: height,
-        child: Center(child: child),
-      );
-
-  Widget _emptySlot(double height) => SizedBox(height: height, width: height);
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 挖孔/刘海在横屏下只产生单侧 inset，取较大值避让，
-        // 保证左右操作区到屏幕边缘的距离完全对称（同本地对局页）
-        final insets = MediaQuery.of(context).padding;
-        final hCutout = math.max(insets.left, insets.right);
-        // 三行等高槽位随屏幕高度收缩（下限 104 防控件过小），
-        // 80 = 摇杆列上下留白 ×2（同本地对局页）
-        final slotHeight = math.max(
-            104.0, math.min(140.0, (constraints.maxHeight - 80) / 3));
-        return Padding(
-          padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
-          child: Row(
-            children: [
-              _buildLeftColumn(slotHeight),
-              // 战场区域：Flame 画布渲染本局迷宫（房主模拟/影子战场）
-              Expanded(child: GameWidget(game: game)),
-              _buildRightColumn(slotHeight),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// 左列控制：空槽（本地绿方开火钮位）/ 红方比分 / 己方摇杆（底部）
-  Widget _buildLeftColumn(double slotHeight) {
-    return Padding(
-      padding: const EdgeInsets.all(_panelPadding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _emptySlot(slotHeight),
-          _slot(
-            slotHeight,
-            TankScoreView(
-              player: TankPlayer.red,
-              score: game.redScore,
-              numberOverlay: IgnorePointer(
-                child: ScoreSmokeEffect(tick: redSmokeTick),
-              ),
-            ),
-          ),
-          TankJoystick(
-            color: myPlayer.color,
-            size: slotHeight,
-            onDrive: onDrive,
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 右列控制：空槽（本地绿方摇杆位）/ 绿方比分 / 己方开火钮（底部）
-  Widget _buildRightColumn(double slotHeight) {
-    return Padding(
-      padding: const EdgeInsets.all(_panelPadding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _emptySlot(slotHeight),
-          _slot(
-            slotHeight,
-            TankScoreView(
-              player: TankPlayer.green,
-              score: game.greenScore,
-              mirrored: true,
-              numberOverlay: IgnorePointer(
-                child: ScoreSmokeEffect(tick: greenSmokeTick),
-              ),
-            ),
-          ),
-          _slot(
-            slotHeight,
-            TankFireButton(
-              color: myPlayer.color,
-              onTap: onFire,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

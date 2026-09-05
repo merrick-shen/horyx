@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/widgets/score_smoke_effect.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 比分显示：侧视小坦克图标（烘焙白模染色）+ 比分数字
@@ -14,6 +15,25 @@ class TankScoreView extends StatelessWidget {
     this.mirrored = false,
     this.numberOverlay,
   });
+
+  /// 便捷构造：数字覆盖层挂得分烟雾特效（[smokeTick] 驱动）并自动包
+  /// IgnorePointer 不拦截手势（本地页与联机页共用的组合包装）
+  factory TankScoreView.smoke({
+    Key? key,
+    required TankPlayer player,
+    required int score,
+    required int smokeTick,
+    bool mirrored = false,
+  }) =>
+      TankScoreView(
+        key: key,
+        player: player,
+        score: score,
+        mirrored: mirrored,
+        numberOverlay: IgnorePointer(
+          child: ScoreSmokeEffect(tick: smokeTick),
+        ),
+      );
 
   /// 归属玩家（决定图标染色）
   final TankPlayer player;

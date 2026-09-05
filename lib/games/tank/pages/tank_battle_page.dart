@@ -9,7 +9,7 @@ import 'package:horyx/games/tank/models/tank_game_state.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_storage.dart';
-import 'package:horyx/games/tank/widgets/score_smoke_effect.dart';
+import 'package:horyx/games/tank/widgets/tank_control_column.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
 import 'package:horyx/games/tank/widgets/tank_score_view.dart';
@@ -150,107 +150,57 @@ class _TankBattlePageState extends State<TankBattlePage> {
         body: LayoutBuilder(
           builder: (context, constraints) {
             final insets = MediaQuery.of(context).padding;
-            final hCutout =
-                insets.left > insets.right ? insets.left : insets.right;
-            // 三行等高槽位随屏幕高度收缩（下限 104 防控件过小），
-            // 避免固定槽高在小屏横屏下纵向溢出；
-            // 80 = 摇杆列上下留白（_panelPadding）×2
-            final slotHeight = math.max(
-                104.0, math.min(140.0, (constraints.maxHeight - 80) / 3));
+            final hCutout = math.max(insets.left, insets.right);
+            final slotHeight =
+                TankControlColumn.slotHeightFor(constraints.maxHeight);
             return Padding(
               padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
               child: Row(
                 children: [
-                  _buildLeftColumn(slotHeight),
+                  // 左列（自上而下）：绿方开火钮 / 红方比分 / 红方摇杆（复刻原版交叉布局）
+                  TankControlColumn(
+                    slotHeight: slotHeight,
+                    top: TankFireButton(
+                      color: TankPlayer.green.color,
+                      onTap: () => _onFire(TankPlayer.green),
+                    ),
+                    middle: TankScoreView.smoke(
+                      player: TankPlayer.red,
+                      score: _redScore,
+                      smokeTick: _redSmokeTick,
+                    ),
+                    bottom: TankJoystick(
+                      color: TankPlayer.red.color,
+                      size: slotHeight,
+                      onDrive: (input) => _onDrive(TankPlayer.red, input),
+                    ),
+                  ),
                   // 战场区域：Flame 画布渲染本局迷宫
                   Expanded(child: GameWidget(game: _game)),
-                  _buildRightColumn(slotHeight),
+                  // 右列（自上而下）：绿方摇杆 / 绿方比分 / 红方开火钮
+                  TankControlColumn(
+                    slotHeight: slotHeight,
+                    top: TankJoystick(
+                      color: TankPlayer.green.color,
+                      size: slotHeight,
+                      onDrive: (input) => _onDrive(TankPlayer.green, input),
+                    ),
+                    middle: TankScoreView.smoke(
+                      player: TankPlayer.green,
+                      score: _greenScore,
+                      smokeTick: _greenSmokeTick,
+                      mirrored: true,
+                    ),
+                    bottom: TankFireButton(
+                      color: TankPlayer.red.color,
+                      onTap: () => _onFire(TankPlayer.red),
+                    ),
+                  ),
                 ],
               ),
             );
           },
         ),
-      ),
-    );
-  }
-
-  /// 摇杆列四周留白：圆钮推出底座时会越过摇杆区域约半个钮径
-  /// （最大约槽高 12%+，140 槽时约 34px），留白必须覆盖之——
-  /// 否则左侧圆钮会被后绘制的地图区盖住、下方会伸出屏幕外
-  static const double _panelPadding = 40;
-
-  /// 等高槽位：较小控件（开火钮/比分）在槽内居中
-  Widget _slot(double height, Widget child) => SizedBox(
-        height: height,
-        child: Center(child: child),
-      );
-
-  /// 左列控制：绿方开火钮 / 红方比分 / 红方摇杆（复刻原版交叉布局）
-  Widget _buildLeftColumn(double slotHeight) {
-    return Padding(
-      padding: const EdgeInsets.all(_panelPadding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _slot(
-            slotHeight,
-            TankFireButton(
-              color: TankPlayer.green.color,
-              onTap: () => _onFire(TankPlayer.green),
-            ),
-          ),
-          _slot(
-            slotHeight,
-            TankScoreView(
-              player: TankPlayer.red,
-              score: _redScore,
-              numberOverlay: IgnorePointer(
-                child: ScoreSmokeEffect(tick: _redSmokeTick),
-              ),
-            ),
-          ),
-          TankJoystick(
-            color: TankPlayer.red.color,
-            size: slotHeight,
-            onDrive: (input) => _onDrive(TankPlayer.red, input),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 右列控制：绿方摇杆 / 绿方比分 / 红方开火钮
-  /// 结构与左列完全一致（仅控件种类镜像），保证两列宽度与行位置对称
-  Widget _buildRightColumn(double slotHeight) {
-    return Padding(
-      padding: const EdgeInsets.all(_panelPadding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          TankJoystick(
-            color: TankPlayer.green.color,
-            size: slotHeight,
-            onDrive: (input) => _onDrive(TankPlayer.green, input),
-          ),
-          _slot(
-            slotHeight,
-            TankScoreView(
-              player: TankPlayer.green,
-              score: _greenScore,
-              mirrored: true,
-              numberOverlay: IgnorePointer(
-                child: ScoreSmokeEffect(tick: _greenSmokeTick),
-              ),
-            ),
-          ),
-          _slot(
-            slotHeight,
-            TankFireButton(
-              color: TankPlayer.red.color,
-              onTap: () => _onFire(TankPlayer.red),
-            ),
-          ),
-        ],
       ),
     );
   }
