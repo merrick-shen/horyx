@@ -1,11 +1,9 @@
 import 'dart:collection';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/game/bullet.dart';
 import 'package:horyx/games/tank/game/effects/bullet_expire_effect.dart';
@@ -15,6 +13,7 @@ import 'package:horyx/games/tank/game/tank_audio.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
+import 'package:horyx/shared/utils/asset_image.dart';
 
 /// 坦克动荡战场游戏（Flame）：渲染每局随机生成的迷宫，并驱动坦克实体。
 /// 迷宫按画布尺寸等比缩放并居中；墙体参数取自原版截图实测。
@@ -225,12 +224,15 @@ class TankMazeGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
-    _bodySprite = Sprite(await _loadImage('assets/tank/tank_body.png'));
-    _cannonSprite = Sprite(await _loadImage('assets/tank/tank_cannon.png'));
-    _bulletSprite = Sprite(await _loadImage('assets/tank/bullet.png'));
-    _shardSprite = Sprite(await _loadImage('assets/tank/tank_shard.png'));
-    _smokeSprite = Sprite(await _loadImage('assets/tank/explosion_smoke.png'));
-    _flashSprite = Sprite(await _loadImage('assets/tank/explosion_flash.png'));
+    _bodySprite = Sprite(await loadAssetImage('assets/tank/tank_body.png'));
+    _cannonSprite =
+        Sprite(await loadAssetImage('assets/tank/tank_cannon.png'));
+    _bulletSprite = Sprite(await loadAssetImage('assets/tank/bullet.png'));
+    _shardSprite = Sprite(await loadAssetImage('assets/tank/tank_shard.png'));
+    _smokeSprite =
+        Sprite(await loadAssetImage('assets/tank/explosion_smoke.png'));
+    _flashSprite =
+        Sprite(await loadAssetImage('assets/tank/explosion_flash.png'));
     await TankAudio.preload();
     _ensureTanks();
     _syncTanks();
@@ -615,15 +617,6 @@ class TankMazeGame extends FlameGame {
         ..position = _boardOffset + bullet.logicalPos * _cell
         ..scale = Vector2.all(_cell);
     }
-  }
-
-  /// 读取打包素材为 Flame 图片（资产在 assets/tank/，不经 Flame 默认的
-  /// assets/images/ 前缀，直接走 rootBundle 加载）
-  Future<ui.Image> _loadImage(String asset) async {
-    final data = await rootBundle.load(asset);
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    return frame.image;
   }
 
   /// 出生双方坦克（仅首次）：红方左下角朝右、绿方右上角朝左（点对称）。

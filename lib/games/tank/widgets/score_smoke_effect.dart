@@ -3,9 +3,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
 
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/shared/utils/asset_image.dart';
 
 /// 比分数字烟雾特效（widget 层覆盖层，叠在比分数字上）：
 /// [tick] 每次自增立即从数字底部爆出一团黑烟，向上飘散并横向
@@ -45,12 +45,11 @@ class _ScoreSmokeEffectState extends State<ScoreSmokeEffect>
     super.dispose();
   }
 
-  /// 复用战场同款烟雾纹理
+  /// 复用战场同款烟雾纹理（loadAssetImage 按路径缓存，
+  /// 与战场 onLoad 的加载共享同一次解码，不再重复解码）
   Future<void> _loadSmoke() async {
-    final data = await rootBundle.load('assets/tank/explosion_smoke.png');
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    if (mounted) setState(() => _smoke = frame.image);
+    final image = await loadAssetImage('assets/tank/explosion_smoke.png');
+    if (mounted) setState(() => _smoke = image);
   }
 
   @override
