@@ -61,7 +61,6 @@ class _TankPageState
   void _resumeSaved() {
     final saved = savedState;
     if (saved == null) return;
-    setState(() => savedState = null);
     _openBattle(saved: saved);
   }
 

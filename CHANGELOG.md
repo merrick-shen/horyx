@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 计分器横屏计分时自动隐藏系统状态栏与底部导航栏，进入沉浸式全屏
 
+### Fixed
+
+- 修复坦克动荡点击续玩卡片后卡片先消失的问题
+
 ## [0.7.0] - 2026-09-03
 
 ### Changed
