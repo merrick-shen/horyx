@@ -160,7 +160,8 @@ class GomokuOnlineController extends OnlineGameControllerBase {
     if (host != null) {
       undoState = UndoState.awaitingPeer;
       notifyListeners();
-      host.sendTo(2, msg);
+      // 唯一对端座位 = 3 - mySeat（两人局，不硬编码座位号）
+      host.sendTo(3 - mySeat, msg);
     } else {
       // 客户端同样置 awaitingPeer：按钮进入"等待对方应答"防重复发起
       undoState = UndoState.awaitingPeer;
@@ -185,7 +186,7 @@ class GomokuOnlineController extends OnlineGameControllerBase {
       } else {
         notifyListeners();
         host.sendTo(
-          2,
+          3 - mySeat, // 唯一对端座位（两人局）
           _msg(NetMessageType.undoResponse, {'accept': false}),
         );
       }
@@ -203,13 +204,15 @@ class GomokuOnlineController extends OnlineGameControllerBase {
     if (winnerSeat != null || gameEndedText != null) return;
     final host = this.host;
     if (host != null) {
-      winnerSeat = 2;
+      // 对方获胜：唯一对端座位 = 3 - mySeat（两人局，与 _onHostResign 的
+      // 3 - seat 同一规则，不硬编码座位号）
+      winnerSeat = 3 - mySeat;
       wonByResign = true;
       notifyListeners();
       host.broadcast(
         NetMessage(
           type: NetMessageType.gameOver,
-          payload: {'reason': 'resign', 'winner': 2},
+          payload: {'reason': 'resign', 'winner': 3 - mySeat},
         ),
       );
     } else {
