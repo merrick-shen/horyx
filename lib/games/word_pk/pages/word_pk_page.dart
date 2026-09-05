@@ -130,26 +130,17 @@ class _WordPkPageState
     );
   }
 
-  /// 提交校验：格式 → 重复 → 真实性；通过则入列并轮换，返回是否通过
+  /// 提交校验（规则唯一来源 WordValidator.validateWord）：
+  /// 通过则入列并轮换，返回是否通过
   bool _submitWord(String raw) {
-    // 词法规则（空串/纯字母）统一走 WordValidator，与联机对局同源
-    final formatError = WordValidator.validateFormat(raw);
-    if (formatError != null) {
-      showAlertDialog(context, message: formatError);
-      return false;
-    }
-    // 统一小写后参与重复比较，忽略大小写差异
-    final word = raw.trim().toLowerCase();
-    if (_entries.any((e) => e.word == word)) {
-      showAlertDialog(context, message: '单词已重复');
-      return false;
-    }
-    if (!WordValidator.isValid(word)) {
-      showAlertDialog(context, message: '不是有效的英文单词');
+    final error = WordValidator.validateWord(raw, _entries);
+    if (error != null) {
+      showAlertDialog(context, message: error);
       return false;
     }
 
-    // 全部校验通过：插入列表头部（最新置顶）并轮换至下一位输入者
+    // 全部校验通过：统一小写后插入列表头部（最新置顶）并轮换至下一位输入者
+    final word = raw.trim().toLowerCase();
     setState(() {
       _entries.insert(0, WordEntry(word: word, playerIndex: _currentPlayer));
       _currentPlayer = _currentPlayer % _playerCount + 1;

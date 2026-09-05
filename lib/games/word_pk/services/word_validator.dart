@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 
-/// 单词真实性校验服务
+import 'package:horyx/games/word_pk/models/word_entry.dart';
+
+/// 单词校验服务
 /// 基于本地词表（约 37 万词）离线校验：无网络请求、毫秒级响应，
 /// 满足「检测响应不超过 1 秒」的质量标准
 class WordValidator {
@@ -47,6 +49,19 @@ class WordValidator {
     if (!RegExp(r'^[A-Za-z]+$').hasMatch(word)) {
       return '单词只能由英文字母组成';
     }
+    return null;
+  }
+
+  /// 单词提交完整校验链（格式 → 重复 → 真实性）的唯一来源：
+  /// 本地对局与联机房主提交共用，返回统一拒绝文案；通过返回 null。
+  /// [raw] 为原始输入（内部统一 trim + 小写后参与比较），
+  /// [entries] 为已生效单词表（存储的均为归一化后的单词）
+  static String? validateWord(String raw, List<WordEntry> entries) {
+    final formatError = validateFormat(raw);
+    if (formatError != null) return formatError;
+    final word = raw.trim().toLowerCase();
+    if (entries.any((e) => e.word == word)) return '单词已重复';
+    if (!isValid(word)) return '不是有效的英文单词';
     return null;
   }
 }

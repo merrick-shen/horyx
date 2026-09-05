@@ -62,17 +62,16 @@ class WordPkOnlineController extends OnlineGameControllerBase {
   }
 
   /// 房主提交：本地完成全部校验（重复/词表），通过即生效并广播
+  /// （校验链唯一来源 WordValidator.validateWord，与本地对局共用；
+  /// [word] 已由 submitWord 归一化，重复传入不影响结果）
   bool _submitAsHost(String word) {
     if (!isMyTurn) {
       onHint?.call('还没轮到你');
       return false;
     }
-    if (entries.any((e) => e.word == word)) {
-      onHint?.call('单词已重复');
-      return false;
-    }
-    if (!WordValidator.isValid(word)) {
-      onHint?.call('「$word」不是有效的英文单词');
+    final error = WordValidator.validateWord(word, entries);
+    if (error != null) {
+      onHint?.call(error);
       return false;
     }
     _applyWord(word, mySeat);
