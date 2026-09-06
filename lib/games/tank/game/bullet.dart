@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/tank/game/tank.dart';
 import 'package:horyx/games/tank/game/tank_audio.dart';
-import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/game/tint_filter.dart';
 
 /// 子弹实体：从炮口沿车身朝向射出，无限反弹，发射 9 秒后消失。
 /// 状态存于迷宫坐标系（[logicalPos] 单位=格，原点迷宫左上角），

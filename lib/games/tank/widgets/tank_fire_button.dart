@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/game/tint_filter.dart';
 
 /// 原版同款开火按钮：玩家色圆环 + 黑色中心圆点（白模染色）
 /// 按压缩放反馈；开火逻辑由对局页接入

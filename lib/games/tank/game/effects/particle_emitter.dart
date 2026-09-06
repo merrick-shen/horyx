@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/game/tint_filter.dart';
 
 /// 瞬发粒子发射器（Cocos2d 重力模式粒子语义，参数以视觉效果调优为准）。
 /// 挂载即一次性爆出 [count] 个粒子：各粒子按发射角±随机幅定向、速度/尺寸/寿命随机，

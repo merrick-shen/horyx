@@ -10,6 +10,7 @@ import 'package:horyx/games/tank/game/effects/bullet_expire_effect.dart';
 import 'package:horyx/games/tank/game/effects/tank_explosion_effect.dart';
 import 'package:horyx/games/tank/game/tank.dart';
 import 'package:horyx/games/tank/game/tank_audio.dart';
+import 'package:horyx/games/tank/game/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
