@@ -6,13 +6,15 @@ import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/games/word_pk/services/word_validator.dart';
 
 /// 单词PK 联机对局控制器（房主权威模型）
-/// 公共骨架（连接持有/挂接/断线终局/回执构造/生命周期）见基类
-/// [OnlineGameControllerBase]，本类只实现单词PK游戏逻辑：
+/// 公共骨架（连接持有/挂接/断线终局/生命周期）见基类
+/// [OnlineGameControllerBase]，回合制回执能力（回执构造/拒绝文案映射）
+/// 来自混入 [SubmissionReceiptMixin]，本类只实现单词PK游戏逻辑：
 /// 单词校验与广播、回合轮换（跳过中途退出者）。
 /// 房主端：接收并校验各端提交，生效单词与回合轮换由房主计算后广播；
 /// 客户端端：提交单词交房主校验，按广播同步对局状态，不自行推导回合。
 /// 全端状态由 wordApplied/turnChanged 驱动，杜绝双端状态分叉。
-class WordPkOnlineController extends OnlineGameControllerBase {
+class WordPkOnlineController extends OnlineGameControllerBase
+    with SubmissionReceiptMixin {
   /// 以房主身份接管房间（满员开局后由等待页调用）
   WordPkOnlineController.host(RoomHost host)
       : super(host: host, client: null, mySeat: 1) {

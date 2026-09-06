@@ -326,11 +326,6 @@ class TankOnlineController extends OnlineGameControllerBase {
     );
   }
 
-  /// 房主拒绝原因 -> 用户可读文案。
-  /// 坦克为实时游戏，无提交-校验-拒绝交互，此映射不会被触发
-  @override
-  String reasonText(Object? reason) => '操作未被接受';
-
   @override
   void dispose() {
     _snapshotTimer?.cancel();
@@ -339,12 +334,6 @@ class TankOnlineController extends OnlineGameControllerBase {
     _game = null;
     super.dispose();
   }
-
-  /// 提交回执的消息类型（基类抽象成员要求实现）。
-  /// 坦克为实时游戏无提交-回执交互，[resultMessage] 不会被调用，
-  /// 此返回值无语义，仅满足基类契约
-  @override
-  NetMessageType get resultMessageType => NetMessageType.tankFire;
 }
 
 /// 全零坦克快照（回合开始比分同步的占位条目，位置由快照驱动无意义）

@@ -33,12 +33,12 @@ enum EndGameReason {
 
 /// 联机对局控制器公共基类（房主权威模型）
 /// 统一各联机游戏的公共骨架：持有 host/client 连接、挂接房间回调、
-/// 断线终局处理、dispose 关闭连接、提交回执构造与拒绝文案映射。
+/// 断线终局处理、dispose 关闭连接。
 /// 游戏差异下沉为子类职责：
 /// - [onHostGameMessage] / [onClientGameMessage]：对局消息处理
 /// - [onSeatLeft]：玩家离开语义（多人局跳过回合 / 2 人局直接终局）
-/// - [resultMessageType]：提交回执的消息类型（stoneResult / wordResult）
-/// - [reasonText]：拒绝原因 -> 用户可读文案
+/// 回合制游戏（有"提交—校验—回执"交互）另混入 [SubmissionReceiptMixin]
+/// 获得回执构造能力；实时游戏（tank）无此交互，不混入。
 /// 约定：页面销毁（dispose）即退出对局，连接关闭由本基类统一负责
 abstract class OnlineGameControllerBase extends ChangeNotifier {
   OnlineGameControllerBase({
@@ -77,10 +77,6 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
     gameEndedText = reason.text;
   }
 
-  /// 提交回执的消息类型（子类提供：stoneResult / wordResult）
-  @protected
-  NetMessageType get resultMessageType;
-
   /// 房主模式挂接：对局消息与玩家离开回调（子类构造体末尾调用）
   @protected
   void attachHost() {
@@ -110,10 +106,6 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
   @protected
   void onSeatLeft(int seat);
 
-  /// 房主拒绝原因 -> 用户可读文案（子类按游戏文案映射）
-  @protected
-  String reasonText(Object? reason);
-
   /// 客户端侧：连接状态变化（断线/房主解散 -> 对局终止）
   void _onClientChanged() {
     if (client?.phase == RoomClientPhase.disconnected &&
@@ -127,13 +119,6 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
     }
   }
 
-  /// 构造提交结果回执（仅发给提交者；拒绝时携带原因，null-aware 自动省略）
-  @protected
-  NetMessage resultMessage(bool ok, String? reason) => NetMessage(
-        type: resultMessageType,
-        payload: {'ok': ok, 'reason': ?reason},
-      );
-
   @override
   void dispose() {
     // 页面销毁即退出对局：释放房间连接（dispose 内部先切断游戏消息回调
@@ -144,4 +129,28 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
     client?.dispose();
     super.dispose();
   }
+}
+
+/// 回合制"提交—校验—回执"能力混入（gomoku / word_pk 等回合制联机游戏）。
+/// 从基类抽离：实时游戏（tank）无提交-校验-拒绝交互，此前被迫在
+/// 子类实现无语义的占位回执成员；现在按需混入，基类只保留
+/// 连接/终局/生命周期公共骨架。
+/// 混入方需提供：
+/// - [resultMessageType]：提交回执的消息类型（stoneResult / wordResult）
+/// - [reasonText]：拒绝原因 -> 用户可读文案
+mixin SubmissionReceiptMixin {
+  /// 提交回执的消息类型（混入方提供：stoneResult / wordResult）
+  @protected
+  NetMessageType get resultMessageType;
+
+  /// 房主拒绝原因 -> 用户可读文案（混入方按游戏文案映射）
+  @protected
+  String reasonText(Object? reason);
+
+  /// 构造提交结果回执（仅发给提交者；拒绝时携带原因，null-aware 自动省略）
+  @protected
+  NetMessage resultMessage(bool ok, String? reason) => NetMessage(
+        type: resultMessageType,
+        payload: {'ok': ok, 'reason': ?reason},
+      );
 }

@@ -20,8 +20,9 @@ enum UndoState {
 }
 
 /// 五子棋联机对局控制器（房主权威模型）
-/// 公共骨架（连接持有/挂接/断线终局/回执构造/生命周期）见基类
-/// [OnlineGameControllerBase]，本类只实现五子棋游戏逻辑：
+/// 公共骨架（连接持有/挂接/断线终局/生命周期）见基类
+/// [OnlineGameControllerBase]，回合制回执能力（回执构造/拒绝文案映射）
+/// 来自混入 [SubmissionReceiptMixin]，本类只实现五子棋游戏逻辑：
 /// 落子校验与广播、五连判定、悔棋协商、认输。
 /// 房主端：校验落子（轮次 + 落点）并广播生效，五连时判定胜负；
 /// 客户端：提交落子交房主校验，棋盘状态随广播同步，不自行判定。
@@ -29,7 +30,8 @@ enum UndoState {
 /// 悔棋为双方协商：请求 -> 对方应答 -> 房主广播回退，全程房主仲裁；
 /// 认输为单方声明：房主收到即判对方获胜并广播终局；
 /// 中途退出（任一方）对局直接结束，不判胜负（与单词PK一致）。
-class GomokuOnlineController extends OnlineGameControllerBase {
+class GomokuOnlineController extends OnlineGameControllerBase
+    with SubmissionReceiptMixin {
   /// 以房主身份接管房间（满员开局后由等待页调用）
   /// [boardSize] 为建房时所选棋盘规格，随 gameStart 已广播给客户端
   factory GomokuOnlineController.host(RoomHost host, {required int boardSize}) {
