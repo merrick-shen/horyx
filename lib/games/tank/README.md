@@ -124,7 +124,7 @@
 | 击毁结算期 | 3 秒 | `TankMazeGame._roundSettleDelay` |
 | 战果定格期 | 1 秒 | `TankMazeGame._roundFreezeDelay` |
 | 迷宫规格 / 墙厚 | 10×7 格 / 0.1 格 | `TankMaze.generate` / `TankMazeGame._wallThicknessRatio` |
-| 摇杆死区 / 前进触发 / 油门 | 底座 12% / 圆钮边缘触底座边缘 / 超出幅度线性归一 | `TankJoystick` |
+| 摇杆死区 / 前进触发 / 油门 | 底座 10% / 圆钮边缘触底座边缘 / 超出幅度线性归一 | `TankJoystick` |
 | 快照广播频率 | 20Hz（50ms 间隔） | `TankOnlineController._snapshotInterval` |
 | 快照年龄外推上限 | 75ms（≈1.5 个快照周期，断流时冻结防冲出战场） | `TankMazeGame._maxExtrapolateAge` |
 | 坦克渲染平滑系数 | 20/秒（20Hz 下滞后 ≈ 0.13 格，小于车宽） | `TankMazeGame._remoteSmoothK` |

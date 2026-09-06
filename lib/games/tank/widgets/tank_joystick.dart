@@ -44,7 +44,7 @@ class _TankJoystickState extends State<TankJoystick> {
   double get _moveStart => widget.size / 2 - _knobSize / 2;
 
   /// 死区半径：拖动距离低于此值视为回中（中心附近角度抖动无意义）
-  double get _deadZone => widget.size * 0.12;
+  double get _deadZone => widget.size * 0.10;
 
   void _onPanUpdate(DragUpdateDetails details) {
     final raw =
