@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/shared/game/game_data.dart';
 import 'package:horyx/games/gomoku/models/gomoku_game_state.dart';
 import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
@@ -19,6 +18,13 @@ import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class GomokuPage extends StatefulWidget {
   const GomokuPage({super.key});
+
+  /// 联机房间标识名：GameData 登记、建房入口与房间标识卡共用的
+  /// 单一事实来源（注册数据归游戏模块自身，注册中心只做汇总）
+  static const String gameName = '五子棋';
+
+  /// 游戏图标：与 [gameName] 同为注册数据的单一来源
+  static const IconData gameIcon = Icons.grid_on_rounded;
 
   @override
   State<GomokuPage> createState() => _GomokuPageState();
@@ -165,7 +171,8 @@ class _GomokuPageState
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
-          gameName: GameData.gomoku.name,
+          gameName: GomokuPage.gameName,
+          icon: GomokuPage.gameIcon,
           capacity: 2,
           gameStartPayload: {'boardSize': boardSize},
           hostGameBuilder: (context, host) =>

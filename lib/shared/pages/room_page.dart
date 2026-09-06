@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:horyx/shared/game/game_data.dart';
+import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/shared/network/net_utils.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
@@ -32,14 +32,21 @@ class RoomPage extends StatefulWidget {
     required this.capacity,
     this.gameStartPayload = const {},
     this.hostGameBuilder,
+    this.icon,
   }) : address = null,
-       port = null;
+       port = null,
+       gameResolver = null;
 
-  const RoomPage.client({super.key, required this.address, required this.port})
-    : gameName = null,
-      capacity = 0,
-      gameStartPayload = const {},
-      hostGameBuilder = null;
+  const RoomPage.client({
+    super.key,
+    required this.address,
+    required this.port,
+    this.gameResolver,
+  }) : gameName = null,
+       capacity = 0,
+       gameStartPayload = const {},
+       hostGameBuilder = null,
+       icon = null;
 
   /// 游戏名称（仅房主模式；等待页顶部标识卡展示，如「单词PK」。
   /// 客户端模式加入前未知，改为取握手应答中的 gameName 展示）
@@ -59,6 +66,18 @@ class RoomPage extends StatefulWidget {
 
   /// 满员开局后的对局页构建器（房主模式；null 表示该游戏联机对局未接入）
   final HostGameBuilder? hostGameBuilder;
+
+  /// 游戏图标（仅房主模式）：由各游戏入口传入自身图标常量。
+  /// 注册表组合根位于 app 层，shared 页面不反向依赖，改为注入
+  final IconData? icon;
+
+  /// 游戏注册表查询（仅客户端模式）：按握手应答的游戏名解析注册项，
+  /// 供标识卡图标与满员开局的联机对局页构建器使用。由 app 层注入
+  /// （注册表组合根位于 app 层，shared 页面不反向依赖）
+  final GameInfo? Function(String gameName)? gameResolver;
+
+  /// 未登记游戏在标识卡的回退图标（原 GameData.iconFor 的回退逻辑）
+  static const IconData _fallbackGameIcon = Icons.sports_esports_rounded;
 
   /// 是否房主模式
   bool get isHost => address == null;
@@ -160,7 +179,8 @@ class _RoomPageState extends State<RoomPage> {
     if (client.phase != RoomClientPhase.gameStarting) return;
     // 游戏名来自握手应答（加入前未知），开局时才解析对局页构建器；
     // 未接入联机的游戏解析为 null，等待页停留「即将开始」
-    final builder = GameData.byName(client.gameName)?.onlineClientBuilder;
+    final builder =
+        widget.gameResolver?.call(client.gameName)?.onlineClientBuilder;
     if (builder == null) return;
     _transferred = true;
     Navigator.of(context).pushReplacement(
@@ -420,7 +440,8 @@ class _RoomPageState extends State<RoomPage> {
   }
 
   /// 游戏标识卡：游戏图标 + 名称 + 局规格，所有游戏通用的房间头部
-  /// 图标按游戏名从注册表匹配；未匹配（未来新游戏未登记）时回退通用图标
+  /// 图标按模式取值：房主用入口传入的图标常量，客户端按握手游戏名
+  /// 经注入的注册表查询；未匹配（未来新游戏未登记）时回退通用图标
   Widget _buildGameCard({required int capacity}) {
     final palette = context.palette;
     // 客户端加入前不知道房主开设的游戏，握手应答后才显示实际游戏名
@@ -430,7 +451,9 @@ class _RoomPageState extends State<RoomPage> {
         : (clientGameName == null || clientGameName.isEmpty)
         ? '游戏房间'
         : clientGameName;
-    final icon = GameData.iconFor(name);
+    final icon = widget.isHost
+        ? (widget.icon ?? RoomPage._fallbackGameIcon)
+        : (widget.gameResolver?.call(name)?.icon ?? RoomPage._fallbackGameIcon);
 
     return PanelCard(
       child: Row(

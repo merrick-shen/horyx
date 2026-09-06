@@ -5,7 +5,6 @@ import 'package:horyx/games/tank/pages/tank_battle_page.dart';
 import 'package:horyx/games/tank/pages/tank_online_page.dart';
 import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/tank/widgets/tank_setup_view.dart';
-import 'package:horyx/shared/game/game_data.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
@@ -19,6 +18,13 @@ import 'package:horyx/shared/widgets/app_top_bar.dart';
 /// 存在存档时设置视图展示「继续上次对战」恢复入口
 class TankPage extends StatefulWidget {
   const TankPage({super.key});
+
+  /// 联机房间标识名：GameData 登记、建房入口与房间标识卡共用的
+  /// 单一事实来源（注册数据归游戏模块自身，注册中心只做汇总）
+  static const String gameName = '坦克动荡';
+
+  /// 游戏图标：与 [gameName] 同为注册数据的单一来源
+  static const IconData gameIcon = Icons.gps_fixed_rounded;
 
   @override
   State<TankPage> createState() => _TankPageState();
@@ -70,7 +76,8 @@ class _TankPageState
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
-          gameName: GameData.tank.name,
+          gameName: TankPage.gameName,
+          icon: TankPage.gameIcon,
           capacity: 2,
           hostGameBuilder: (context, host) =>
               TankOnlinePage.host(host: host),

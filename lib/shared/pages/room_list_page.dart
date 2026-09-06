@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
@@ -13,7 +14,12 @@ import 'package:horyx/shared/widgets/primary_button.dart';
 /// 输入房主在房间等待页显示的地址（IP:端口）直接加入；
 /// 连接与入座流程由房间等待页负责
 class RoomListPage extends StatefulWidget {
-  const RoomListPage({super.key});
+  const RoomListPage({super.key, this.gameResolver});
+
+  /// 游戏注册表查询（app 层注入）：等待页据此解析标识卡图标与
+  /// 满员开局的联机对局页构建器。注册表组合根位于 app 层，
+  /// shared 页面不反向依赖，由调用方注入
+  final GameInfo? Function(String gameName)? gameResolver;
 
   @override
   State<RoomListPage> createState() => _RoomListPageState();
@@ -42,8 +48,11 @@ class _RoomListPageState extends State<RoomListPage> {
     }
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            RoomPage.client(address: address.host, port: address.port),
+        builder: (_) => RoomPage.client(
+          address: address.host,
+          port: address.port,
+          gameResolver: widget.gameResolver,
+        ),
       ),
     );
   }
