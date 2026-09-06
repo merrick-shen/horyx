@@ -1,22 +1,15 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:horyx/app/app_shell.dart';
-import 'package:horyx/games/word_pk/services/word_validator.dart';
 import 'package:horyx/shared/storage/theme_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/theme/theme_controller.dart';
 
 /// 应用入口
 Future<void> main() async {
-  // 词表加载依赖 rootBundle，需先初始化绑定
+  // 主题恢复依赖存储插件通道，需先初始化绑定
   WidgetsFlutterBinding.ensureInitialized();
-  // 词表（约 37 万词）解析耗时百毫秒级，不阻塞首帧：
-  // 用户从启动到进入单词PK并提交单词远慢于加载完成，
-  // 未加载完成的窗口内 isValid 返回 false 在真实操作路径上不可感知
-  unawaited(WordValidator.load());
   // 启动时恢复用户上次选择的主题模式与主题色彩，避免重启后回退默认值；
   // 极端平台异常（存储初始化失败等）时回退默认主题，保证应用可正常启动
   var themeMode = ThemeMode.system;

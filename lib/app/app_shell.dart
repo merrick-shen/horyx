@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/app/pages/home_page.dart';
 import 'package:horyx/app/pages/more_page.dart';
+import 'package:horyx/games/word_pk/services/word_validator.dart';
 import 'package:horyx/shared/network/room_list_page.dart';
 
 /// 应用根骨架：底部导航栏 + 首页/联机/更多页切换
@@ -20,6 +23,17 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   final PageController _pageController = PageController(initialPage: 0);
   int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // 预热单词PK词表（约 37 万词，解析耗时百毫秒级）：fire-and-forget
+    // 不阻塞首帧——用户从启动到进入单词PK并提交单词远慢于加载完成，
+    // 未加载完成的窗口内 isValid 返回 false 在真实操作路径上不可感知。
+    // 放在 app 层骨架而非 main 入口：入口不依赖具体游戏模块，
+    // 挂载时机与原先几乎一致（runApp 后首帧）
+    unawaited(WordValidator.load());
+  }
 
   @override
   void dispose() {
