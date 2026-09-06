@@ -145,6 +145,29 @@ void main() {
 
       expect(messages, isEmpty);
     });
+
+    test('半行累积超过上限判定对端异常抛出', () {
+      final decoder = NetFrameDecoder();
+      // 1 MB + 1 字节不含换行：超出半行缓冲上限
+      expect(
+        () => decoder.feed(List<int>.filled(1024 * 1024 + 1, 0x61)),
+        throwsA(isA<NetFrameOverflowException>()),
+      );
+    });
+
+    test('上限内的半行不误断，换行到达后恢复正常解码', () {
+      final decoder = NetFrameDecoder();
+      // 上限内的大量无换行字节（合法大消息的拆包场景）不应抛出
+      final partial = decoder.feed(List<int>.filled(1024 * 1024 - 16, 0x61));
+      expect(partial, isEmpty);
+
+      // 换行到达后缓冲清空（坏行容错丢弃），后续消息不受影响
+      final next = decoder.feed(
+        [...utf8.encode('\n'), ...NetProtocol.encode(NetMessage(type: NetMessageType.ping))],
+      );
+      expect(next, hasLength(1));
+      expect(next.single.type, NetMessageType.ping);
+    });
   });
 
   group('NetSession 会话（本地回环真实 Socket）', () {
@@ -304,6 +327,48 @@ void main() {
       await timeoutFired.future.timeout(const Duration(seconds: 5));
 
       clientSocket.destroy();
+      await serverSession.close();
+    });
+
+    test('对端灌入无换行字节流超限后判定异常断开', () async {
+      final serverReady = Completer<NetSession>();
+      server.listen((socket) {
+        final session = NetSession(
+          socket,
+          pingInterval: const Duration(days: 1),
+        );
+        session.onDisconnected = () {};
+        serverReady.complete(session);
+      });
+
+      final clientSocket = await Socket.connect('127.0.0.1', server.port);
+      final clientSession = NetSession(
+        clientSocket,
+        pingInterval: const Duration(days: 1),
+      );
+      clientSession.onDisconnected = () {};
+      final serverSession = await serverReady.future;
+
+      final serverGone = Completer<void>();
+      serverSession.onDisconnected = () => serverGone.complete();
+
+      // 分块灌入 1.5 MB 不含换行的字节（模拟异常/恶意对端）；
+      // 服务端超限断开后继续写入会抛 SocketException（对端已关闭），
+      // 属预期现象，捕获后停止灌入即可
+      final junk = List<int>.filled(64 * 1024, 0x61);
+      try {
+        for (var i = 0; i < 24; i++) {
+          clientSocket.add(junk);
+          await clientSocket.flush();
+        }
+      } on SocketException {
+        // 服务端已判定异常并断开
+      }
+
+      // 超出 1 MB 半行上限即断开，无需等心跳超时
+      await serverGone.future.timeout(const Duration(seconds: 5));
+
+      await clientSession.close();
       await serverSession.close();
     });
 

@@ -88,7 +88,17 @@ class NetSession {
   /// 心跳细节对上层透明（房间/对局页无需关心 ping/pong）
   void _onData(List<int> data) {
     _lastActiveAt = DateTime.now();
-    for (final message in _decoder.feed(data)) {
+    final List<NetMessage> messages;
+    try {
+      messages = _decoder.feed(data);
+    } on NetFrameOverflowException {
+      // 对端持续发送无换行字节流（异常/恶意），判定对端异常直接断开，
+      // 防止分帧缓冲无限累积；不发 bye（对端已不可信，按掉线处理即可）
+      debugPrint('NetSession: 分帧缓冲超限，断开异常对端连接');
+      _handleDisconnect();
+      return;
+    }
+    for (final message in messages) {
       if (message.type == NetMessageType.ping) {
         send(const NetMessage.pong());
         continue;
