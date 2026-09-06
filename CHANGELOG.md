@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 计分器横屏计分时自动隐藏系统状态栏与底部导航栏，进入沉浸式全屏
 - 坦克动荡摇杆死区缩小，轻推摇杆的转向响应更灵敏
+- 联机坦克对战流畅度优化：降低操作与画面延迟、减少角色移动顿挫（快照提升至 30Hz、网络包直发、驾驶输入平滑）
 
 ### Fixed
 

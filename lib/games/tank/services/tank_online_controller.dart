@@ -15,7 +15,7 @@ import 'package:horyx/shared/widgets/end_game_dialog.dart';
 ///
 /// 与回合制联机（提交—校验—广播）不同，坦克是实时游戏：
 /// - 房主端：本地跑完整模拟（[TankMazeGame] 本地模式，物理与回合
-///   结算逻辑零改动），20Hz 广播战场状态快照；客户端的驾驶/开火
+///   结算逻辑零改动），30Hz 广播战场状态快照；客户端的驾驶/开火
 ///   输入转发到本地战场执行；新局生成后广播迷宫种子（双端同种子
 ///   重建同一迷宫，不传输墙体数据）。
 /// - 客户端：只上报输入（摇杆变化时发、开火即发），影子战场按收到的
@@ -47,12 +47,14 @@ class TankOnlineController extends OnlineGameControllerBase {
   /// 双人房间：对方固定为座位 2（绿方）；座位 1 为房主本机（红方）
   static const int _peerSeat = 2;
 
-  /// 快照广播频率（20Hz）：局域网延迟下足够流畅，报文体积可控
-  static const Duration _snapshotInterval = Duration(milliseconds: 50);
+  /// 快照广播频率（30Hz）：局域网延迟下足够流畅，报文体积可控
+  static const Duration _snapshotInterval = Duration(milliseconds: 33);
 
   /// 摇杆输入上报的变化阈值：角度/油门变化小于该值不重发
-  /// （摇杆手抖产生的微幅抖动会刷爆报文；阈值小于操作可感知粒度）
-  static const double _driveEpsilon = 0.06;
+  /// （摇杆手抖产生的微幅抖动会刷爆报文；阈值小于操作可感知粒度。
+  /// 取 0.03：上报粒度更细，房主端油门平滑的阶跃幅度更小、更流畅，
+  /// tankDrive 单条约 70B，最坏 60 条/秒对局域网可忽略）
+  static const double _driveEpsilon = 0.03;
 
   /// 已挂接的战场（房主=本地模拟；客户端=远程快照驱动）
   TankMazeGame? _game;
@@ -163,7 +165,7 @@ class TankOnlineController extends OnlineGameControllerBase {
     );
   }
 
-  /// 20Hz 快照广播；对局终止后自动停发
+  /// 30Hz 快照广播；对局终止后自动停发
   void _broadcastSnapshot() {
     if (gameEndedText != null) {
       _snapshotTimer?.cancel();
@@ -250,7 +252,7 @@ class TankOnlineController extends OnlineGameControllerBase {
         // 解码为 null 的两种情况（摇杆归位停车 / 非法载荷）统一按停车
         // 处理：置空输入，坦克停止旋转与推进。带角度的 speed 0 =
         // 圆钮在底座内的原地转向（只转不走，与本地双人语义一致）
-        game.setDrive(TankPlayer.green, parseTankDrive(msg));
+        game.setNetworkDrive(TankPlayer.green, parseTankDrive(msg));
       case NetMessageType.tankFire:
         // 实际发射成功才广播事件：被上限/结算期拒绝时客户端不多响一声
         // （子弹本体由快照承载，事件只负责音效即时性）

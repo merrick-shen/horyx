@@ -24,6 +24,10 @@ class NetSession {
     Duration pingInterval = const Duration(seconds: 5),
     Duration heartbeatTimeout = const Duration(seconds: 15),
   }) {
+    // 禁用 Nagle 算法：联机游戏全是高频小包（快照/驾驶输入），
+    // Nagle+对端延迟 ACK 会造成 40-200ms 的到达抖动，是实时对局卡顿的元凶；
+    // fire-and-forget——连接已断时返回 false 不抛异常
+    socket.setOption(SocketOption.tcpNoDelay, true);
     final session = NetSession._(socket, pingInterval, heartbeatTimeout);
     session._start();
     return session;

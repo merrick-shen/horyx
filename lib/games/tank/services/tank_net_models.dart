@@ -128,7 +128,7 @@ class TankNetBulletState {
   }
 }
 
-/// 整个战场的状态快照（房主 20Hz 广播）
+/// 整个战场的状态快照（房主 30Hz 广播）
 class TankNetSnapshot {
   const TankNetSnapshot({
     required this.redScore,

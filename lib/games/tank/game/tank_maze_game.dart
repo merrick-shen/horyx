@@ -93,13 +93,15 @@ class TankMazeGame extends FlameGame {
       : TankBattlePhase.playing;
 
   /// 坦克位置平滑系数（指数平滑速率，1/秒）：
-  /// 20Hz 快照下滞后 ≈ 速度/系数（满速 2.6 格/秒约滞后 0.13 格，小于车宽）
+  /// 30Hz 快照下滞后 ≈ 速度/系数（满速 2.6 格/秒约滞后 0.13 格，小于车宽）
   static const double _remoteSmoothK = 20.0;
 
-  /// 快照年龄外推上限（秒，约 1.5 个快照周期）：渲染目标 = 快照位置 +
+  /// 快照年龄外推上限（秒，约 3 个快照周期）：渲染目标 = 快照位置 +
   /// 估计速度 × 快照年龄，快照晚到时目标持续前进消除停顿；超过上限
-  /// （断流）后目标冻结在延伸位置，避免按旧速度无限外推冲出战场
-  static const double _maxExtrapolateAge = 0.075;
+  /// （断流）后目标冻结在延伸位置，避免按旧速度无限外推冲出战场。
+  /// 上限放宽到 0.1s 容忍偶发到达抖动（满速外推 0.1s 偏差约 0.26 格，
+  /// 下条快照即校正）
+  static const double _maxExtrapolateAge = 0.1;
 
   /// 最新快照到达时刻（秒，墙钟）：外推年龄基准
   double _lastSnapshotAt = 0;
@@ -171,6 +173,20 @@ class TankMazeGame extends FlameGame {
   void setDrive(TankPlayer player, TankDriveInput? input) {
     if (remote) return;
     _tanks[player]?.input = input;
+  }
+
+  /// 联机房主专用：下发网络来源的客户端驾驶输入（走油门平滑通道）。
+  /// 与 [setDrive] 的差异：置 [Tank.smoothedInput] 标记（幂等），
+  /// 油门经指数平滑，消除客户端 epsilon 节流后离散档位在房主视角
+  /// 的顿挫；本地双人走 [setDrive] 不受影响。
+  /// 坦克未出生（素材加载前）时丢弃，待后续输入补上
+  void setNetworkDrive(TankPlayer player, TankDriveInput? input) {
+    if (remote) return;
+    final tank = _tanks[player];
+    if (tank == null) return;
+    tank
+      ..smoothedInput = true
+      ..input = input;
   }
 
   /// 联机快照组装所需：指定玩家的坦克（只读访问；素材加载前为 null）
@@ -556,16 +572,17 @@ class TankMazeGame extends FlameGame {
   }
 
   /// 坦克复位：回出生点、朝向复位、复活并清空输入
+  /// （clearInput 同时复位油门平滑状态，防新局带余速蠕行）
   void _resetTanks() {
     _tanks[TankPlayer.red]
       ?..logicalPos = Vector2(0.5, maze.rows - 0.5)
       ..angle = 0
-      ..input = null
+      ..clearInput()
       ..destroyed = false;
     _tanks[TankPlayer.green]
       ?..logicalPos = Vector2(maze.cols - 0.5, 0.5)
       ..angle = math.pi
-      ..input = null
+      ..clearInput()
       ..destroyed = false;
     _syncTanks();
   }

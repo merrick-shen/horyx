@@ -129,6 +129,19 @@ class Tank extends PositionComponent {
   /// 摇杆驾驶输入；null 表示摇杆回中（停车）
   TankDriveInput? input;
 
+  /// 驾驶输入是否来自网络（联机房主的客户端坦克）：true 时油门做指数
+  /// 平滑——客户端 epsilon 节流上报的离散 speedFactor 是阶跃输入，直接
+  /// 驱动会在房主视角呈速度档位跳变（掉帧感）；本地双人走 setDrive
+  /// 恒为 false，手感与原实现逐帧等价
+  bool smoothedInput = false;
+
+  /// 平滑后的油门（0~1）：仅 [smoothedInput] 为 true 时参与驱动
+  double _smoothedThrottle = 0;
+
+  /// 油门平滑时间常数（秒）：约 3τ 收敛到 95%，兼顾消除档位跳变
+  /// 与不引入明显的操作迟滞
+  static const double _throttleTau = 0.09;
+
   /// 最大前进速度（格/秒）：实际速度 = 上限 × 摇杆油门（0~1）。
   /// 子弹速度以它为基准（见 Bullet）
   static const double maxForwardSpeed = 2.6;
@@ -150,6 +163,35 @@ class Tank extends PositionComponent {
     if (destroyed) return;
 
     final drive = input;
+
+    if (smoothedInput) {
+      // 联机路径：油门指数趋近目标（null 停车时目标为 0、自然衰减，
+      // 消除急停顿挫），低于吸附阈值归零避免无限蠕行；转向目标仍为
+      // 阶跃，但下方转向限速天然连续，无需平滑
+      final target = drive?.speedFactor ?? 0;
+      _smoothedThrottle += (target - _smoothedThrottle) *
+          (1 - math.exp(-dt / _throttleTau));
+      if (_smoothedThrottle < 0.02) _smoothedThrottle = 0;
+
+      if (drive != null) {
+        // 朝摇杆指向旋转（走最短方向）；角度差小于本帧转向量时直接对齐。
+        // 旋转同样参与碰撞：任一角度步导致穿墙则沿最小穿透方向弹开
+        final diff = angleDelta(angle, drive.targetAngle);
+        final maxTurn = _turnSpeed * dt;
+        final turn =
+            diff.abs() <= maxTurn ? diff : maxTurn * (diff > 0 ? 1 : -1);
+        _turn(turn);
+      }
+
+      // 圆钮推出底座边界：沿当前朝向前进，用平滑后的油门（停车衰减期
+      // 输入已为 null，仍按余速滑行至停）
+      if (_smoothedThrottle > 0) {
+        _move(maxForwardSpeed * _smoothedThrottle * dt);
+      }
+      return;
+    }
+
+    // 本地路径：保持原行为
     if (drive == null) return;
 
     // 朝摇杆指向旋转（走最短方向）；角度差小于本帧转向量时直接对齐。
@@ -163,6 +205,13 @@ class Tank extends PositionComponent {
     if (drive.speedFactor > 0) {
       _move(maxForwardSpeed * drive.speedFactor * dt);
     }
+  }
+
+  /// 清空驾驶输入并复位油门平滑状态：新一局复位必须走这里——
+  /// 只置空 input 的话，平滑油门仍残留旧值，新局坦克会带余速蠕行
+  void clearInput() {
+    input = null;
+    _smoothedThrottle = 0;
   }
 
   /// 当前朝向 current 到目标角 target 的最短角度差（-π..π）。
