@@ -3,7 +3,33 @@ import 'package:flutter/foundation.dart';
 import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
-import 'package:horyx/shared/widgets/end_game_dialog.dart';
+
+/// 联机对局的无胜负终止原因（终局弹窗与控制器共用的单一文案来源）。
+/// 纯枚举（不含 UI 依赖，图标见 end_game_dialog 的扩展）下沉于
+/// network 层：控制器（[OnlineGameControllerBase.endGame]）与 UI
+/// 弹窗共同依赖，避免网络层反向引用 UI 组件（依赖方向倒置）
+enum EndGameReason {
+  /// 其他玩家均已离开（房主侧判定）
+  peerLeft,
+
+  /// 房主解散房间（客户端收到 bye）
+  hostDismissed,
+
+  /// 与房间的连接断开（网络原因，未收到 bye）
+  disconnected,
+
+  /// 对局数据异常（如开局载荷校验失败，防御协议演进/载荷损坏）
+  dataError;
+
+  /// 面向用户的完整文案：控制器置终局信号（gameEndedText）也取自此，
+  /// 调用方只表达原因、不写文案
+  String get text => switch (this) {
+        EndGameReason.peerLeft => '其他玩家均已离开，对局结束',
+        EndGameReason.hostDismissed => '房主已解散房间',
+        EndGameReason.disconnected => '与房间的连接已断开，请检查网络',
+        EndGameReason.dataError => '对局数据异常，对局结束',
+      };
+}
 
 /// 联机对局控制器公共基类（房主权威模型）
 /// 统一各联机游戏的公共骨架：持有 host/client 连接、挂接房间回调、

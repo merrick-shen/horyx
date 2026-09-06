@@ -10,7 +10,7 @@ import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/gomoku/widgets/board_view.dart';
 import 'package:horyx/games/gomoku/widgets/setup_view.dart';
-import 'package:horyx/shared/network/room_page.dart';
+import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 
 /// 五子棋游戏页

@@ -2,7 +2,6 @@ import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
-import 'package:horyx/shared/widgets/end_game_dialog.dart';
 import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 
 /// 悔棋协商状态机

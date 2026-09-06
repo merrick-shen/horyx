@@ -1,31 +1,12 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/dialog_action_button.dart';
 
-/// 联机对局的无胜负终止原因（终局弹窗与控制器共用的单一文案来源）
-enum EndGameReason {
-  /// 其他玩家均已离开（房主侧判定）
-  peerLeft,
-
-  /// 房主解散房间（客户端收到 bye）
-  hostDismissed,
-
-  /// 与房间的连接断开（网络原因，未收到 bye）
-  disconnected,
-
-  /// 对局数据异常（如开局载荷校验失败，防御协议演进/载荷损坏）
-  dataError;
-
-  /// 面向用户的完整文案：控制器置终局信号（gameEndedText）也取自此，
-  /// 调用方只表达原因、不写文案
-  String get text => switch (this) {
-        EndGameReason.peerLeft => '其他玩家均已离开，对局结束',
-        EndGameReason.hostDismissed => '房主已解散房间',
-        EndGameReason.disconnected => '与房间的连接已断开，请检查网络',
-        EndGameReason.dataError => '对局数据异常，对局结束',
-      };
-
+/// [EndGameReason] 的图标扩展：纯枚举下沉于 network 层（controllers
+/// 与本组件共用），图标属 UI 表达，以扩展形式留在本文件
+extension EndGameReasonIcon on EndGameReason {
   /// 弹窗头部图标（按原因语义区分）
   IconData get icon => switch (this) {
         EndGameReason.peerLeft => Icons.person_off_rounded,
