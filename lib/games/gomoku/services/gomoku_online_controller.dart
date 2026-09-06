@@ -39,7 +39,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
       host: host,
       boardSize: boardSize,
       mySeat: 1,
-    )..attachHost();
+    )..initialize();
   }
 
   /// 以客户端身份接管房间（收到 gameStart 后由等待页调用）
@@ -54,7 +54,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
       // 非法时兜底 15 仅用于终局弹窗前的空棋盘渲染
       boardSize: valid ? raw : 15,
       mySeat: client.mySeat ?? 2,
-    )..attachClient();
+    )..initialize();
     if (!valid) {
       controller.endGame(EndGameReason.dataError);
     }

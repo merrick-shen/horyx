@@ -16,27 +16,42 @@ import 'package:horyx/games/word_pk/services/word_validator.dart';
 class WordPkOnlineController extends OnlineGameControllerBase
     with SubmissionReceiptMixin {
   /// 以房主身份接管房间（满员开局后由等待页调用）
-  WordPkOnlineController.host(RoomHost host)
-      : super(host: host, client: null, mySeat: 1) {
-    playerCount = host.capacity;
-    _activeSeats = {...host.seats};
-    attachHost();
+  factory WordPkOnlineController.host(RoomHost host) {
+    return WordPkOnlineController._(
+      host: host,
+      mySeat: 1,
+      playerCount: host.capacity,
+      activeSeats: {...host.seats},
+    )..initialize();
   }
 
   /// 以客户端身份接管房间（收到 gameStart 后由等待页调用）
-  WordPkOnlineController.client(RoomClient client)
-      : super(host: null, client: client, mySeat: client.mySeat ?? 1) {
-    playerCount = client.capacity;
-    _activeSeats = {...client.seats};
-    // 挂接对局消息处理（含暂存消息回放）并跟踪连接状态变化
-    attachClient();
+  factory WordPkOnlineController.client(RoomClient client) {
+    return WordPkOnlineController._(
+      client: client,
+      mySeat: client.mySeat ?? 1,
+      playerCount: client.capacity,
+      activeSeats: {...client.seats},
+    )..initialize();
   }
 
-  /// 本局总人数
-  late final int playerCount;
+  /// 私有构造：全部字段构造参数注入（host/client 两模式共用），
+  /// 无 late 初始化时序约束；[_activeSeats] 为私有字段不能作命名参数
+  /// （lint 建议的 this._activeSeats 仅适用于位置形式），故显式初始化
+  WordPkOnlineController._({
+    super.host,
+    super.client,
+    required super.mySeat,
+    required this.playerCount,
+    required Set<int> activeSeats,
+  }) : _activeSeats = activeSeats; // ignore: prefer_initializing_formals
 
-  /// 仍在对局中的座位集合（中途退出即移除，回合轮换跳过空位）
-  late final Set<int> _activeSeats;
+  /// 本局总人数（构造参数注入：与挂接时机解耦，无 late 初始化时序约束）
+  final int playerCount;
+
+  /// 仍在对局中的座位集合（中途退出即移除，回合轮换跳过空位；
+  /// 集合内容在 onSeatLeft 中修改，引用本身不可变）
+  final Set<int> _activeSeats;
 
   /// 当前输入者座位号（房主权威，客户端随广播更新）
   int currentPlayer = 1;

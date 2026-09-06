@@ -77,19 +77,29 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
     gameEndedText = reason.text;
   }
 
-  /// 房主模式挂接：对局消息与玩家离开回调（子类构造体末尾调用）
+  /// 统一挂接入口（模板方法）：按构造模式自动选择挂接路径
+  /// （房主：对局消息与玩家离开回调；客户端：消息回放与连接状态）。
+  /// 由各游戏 factory 在返回前级联调用——此时子类字段已全部初始化
+  /// 完成；客户端路径会同步回放暂存消息，不允许在字段未就绪时提前
+  /// 调用（原先靠子类自觉在构造体末尾分别调 attachHost/attachClient，
+  /// 现收敛为单一入口，时序约束集中声明于此）
   @protected
-  void attachHost() {
+  void initialize() {
+    if (host != null) {
+      _attachHost();
+    } else {
+      _attachClient();
+    }
+  }
+
+  /// 房主模式挂接：对局消息与玩家离开回调（由 [initialize] 调度）
+  void _attachHost() {
     host?.onGameMessage = onHostGameMessage;
     host?.onSeatLeft = onSeatLeft;
   }
 
-  /// 客户端模式挂接：对局消息（含暂存回放）与连接状态（子类构造体末尾调用）
-  ///
-  /// 必须在子类字段全部初始化完成后调用：attachGameHandler 会同步回放
-  /// 暂存消息，过早挂接会在子类 late 字段未就绪时触发消息处理
-  @protected
-  void attachClient() {
+  /// 客户端模式挂接：对局消息（含暂存回放）与连接状态（由 [initialize] 调度）
+  void _attachClient() {
     client?.attachGameHandler(onClientGameMessage);
     client?.addListener(_onClientChanged);
   }

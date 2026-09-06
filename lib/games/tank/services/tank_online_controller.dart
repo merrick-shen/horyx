@@ -28,7 +28,7 @@ import 'package:horyx/shared/network/room_host.dart';
 class TankOnlineController extends OnlineGameControllerBase {
   /// 以房主身份接管房间（满员开局后由联机对局页调用）
   factory TankOnlineController.host(RoomHost host) {
-    return TankOnlineController._(host: host, mySeat: 1)..attachHost();
+    return TankOnlineController._(host: host, mySeat: 1)..initialize();
   }
 
   /// 以客户端身份接管房间（收到 gameStart 后由联机对局页调用）。
@@ -38,7 +38,7 @@ class TankOnlineController extends OnlineGameControllerBase {
     return TankOnlineController._(
       client: client,
       mySeat: client.mySeat ?? 2,
-    )..attachClient();
+    )..initialize();
   }
 
   TankOnlineController._({super.host, super.client, required super.mySeat});
