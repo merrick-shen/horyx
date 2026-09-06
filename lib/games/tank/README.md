@@ -9,11 +9,11 @@
 
 | 目录/文件 | 职责 |
 | --- | --- |
-| `models/` | 纯数据与算法：`TankPlayer`（玩家/染色/驾驶输入）、`TankMaze`（迷宫生成与墙查询，支持指定种子复现）、`TankGameState`（比分存档模型） |
+| `models/` | 纯数据与算法：`TankPlayer`（玩家与双方颜色/驾驶输入）、`TankMaze`（迷宫生成与墙查询，支持指定种子复现）、`TankGameState`（比分存档模型） |
 | `pages/` | `tank_page` 设置页（本地/局域网模式选择 + 继续上次对战入口）、`tank_battle_page` 横屏对局页（比分 UI、输入下发、横屏沉浸、退出存档确认）、`tank_online_page` 联机对局页（布局复刻本地，仅保留己方控件） |
 | `widgets/` | UI 组件：四向摇杆（油门）、开火按钮、比分视图（含得分烟雾覆盖层）、模式面板 |
 | `services/` | `tank_storage` 比分存档服务（SharedPreferences 单键 JSON）、`tank_online_controller` 联机对局控制器（快照广播/输入上报/终局处理）、`tank_net_models` 联机协议编解码（纯数据模型，全字段类型校验） |
-| `game/` | Flame 游戏核心：`tank_maze_game`（战场：迷宫渲染/回合流程/开火/计分；双模式——本地完整模拟与远程快照驱动的影子战场）、`tank`（坦克实体与碰撞）、`bullet`（子弹实体与反弹）、`tank_audio`（音效） |
+| `game/` | Flame 游戏核心：`tank_maze_game`（战场：迷宫渲染/回合流程/开火/计分；双模式——本地完整模拟与远程快照驱动的影子战场）、`tank`（坦克实体与碰撞）、`bullet`（子弹实体与反弹）、`tank_audio`（音效）、`tint_filter`（白模素材染色滤镜） |
 | `game/effects/` | 粒子特效：`particle_emitter`（瞬发粒子发射器）、`tank_explosion_effect`（坦克爆炸）、`bullet_expire_effect`（子弹消散） |
 
 ## 回合运行流程
@@ -41,7 +41,7 @@
 | 消息 | 方向 | 载荷 |
 | --- | --- | --- |
 | `tankRoundStart` | 房主 → 客户端 | 迷宫种子/规格 + 双方比分（首局与新局广播） |
-| `tankSnapshot` | 房主 → 客户端 | 20Hz：坦克位置/朝向/存活、子弹（按 id 增量同步）、比分、战场阶段 |
+| `tankSnapshot` | 房主 → 客户端 | 30Hz：坦克位置/朝向/存活、子弹全量列表（id 跨快照稳定，客户端据以匹配平滑）、比分、战场阶段 |
 | `tankDrive` | 客户端 → 房主 | 摇杆角度 + 油门（变化小于阈值不重发；null = 停车，以 speed 0 表达） |
 | `tankFire` | 客户端 → 房主 | 开火请求（是否实际发射由房主裁决：同屏上限/结算期拒绝时不回事件） |
 | `tankFireEvent` | 房主 → 客户端 | 开火方（即时音效事件；房主自己的开火也广播，客户端才能听到） |
@@ -125,10 +125,10 @@
 | 战果定格期 | 1 秒 | `TankMazeGame._roundFreezeDelay` |
 | 迷宫规格 / 墙厚 | 10×7 格 / 0.1 格 | `TankMaze.generate` / `TankMazeGame._wallThicknessRatio` |
 | 摇杆死区 / 前进触发 / 油门 | 底座 10% / 圆钮边缘触底座边缘 / 超出幅度线性归一 | `TankJoystick` |
-| 快照广播频率 | 20Hz（50ms 间隔） | `TankOnlineController._snapshotInterval` |
-| 快照年龄外推上限 | 75ms（≈1.5 个快照周期，断流时冻结防冲出战场） | `TankMazeGame._maxExtrapolateAge` |
-| 坦克渲染平滑系数 | 20/秒（20Hz 下滞后 ≈ 0.13 格，小于车宽） | `TankMazeGame._remoteSmoothK` |
-| 驾驶上报变化阈值 | 0.06 弧度（摇杆手抖不刷爆报文） | `TankOnlineController._driveEpsilon` |
+| 快照广播频率 | 30Hz（33ms 间隔） | `TankOnlineController._snapshotInterval` |
+| 快照年龄外推上限 | 100ms（≈3 个快照周期，断流时冻结防冲出战场） | `TankMazeGame._maxExtrapolateAge` |
+| 坦克渲染平滑系数 | 20/秒（滞后 ≈ 0.13 格，小于车宽） | `TankMazeGame._remoteSmoothK` |
+| 驾驶上报变化阈值 | 0.03（角度/油门；摇杆手抖不刷爆报文） | `TankOnlineController._driveEpsilon` |
 
 ## 注意事项（重要坑点）
 
