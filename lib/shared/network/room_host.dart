@@ -38,6 +38,15 @@ class RoomHost extends ChangeNotifier {
 
   ServerSocket? _server;
 
+  /// 是否已释放（[dispose] 后置位）：迟到的房间事件不再 notifyListeners，
+  /// 防止对已 dispose 的通知器触发 debug 断言
+  bool _disposed = false;
+
+  /// dispose 后安全的监听通知（释放后的迟到事件静默丢弃）
+  void _notifyChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
   /// 已入座的客户端：座位号 -> 会话（座位 1 为房主本机，不在此表）
   final Map<int, NetSession> _clients = {};
 
@@ -76,7 +85,7 @@ class RoomHost extends ChangeNotifier {
         _port = server.port;
         // 只处理接入的连接；监听异常（端口被抢占等极端场景）交由各会话自行断开
         server.listen(_onAccept);
-        notifyListeners();
+        _notifyChanged();
         return true;
       } on SocketException {
         // 端口被占用，尝试下一个
@@ -98,7 +107,7 @@ class RoomHost extends ChangeNotifier {
     await Future.wait(sessions.map((session) => session.close()));
     await _server?.close();
     _server = null;
-    notifyListeners();
+    _notifyChanged();
   }
 
   /// 新连接接入：建立会话并等待 hello 握手，10 秒未握手则断开
@@ -195,7 +204,7 @@ class RoomHost extends ChangeNotifier {
       ),
       except: session,
     );
-    notifyListeners();
+    _notifyChanged();
 
     // 满员自动开局（重开场景由步骤 4 控制，此处只广播一次）
     if (isFull && !_gameStarted) _startGame();
@@ -211,7 +220,7 @@ class RoomHost extends ChangeNotifier {
         payload: {'playerCount': capacity, ...gameStartPayload},
       ),
     );
-    notifyListeners();
+    _notifyChanged();
     // 游戏页面导航与对局逻辑由各游戏的联机层接入
   }
 
@@ -229,7 +238,7 @@ class RoomHost extends ChangeNotifier {
     );
     // 对局中的离开交由游戏层（回合跳过/全员离开判定）；等待阶段无消费者
     onSeatLeft?.call(seat);
-    notifyListeners();
+    _notifyChanged();
   }
 
   /// 对局广播：向所有已入座客户端发送消息（游戏层使用）
@@ -244,5 +253,19 @@ class RoomHost extends ChangeNotifier {
       if (identical(session, except)) continue;
       session.send(message);
     }
+  }
+
+  /// 释放通知器并解散房间（所有权终点的统一出口）：
+  /// 先切断游戏层回调再关房，关闭窗口期的客户端消息不再进入本对象；
+  /// close 的 bye flush 可能耗时数秒，dispose 按约定同步返回、连接后台关闭。
+  /// dispose 后迟到的断线清理不会通知监听者
+  @override
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    onGameMessage = null;
+    onSeatLeft = null;
+    close();
+    super.dispose();
   }
 }

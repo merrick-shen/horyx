@@ -39,6 +39,15 @@ class RoomClient extends ChangeNotifier {
   NetSession? _session;
   Timer? _joinTimeout;
 
+  /// 是否已释放（[dispose] 后置位）：迟到的房间事件（断线回调等）
+  /// 不再 notifyListeners，防止对已 dispose 的通知器触发 debug 断言
+  bool _disposed = false;
+
+  /// dispose 后安全的监听通知（释放后的迟到事件静默丢弃）
+  void _notifyChanged() {
+    if (!_disposed) notifyListeners();
+  }
+
   /// 当前阶段
   RoomClientPhase phase = RoomClientPhase.connecting;
 
@@ -145,25 +154,25 @@ class RoomClient extends ChangeNotifier {
         // 自己的座位需在此主动补入，否则等待页会把自己显示成空位
         if (mySeat != null) _seats.add(mySeat!);
         phase = RoomClientPhase.joined;
-        notifyListeners();
+        _notifyChanged();
       case NetMessageType.playerJoined:
         // 座位号缺失/非数字的异常载荷直接忽略（B10）：
         // 兜 -1 入集合会留脏数据且对应的 playerLeft 也清不掉它
         final joinedSeat = message.payload['seat'];
         if (joinedSeat is! int) return;
         _seats.add(joinedSeat);
-        notifyListeners();
+        _notifyChanged();
       case NetMessageType.playerLeft:
         // 同上，异常载荷忽略，保持座位集合不变式
         final leftSeat = message.payload['seat'];
         if (leftSeat is! int) return;
         _seats.remove(leftSeat);
-        notifyListeners();
+        _notifyChanged();
       case NetMessageType.gameStart:
         // 开局载荷整体保存，游戏层按需取用（如五子棋的 boardSize）
         startPayload = Map<String, dynamic>.of(message.payload);
         phase = RoomClientPhase.gameStarting;
-        notifyListeners();
+        _notifyChanged();
       case NetMessageType.bye:
         _byeReceived = true;
       default:
@@ -180,11 +189,12 @@ class RoomClient extends ChangeNotifier {
   /// 连接断开（含主动关闭）：仅在已加入阶段才提示断开，
   /// 失败阶段的关闭是自身清理动作，不覆盖失败状态
   void _onDisconnected() {
+    if (_disposed) return;
     _joinTimeout?.cancel();
     _joinTimeout = null;
     if (phase == RoomClientPhase.failed) return;
     phase = RoomClientPhase.disconnected;
-    notifyListeners();
+    _notifyChanged();
   }
 
   /// 标记失败并清理连接
@@ -197,7 +207,7 @@ class RoomClient extends ChangeNotifier {
     _session = null;
     // 先置阶段再关连接：断开回调看到 failed 后不再改写状态
     session?.close();
-    notifyListeners();
+    _notifyChanged();
   }
 
   /// 拒绝原因 -> 用户可读文案
@@ -219,5 +229,23 @@ class RoomClient extends ChangeNotifier {
     final session = _session;
     _session = null;
     await session?.close();
+  }
+
+  /// 释放通知器并关闭连接（所有权终点的统一出口）：
+  /// 先切断对局消息回调再关闭，关闭窗口期的对端消息不再进入本对象；
+  /// close 的 bye flush 可能耗时数秒，dispose 按约定同步返回、连接后台关闭。
+  /// dispose 后迟到的断线回调不会改写状态，也不会通知监听者
+  @override
+  void dispose() {
+    if (_disposed) return;
+    _disposed = true;
+    _joinTimeout?.cancel();
+    _joinTimeout = null;
+    onGameMessage = null;
+    _pendingGameMessages.clear();
+    final session = _session;
+    _session = null;
+    session?.close();
+    super.dispose();
   }
 }

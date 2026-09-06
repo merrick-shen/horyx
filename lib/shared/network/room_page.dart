@@ -121,8 +121,8 @@ class _RoomPageState extends State<RoomPage> {
     );
     final ok = await host.start();
     if (!mounted) {
-      // 创建期间页面已退出：立即关房，避免无 UI 持有的房间残留监听
-      host.close();
+      // 创建期间页面已退出：立即释放，避免无 UI 持有的房间残留监听
+      host.dispose();
       return;
     }
     if (!ok) {
@@ -173,10 +173,11 @@ class _RoomPageState extends State<RoomPage> {
     _host?.removeListener(_onHostChanged);
     _client?.removeListener(_onClientChanged);
     _copiedTimer?.cancel();
-    // 连接所有权未移交对局页时由本页负责关闭（房主解散/客户端退出）
+    // 连接所有权未移交对局页时由本页负责释放（关闭连接并释放通知器；
+    // 已移交时对局页的控制器 dispose 是唯一释放点）
     if (!_transferred) {
-      _host?.close();
-      _client?.close();
+      _host?.dispose();
+      _client?.dispose();
     }
     super.dispose();
   }
