@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
 /// 坦克动荡音效（素材提取自原版 APK 音频，经 assets/tank/audio/ 打包）。
@@ -28,13 +29,21 @@ abstract final class TankAudio {
   /// 已加载的音频（按文件索引）
   static final Map<String, AudioSource> _sounds = {};
 
-  /// 初始化引擎并预解码全部音效进内存（战场 onLoad 中等待一次）
+  /// 初始化引擎并预解码全部音效进内存（战场 onLoad 中等待一次）。
+  /// 部分设备/ROM 上 SoLoud 初始化或音频解码可能失败：此处捕获不抛出，
+  /// 避免 onLoad 整体失败导致坦克永不出现、战场空白。
+  /// 失败态 = [_sounds] 为空/不全：[play] 对缺失条目直接返回天然静默，
+  /// 已加载的条目（引擎已初始化）仍正常发声
   static Future<void> preload() async {
-    if (!SoLoud.instance.isInitialized) {
-      await SoLoud.instance.init();
-    }
-    for (final file in _files) {
-      _sounds[file] = await SoLoud.instance.loadAsset('$_prefix$file');
+    try {
+      if (!SoLoud.instance.isInitialized) {
+        await SoLoud.instance.init();
+      }
+      for (final file in _files) {
+        _sounds[file] = await SoLoud.instance.loadAsset('$_prefix$file');
+      }
+    } catch (e) {
+      debugPrint('TankAudio.preload 失败，音效静默降级（游戏不受影响）: $e');
     }
   }
 
