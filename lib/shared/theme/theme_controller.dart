@@ -31,7 +31,13 @@ class ThemeController extends ChangeNotifier {
     if (_mode == mode) return;
     _mode = mode;
     notifyListeners();
-    await ThemeStorage.save(mode);
+    try {
+      await ThemeStorage.save(mode);
+    } catch (e) {
+      // 写盘失败仅影响重启后的主题恢复，UI 已即时切换不阻断交互，
+      // 与 main 启动时读取侧的容错风格对齐
+      debugPrint('ThemeStorage.save 失败（主题仅本次会话生效）: $e');
+    }
   }
 
   /// 切换主题色彩；重复设置同一颜色时跳过，避免无谓刷新与写盘
@@ -39,7 +45,12 @@ class ThemeController extends ChangeNotifier {
     if (_seedColor == color) return;
     _seedColor = color;
     notifyListeners();
-    await ThemeStorage.saveSeedColor(color);
+    try {
+      await ThemeStorage.saveSeedColor(color);
+    } catch (e) {
+      // 同 setMode：写盘失败仅影响重启后的色彩恢复
+      debugPrint('ThemeStorage.saveSeedColor 失败（色彩仅本次会话生效）: $e');
+    }
   }
 }
 

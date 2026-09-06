@@ -112,7 +112,13 @@ class _ArchivePageState extends State<ArchivePage> {
     );
     if (!mounted || result != ConfirmResult.confirm) return;
 
-    await entry.clear();
+    try {
+      await entry.clear();
+    } catch (e) {
+      // 删除失败（存储异常）不阻断流程：刷新后条目仍在列表中可重试，
+      // 与 main 启动时读取侧的容错风格对齐
+      debugPrint('存档删除失败: $e');
+    }
     if (!mounted) return;
     // 重新读取存档刷新列表（删除后可能无存档，自动切换空状态）
     await _loadArchives();
