@@ -62,11 +62,7 @@ class _AlertDialogBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline_rounded,
-            color: palette.primary,
-            size: 22,
-          ),
+          Icon(Icons.error_outline_rounded, color: palette.primary, size: 22),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -79,24 +75,31 @@ class _AlertDialogBar extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          // 小号实底按钮：与 DialogActionButton 实底态同一视觉语言（主题色 + 白字）
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
-              decoration: BoxDecoration(
-                color: palette.primary,
+          // 小号实底按钮：与 DialogActionButton 实底态同一视觉语言（主题色 + 白字）；
+          // Material+InkWell 标准写法（同 PrimaryButton）：提供水波纹按压反馈
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: palette.primary,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
                 borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                buttonLabel,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
+                onTap: () => Navigator.of(context).pop(),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  child: Text(
+                    buttonLabel,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ),

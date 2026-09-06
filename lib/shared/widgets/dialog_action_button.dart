@@ -32,33 +32,40 @@ class DialogActionButton extends StatelessWidget {
     final palette = context.palette;
     final background = fillColor ?? palette.primary;
 
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: filled ? background : palette.scaffoldBg,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: filled ? background : palette.scaffoldBg,
+        borderRadius: BorderRadius.circular(13),
+        border: filled ? null : Border.all(color: palette.stroke),
+        // 主题色实底带光晕强调主操作；自定义颜色（如当前所选色）不加，
+        // 浅色/高亮度的光晕视觉效果差
+        boxShadow: filled && fillColor == null
+            ? [
+                BoxShadow(
+                  color: palette.primary.withValues(alpha: 0.35),
+                  blurRadius: 14,
+                  offset: const Offset(0, 5),
+                ),
+              ]
+            : null,
+      ),
+      // Material+InkWell 标准写法（同 PrimaryButton）：提供水波纹按压反馈
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(13),
-          border: filled ? null : Border.all(color: palette.stroke),
-          // 主题色实底带光晕强调主操作；自定义颜色（如当前所选色）不加，
-          // 浅色/高亮度的光晕视觉效果差
-          boxShadow: filled && fillColor == null
-              ? [
-                  BoxShadow(
-                    color: palette.primary.withValues(alpha: 0.35),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: filled ? Colors.white : palette.textPrimary,
-            fontSize: 14.5,
-            fontWeight: FontWeight.w700,
+          onTap: onPressed,
+          child: Container(
+            height: 44,
+            alignment: Alignment.center,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: filled ? Colors.white : palette.textPrimary,
+                fontSize: 14.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ),
       ),

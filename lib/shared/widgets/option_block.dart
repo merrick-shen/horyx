@@ -35,43 +35,52 @@ class OptionBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        width: fixedWidth,
-        height: height,
-        // 自适应宽度时以内容撑开，并保留最小可点区域
-        constraints: fixedWidth == null
-            ? const BoxConstraints(minWidth: 56)
-            : null,
-        padding: fixedWidth == null
-            ? const EdgeInsets.symmetric(horizontal: 16)
-            : null,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          // 选中态使用品牌纯色，未选中与页面底色区分
-          color: selected ? palette.primary : palette.scaffoldBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected ? Colors.transparent : palette.stroke,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: palette.primary.withValues(alpha: 0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: fixedWidth,
+      height: height,
+      // 自适应宽度时以内容撑开，并保留最小可点区域
+      constraints: fixedWidth == null
+          ? const BoxConstraints(minWidth: 56)
+          : null,
+      decoration: BoxDecoration(
+        // 选中态使用品牌纯色，未选中与页面底色区分
+        color: selected ? palette.primary : palette.scaffoldBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: selected ? Colors.transparent : palette.stroke,
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : palette.textPrimary,
-            fontSize: 17,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: palette.primary.withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
+      ),
+      // Material+InkWell 标准写法（同 PrimaryButton）：水波纹覆盖整块；
+      // 原容器 padding/alignment 内移到内容层，避免水波纹仅覆盖文字区域
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Center(
+            child: Padding(
+              padding: fixedWidth == null
+                  ? const EdgeInsets.symmetric(horizontal: 16)
+                  : EdgeInsets.zero,
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: selected ? Colors.white : palette.textPrimary,
+                  fontSize: 17,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -149,79 +158,88 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return GestureDetector(
-      // 点击块内空白区域也可聚焦，扩大点击面积
-      onTap: () => widget.focusNode.requestFocus(),
-      child: AnimatedBuilder(
-        // 监听焦点：聚焦未生效时以主题色描边提示输入中
-        animation: widget.focusNode,
-        builder: (context, _) {
-          final focused = widget.focusNode.hasFocus;
-          // 有合法内容即生效选中态；超范围时不呈选中（避免误导已生效）
-          final selected = widget.controller.text.isNotEmpty && !_invalid;
+    return AnimatedBuilder(
+      // 监听焦点：聚焦未生效时以主题色描边提示输入中
+      animation: widget.focusNode,
+      builder: (context, _) {
+        final focused = widget.focusNode.hasFocus;
+        // 有合法内容即生效选中态；超范围时不呈选中（避免误导已生效）
+        final selected = widget.controller.text.isNotEmpty && !_invalid;
 
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: widget.width,
-            height: widget.height,
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: selected ? palette.primary : palette.scaffoldBg,
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: selected ? palette.primary : palette.scaffoldBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _invalid
+                  ? NumberOptionBlock._invalidColor
+                  : selected
+                  ? Colors.transparent
+                  : focused
+                  ? palette.primary
+                  : palette.stroke,
+              width: _invalid ? 1.6 : 1,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: palette.primary.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          // Material+InkWell 标准写法（同 PrimaryButton）：点击块内空白
+          // 区域也可聚焦（原 GestureDetector 语义），水波纹覆盖整块；
+          // 原容器 padding/alignment 内移到内容层
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: _invalid
-                    ? NumberOptionBlock._invalidColor
-                    : selected
-                        ? Colors.transparent
-                        : focused
-                            ? palette.primary
-                            : palette.stroke,
-                width: _invalid ? 1.6 : 1,
-              ),
-              boxShadow: selected
-                  ? [
-                      BoxShadow(
-                        color: palette.primary.withValues(alpha: 0.35),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+              onTap: () => widget.focusNode.requestFocus(),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: TextField(
+                    controller: widget.controller,
+                    focusNode: widget.focusNode,
+                    keyboardType: TextInputType.number,
+                    // 仅数字且最多 2 位（调用方范围上限均为两位数以内，超长输入无意义）
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(2),
+                    ],
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: selected ? Colors.white : palette.textPrimary,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    cursorColor: selected ? Colors.white : palette.primary,
+                    decoration: InputDecoration(
+                      isCollapsed: true,
+                      border: InputBorder.none,
+                      hintText: widget.hintText,
+                      hintStyle: TextStyle(
+                        color: selected
+                            ? Colors.white.withValues(alpha: 0.75)
+                            : palette.textSecondary,
+                        fontSize: 13,
                       ),
-                    ]
-                  : null,
-            ),
-            child: TextField(
-              controller: widget.controller,
-              focusNode: widget.focusNode,
-              keyboardType: TextInputType.number,
-              // 仅数字且最多 2 位（调用方范围上限均为两位数以内，超长输入无意义）
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(2),
-              ],
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: selected ? Colors.white : palette.textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-              ),
-              cursorColor: selected ? Colors.white : palette.primary,
-              decoration: InputDecoration(
-                isCollapsed: true,
-                border: InputBorder.none,
-                hintText: widget.hintText,
-                hintStyle: TextStyle(
-                  color: selected
-                      ? Colors.white.withValues(alpha: 0.75)
-                      : palette.textSecondary,
-                  fontSize: 13,
+                      counterText: '',
+                    ),
+                    onChanged: _onChanged,
+                  ),
                 ),
-                counterText: '',
               ),
-              onChanged: _onChanged,
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

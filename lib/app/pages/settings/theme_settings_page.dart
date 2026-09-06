@@ -184,75 +184,83 @@ class _ModeOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          // 选中态：品牌淡底 + 品牌描边；未选中：透明底 + 常规描边
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        // 选中态：品牌淡底 + 品牌描边；未选中：透明底 + 常规描边
+        color: selected
+            ? palette.primary.withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
           color: selected
-              ? palette.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected
-                ? palette.primary.withValues(alpha: 0.5)
-                : palette.stroke,
-          ),
+              ? palette.primary.withValues(alpha: 0.5)
+              : palette.stroke,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                // 选中态图标块用品牌实底反色，强化当前选择
-                color: selected
-                    ? palette.primary
-                    : palette.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(
-                data.icon,
-                size: 20,
-                color: selected ? Colors.white : palette.primary,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data.name,
-                    style: TextStyle(
-                      color: palette.textPrimary,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+      ),
+      // Material+InkWell 标准写法（同 PrimaryButton）：水波纹覆盖整行；
+      // 原容器 padding 内移到内容层
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    // 选中态图标块用品牌实底反色，强化当前选择
+                    color: selected
+                        ? palette.primary
+                        : palette.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(11),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    data.description,
-                    style: TextStyle(
-                      color: palette.textSecondary,
-                      fontSize: 12,
-                    ),
+                  child: Icon(
+                    data.icon,
+                    size: 20,
+                    color: selected ? Colors.white : palette.primary,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.name,
+                        style: TextStyle(
+                          color: palette.textPrimary,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        data.description,
+                        style: TextStyle(
+                          color: palette.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  // 单选标记：选中实心主题色，未选中空心描边
+                  selected
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked,
+                  color: selected ? palette.primary : palette.stroke,
+                  size: 22,
+                ),
+              ],
             ),
-            Icon(
-              // 单选标记：选中实心主题色，未选中空心描边
-              selected
-                  ? Icons.check_circle_rounded
-                  : Icons.radio_button_unchecked,
-              color: selected ? palette.primary : palette.stroke,
-              size: 22,
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -277,26 +285,32 @@ class _PresetSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        // 以色值构造 key，便于测试按颜色定位色块
-        key: ValueKey('preset_swatch_${colorToHex(color)}'),
-        duration: const Duration(milliseconds: 180),
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          // 选中态以同色描边点亮外圈，未选中用调色板描边弱化
-          border: Border.all(
-            width: 2.5,
-            color: selected ? color : context.palette.stroke,
-          ),
+    return AnimatedContainer(
+      // 以色值构造 key，便于测试按颜色定位色块
+      key: ValueKey('preset_swatch_${colorToHex(color)}'),
+      duration: const Duration(milliseconds: 180),
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color,
+        // 选中态以同色描边点亮外圈，未选中用调色板描边弱化
+        border: Border.all(
+          width: 2.5,
+          color: selected ? color : context.palette.stroke,
         ),
-        child: selected
-            ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
-            : null,
+      ),
+      // Material+InkWell 标准写法（同 PrimaryButton）；
+      // 圆形色块用 customBorder 裁剪出圆形水波纹
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: selected
+              ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
+              : null,
+        ),
       ),
     );
   }
@@ -323,57 +337,69 @@ class _CustomColorTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          // 与模式选项行一致：选中态品牌描边 + 淡底
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      decoration: BoxDecoration(
+        // 与模式选项行一致：选中态品牌描边 + 淡底
+        color: selected
+            ? palette.primary.withValues(alpha: 0.12)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
           color: selected
-              ? palette.primary.withValues(alpha: 0.12)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected
-                ? palette.primary.withValues(alpha: 0.5)
-                : palette.stroke,
-          ),
+              ? palette.primary.withValues(alpha: 0.5)
+              : palette.stroke,
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                // 调色板图标容器：淡品牌底承载当前颜色块，示意「可调色」
-                color: palette.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(11),
-              ),
-              child: Icon(Icons.tune_rounded, size: 20, color: currentColor),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                '自定义颜色',
-                style: TextStyle(
-                  color: palette.textPrimary,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+      ),
+      // Material+InkWell 标准写法（同 PrimaryButton）：水波纹覆盖整行；
+      // 原容器 padding 内移到内容层
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    // 调色板图标容器：淡品牌底承载当前颜色块，示意「可调色」
+                    color: palette.primary.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Icon(
+                    Icons.tune_rounded,
+                    size: 20,
+                    color: currentColor,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    '自定义颜色',
+                    style: TextStyle(
+                      color: palette.textPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Text(
+                  colorToHex(currentColor),
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 12.5,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right_rounded, color: palette.textSecondary),
+              ],
             ),
-            Text(
-              colorToHex(currentColor),
-              style: TextStyle(
-                color: palette.textSecondary,
-                fontSize: 12.5,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.chevron_right_rounded, color: palette.textSecondary),
-          ],
+          ),
         ),
       ),
     );
