@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - 修复坦克动荡点击续玩卡片后卡片先消失的问题
+- 修复坦克动荡联机对战中，比分定格期客户端画面仍小幅前冲、与房主端不一致的问题
 
 ## [0.7.0] - 2026-09-03
 

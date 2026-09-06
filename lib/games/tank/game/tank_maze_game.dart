@@ -77,12 +77,20 @@ class TankMazeGame extends FlameGame {
   /// 快照按 id 匹配做平滑，避免列表顺序变化导致渲染跳变
   final Map<int, _RemoteBullet> _remoteBullets = {};
 
-  /// 最新快照写入的战场阶段；只读暴露见 [phase]
+  /// 最新快照写入的战场阶段（远程模式专属状态）；只读暴露见 [phase]
   TankBattlePhase _phase = TankBattlePhase.playing;
 
-  /// 最新快照的战场阶段（只读）：当前客户端无 UI 消费，
-  /// 快照位置本身已表达定格/推进语义；预留供结算期 UI 与输入提示
-  TankBattlePhase get phase => _phase;
+  /// 当前战场阶段（只读）：远程模式取最新快照写入值；本地模式（房主/双人）
+  /// 由回合状态机推导——冻结倒计时中为定格期，击毁后残弹展示期为 settling
+  /// （战场仍推进，客户端照常外推），其余为进行中。此前本地恒为 playing，
+  /// 广播后客户端在冻结定格期仍按估计速度外推，位置比房主超前约 0.2 格
+  TankBattlePhase get phase => remote
+      ? _phase
+      : _freezeCountdown > 0
+      ? TankBattlePhase.frozen
+      : _roundOver
+      ? TankBattlePhase.settling
+      : TankBattlePhase.playing;
 
   /// 坦克位置平滑系数（指数平滑速率，1/秒）：
   /// 20Hz 快照下滞后 ≈ 速度/系数（满速 2.6 格/秒约滞后 0.13 格，小于车宽）
