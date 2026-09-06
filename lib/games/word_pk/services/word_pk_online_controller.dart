@@ -78,11 +78,18 @@ class WordPkOnlineController extends OnlineGameControllerBase {
     return true;
   }
 
-  /// 客户端提交：发往房主校验，结果异步返回
-  /// （通过走 wordApplied 广播同步，拒绝走 wordResult 提示）
+  /// 客户端提交：本地先按与房主同源的完整校验链（词法/重复/词表）
+  /// 预检，拒绝即时提示且不发网络——输入框在预检通过后才清空，
+  /// 被拒时输入完整保留；预检通过才发往房主复验（客户端不可信：
+  /// 房主仍全量重做校验，兜底预检后状态变化的竞态与词表异常）
   bool _submitAsClient(String word) {
     if (!isMyTurn) {
       onHint?.call('还没轮到你');
+      return false;
+    }
+    final error = WordValidator.validateWord(word, entries);
+    if (error != null) {
+      onHint?.call(error);
       return false;
     }
     client?.send(

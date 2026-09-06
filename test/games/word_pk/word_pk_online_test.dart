@@ -88,7 +88,7 @@ void main() {
     ctrlB.dispose();
   });
 
-  test('校验拒绝：重复与非词表单词由房主回执拒绝原因', () async {
+  test('校验拒绝：客户端本地预检即时拒绝，不发网络、输入保留', () async {
     final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);
 
@@ -100,21 +100,21 @@ void main() {
     final clientCtrl = WordPkOnlineController.client(client);
     final hints = hintsOf(clientCtrl);
 
-    // 房主先提交，轮换到客户端；客户端提交重复词被拒
+    // 房主先提交，轮换到客户端；客户端提交重复词被本地预检拒绝
+    // （校验链与房主同源，拒绝发生在清空之前，输入不丢失、不发网络）
     expect(hostCtrl.submitWord('apple'), isTrue);
     await until(() => clientCtrl.currentPlayer == 2);
-    expect(clientCtrl.submitWord('apple'), isTrue);
-    await until(() => hints.isNotEmpty);
+    expect(clientCtrl.submitWord('apple'), isFalse);
     expect(hints.last, '单词已重复');
-    // 拒绝不改变回合与列表
+    // 拒绝不改变回合与列表（未发送网络消息，房主侧无感知）
     expect(clientCtrl.currentPlayer, 2);
     expect(clientCtrl.entries.length, 1);
 
-    // 非词表单词被拒
+    // 非词表单词同样本地拒绝
     hints.clear();
-    expect(clientCtrl.submitWord('qqqqzz'), isTrue);
-    await until(() => hints.isNotEmpty);
+    expect(clientCtrl.submitWord('qqqqzz'), isFalse);
     expect(hints.last, '不是有效的英文单词');
+    expect(clientCtrl.entries.length, 1);
 
     hostCtrl.dispose();
     clientCtrl.dispose();
