@@ -10,6 +10,7 @@
 - 局域网联机：dart:io TCP（NDJSON 分帧协议、房主权威模型，零第三方网络依赖）
 - 持久化：SharedPreferences 单键 JSON 原子写入，读取容错，模型带 version 字段备迁移
 - SVG 渲染：flutter_svg（关于页 Logo 动态着色）
+- 版本信息：package_info_plus（关于页读取并展示应用版本号）
 - 应用图标：flutter_launcher_icons（源图见 `assets/icon/`，配置位于 pubspec.yaml）
 
 ## 项目结构
@@ -18,22 +19,25 @@
 
 ```
 lib/
-├── main.dart               # 应用入口：异步预热词表（不阻塞首帧）、恢复主题（含启动异常兜底）
+├── main.dart               # 应用入口：恢复主题（含启动异常兜底）
 ├── app/                    # 应用层
-│   ├── app_shell.dart      # 底部导航壳（首页/联机/更多，PageView 保活）
-│   ├── pages/              # 应用级页面（主页、更多、设置：主题/存档管理/关于/更新日志）
+│   ├── app_shell.dart      # 底部导航壳（首页/联机/更多，PageView 保活；挂载时预热单词PK词表）
+│   ├── game_data.dart      # 游戏注册中心（全部游戏元数据与路由的组合根）
+│   ├── pages/              # 应用级页面（主页、更多）
+│   │   └── settings/       # 设置页（主题/存档管理/关于/更新日志）
 │   └── widgets/            # 主页组件（游戏卡片、游戏网格）
 ├── games/                  # 游戏层（一游戏一目录，内分 pages/services/models/widgets）
 │   ├── word_pk/            # 单词PK（页面、联机对局控制器、词表校验、存档）
 │   ├── gomoku/             # 五子棋（规则引擎、联机对局控制器、存档）
-│   ├── tank/               # 坦克动荡（Flame 战场：随机迷宫、原版摇杆驾驶、坦克与子弹碰撞、回合计分；内分 game/ 实体逻辑与音效；联机为房主权威快照广播 + 客户端影子战场）
+│   ├── tank/               # 坦克动荡（Flame 战场：随机迷宫、原版摇杆驾驶、坦克与子弹碰撞、回合计分；内分 game/ 实体逻辑、特效与音效；联机为房主权威快照广播 + 客户端影子战场）
 │   └── scoreboard/         # 计分器（BO 赛制规则引擎、存档）
 ├── shared/                 # 共享层
-│   ├── game/               # 游戏注册中心（统一游戏元数据与路由）
-│   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、房间等待页与联机加入、对局控制器基类）
+│   ├── game/               # 游戏元数据模型（GameInfo，注册组合根位于 app/game_data.dart）
+│   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、对局控制器基类）
+│   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页）
 │   ├── storage/            # 存档读写泛型基类、主题持久化
 │   ├── theme/              # 主题系统（调色板、控制器）
-│   ├── utils/              # 通用工具（页面提示条）
+│   ├── utils/              # 通用工具（页面提示条、资产图片解码缓存、横屏沉浸式 mixin）
 │   └── widgets/            # 通用组件（顶栏、对话框、设置项、面板、续玩卡片等）
 test/                       # 单元与集成测试（按 games/、shared/ 与 lib 同构组织）
 assets/
