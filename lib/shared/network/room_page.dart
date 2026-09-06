@@ -153,7 +153,7 @@ class _RoomPageState extends State<RoomPage> {
     }
   }
 
-  /// 客户端侧状态变化：收到开局通知后跳转对局页并移交连接所有权
+  /// 客户端状态变化：收到开局通知后跳转对局页并移交连接所有权
   void _onClientChanged() {
     final client = _client;
     if (client == null || _transferred) return;
@@ -166,6 +166,22 @@ class _RoomPageState extends State<RoomPage> {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => builder(context, client)),
     );
+  }
+
+  /// 客户端加入失败重试：销毁旧连接实例并以原地址重建重新连接
+  /// （失败阶段 _fail 已关闭连接、清理定时器，重建无资源泄漏；
+  /// 房间满/对局已开始等失败原因的重试结果由房主重新裁决，
+  /// 失败视图会再次展示原因，可继续重试或返回）
+  void _retryJoin() {
+    final old = _client;
+    if (old != null) {
+      old.removeListener(_onClientChanged);
+      old.dispose();
+    }
+    final client = RoomClient(host: widget.address!, port: widget.port!)
+      ..connect();
+    client.addListener(_onClientChanged);
+    setState(() => _client = client);
   }
 
   @override
@@ -275,6 +291,7 @@ class _RoomPageState extends State<RoomPage> {
             return _buildMessageView(
               icon: Icons.wifi_off_rounded,
               message: client.failReason,
+              onRetry: _retryJoin,
             );
           case RoomClientPhase.disconnected:
             return _buildMessageView(
@@ -314,8 +331,14 @@ class _RoomPageState extends State<RoomPage> {
     );
   }
 
-  /// 失败/断开态：图标 + 说明 + 返回按钮
-  Widget _buildMessageView({required IconData icon, required String message}) {
+  /// 失败/断开态：图标 + 说明 + 操作按钮。
+  /// [onRetry] 非空时（客户端加入失败）按钮为「重试」——原地址直接重连
+  /// 其余场景按钮为「返回」退出本页
+  Widget _buildMessageView({
+    required IconData icon,
+    required String message,
+    VoidCallback? onRetry,
+  }) {
     final palette = context.palette;
     return Center(
       child: ConstrainedBox(
@@ -335,7 +358,11 @@ class _RoomPageState extends State<RoomPage> {
               ),
             ),
             const SizedBox(height: 24),
-            PrimaryButton(label: '返回', outlined: true, onPressed: _requestExit),
+            PrimaryButton(
+              label: onRetry != null ? '重试' : '返回',
+              outlined: true,
+              onPressed: onRetry ?? _requestExit,
+            ),
           ],
         ),
       ),
