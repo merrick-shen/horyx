@@ -62,8 +62,17 @@ class NetSession {
   VoidCallback? onDisconnected;
 
   /// 发送消息（NDJSON 编码后写入 socket）
+  /// 会话已断开后静默丢弃：socket 已销毁仍写入只会产生无意义错误日志
+  /// （断线由断线回调统一收敛，上层此刻不应再有在途发送）
   /// 写入失败（socket 已关闭等）不抛出：留日志痕迹，由心跳/错误回调兜底
   void send(NetMessage message) {
+    if (_closed) return;
+    _write(message);
+  }
+
+  /// 绕过断线守卫的底层写入：send（已做守卫）与关闭流程的 bye 发送共用——
+  /// bye 触发时 [_closed] 已置位（防重入先于一切清理），走 send 会被拦下
+  void _write(NetMessage message) {
     try {
       _socket.add(NetProtocol.encode(message));
     } catch (e) {
@@ -132,7 +141,7 @@ class NetSession {
     _heartbeatTimer = null;
 
     if (sendBye) {
-      send(const NetMessage.bye());
+      _write(const NetMessage.bye());
       // 给 bye 一点 flush 时间再销毁，尽量避免对端漏收
       try {
         await _socket.flush().timeout(_pingInterval);
