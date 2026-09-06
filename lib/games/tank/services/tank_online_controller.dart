@@ -247,11 +247,10 @@ class TankOnlineController extends OnlineGameControllerBase {
     if (game == null || gameEndedText != null) return;
     switch (msg.type) {
       case NetMessageType.tankDrive:
-        final input = parseTankDrive(msg);
-        if (input == null) return;
-        // speed 0 表达停车（摇杆归位）：与本地双人语义一致置空输入，
-        // 坦克不再旋转也不推进
-        game.setDrive(TankPlayer.green, input.speedFactor <= 0 ? null : input);
+        // 解码为 null 的两种情况（摇杆归位停车 / 非法载荷）统一按停车
+        // 处理：置空输入，坦克停止旋转与推进。带角度的 speed 0 =
+        // 圆钮在底座内的原地转向（只转不走，与本地双人语义一致）
+        game.setDrive(TankPlayer.green, parseTankDrive(msg));
       case NetMessageType.tankFire:
         // 实际发射成功才广播事件：被上限/结算期拒绝时客户端不多响一声
         // （子弹本体由快照承载，事件只负责音效即时性）

@@ -259,26 +259,30 @@ class TankNetRoundStart {
 }
 
 /// 构造驾驶输入消息：客户端 → 房主。
-/// [input] 为 null 表示摇杆归位（停车），以 speed 0 表达；
+/// [input] 为 null 表示摇杆归位（angle 字段为 JSON null），与
+/// 「圆钮在底座内」的原地转向输入（speed 0 但带角度）严格区分——
+/// 前者停车，后者只转向不前进（原版操控语义，见 TankJoystick）；
 /// 角度按 2π 归一为 [0, 2π)，避免负角度浮点在 JSON 中的冗余表示
 NetMessage tankDriveMessage(TankDriveInput? input) => NetMessage(
       type: NetMessageType.tankDrive,
       payload: {
         'angle':
-            input == null ? 0.0 : input.targetAngle % (2 * math.pi),
+            input == null ? null : input.targetAngle % (2 * math.pi),
         'speed': input?.speedFactor ?? 0.0,
       },
     );
 
-/// 从驾驶输入消息解码；speed 非法（负数/超 1）返回 null。
-/// speed 0 即停车（返回零输入，调用方据此置空摇杆状态）
+/// 从驾驶输入消息解码；speed 非法（负数/超 1）或 angle 缺失（摇杆归位）
+/// 返回 null，调用方统一按停车处理；带角度的 speed 0 = 原地转向（只转不走）
 TankDriveInput? parseTankDrive(NetMessage message) {
   final p = message.payload;
   final angle = p['angle'];
   final speed = p['speed'];
-  if (angle is! num || speed is! num) return null;
+  if (speed is! num) return null;
   final s = speed.toDouble();
   if (s < 0 || s > 1) return null;
+  if (angle == null) return null;
+  if (angle is! num) return null;
   return TankDriveInput(
     targetAngle: angle.toDouble(),
     speedFactor: s,

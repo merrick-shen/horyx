@@ -37,11 +37,22 @@ void main() {
       expect(angle, closeTo(1.5 * math.pi, 1e-9));
     });
 
-    test('null 输入编码为停车（speed 0）', () {
+    test('null 输入编码为停车（angle 字段缺失，解码返回 null）', () {
       final restored = parseTankDrive(jsonRoundtrip(tankDriveMessage(null)));
 
+      expect(restored, isNull);
+    });
+
+    test('speed 0 带角度为原地转向（往返保持角度）', () {
+      const input = TankDriveInput(targetAngle: 2.0, speedFactor: 0);
+
+      final restored = parseTankDrive(
+        jsonRoundtrip(tankDriveMessage(input)),
+      );
+
       expect(restored, isNotNull);
-      expect(restored!.speedFactor, 0);
+      expect(restored!.targetAngle, closeTo(2.0, 1e-9));
+      expect(restored.speedFactor, 0);
     });
 
     test('油门越界（大于 1 / 负数）拒绝', () {
