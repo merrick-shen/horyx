@@ -4,7 +4,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 
-/// 更新日志页
+/// 更新日志页（版本列表）
+/// 列表仅展示「版本号 + 发布日期 + 分类摘要」，点击进入详情页查看完整内容；
 /// 内容直接读取打包进应用的 CHANGELOG.md 资源，与仓库文件保持一致：
 /// 后续更新 CHANGELOG.md 后重新构建即可同步，无需在代码中维护第二份数据
 class ChangelogPage extends StatefulWidget {
@@ -60,62 +61,201 @@ class _ChangelogPageState extends State<ChangelogPage> {
     }
     return Scrollbar(
       child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         itemCount: _versions!.length,
-        itemBuilder: (context, index) =>
-            _buildVersion(palette, _versions![index]),
+        itemBuilder: (context, index) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _buildVersionCard(palette, _versions![index]),
+        ),
       ),
     );
   }
 
-  /// 单个版本区块：版本头 + 各类型分组
-  Widget _buildVersion(AppPalette palette, _VersionSection version) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (version.date != null) ...[
-          // 版本号 + 发布日期
-          Row(
+  /// 版本卡片：版本号 + 发布日期 + 分类摘要，点击进入详情页
+  Widget _buildVersionCard(AppPalette palette, _VersionSection version) {
+    return Material(
+      color: palette.surfaceBg,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.of(context).push(_VersionDetailRoute(version)),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
             children: [
-              Text(
-                'v${version.version}',
-                style: TextStyle(
-                  color: palette.primary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 版本号与日期，与详情页大标题建立 Hero 共享元素过渡
+                    Hero(
+                      tag: 'changelog-version-${version.version}',
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: _buildVersionTitle(palette, version),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _summary(version),
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(width: 8),
-              Text(
-                version.date!,
-                style: TextStyle(color: palette.textSecondary, fontSize: 12),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: palette.textSecondary,
               ),
             ],
           ),
-        ] else ...[
-          // 未发布版本无日期
+        ),
+      ),
+    );
+  }
+
+  /// 版本号 + 发布日期行（列表卡片与详情页共用，保证 Hero 过渡时样式连续）
+  Widget _buildVersionTitle(AppPalette palette, _VersionSection version) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          // 已发布版本统一 v 前缀；「未发布」为特殊标识，不加前缀
+          version.version == '未发布' ? version.version : 'v${version.version}',
+          style: TextStyle(
+            color: palette.primary,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (version.date != null) ...[
+          const SizedBox(width: 8),
           Text(
-            version.version,
-            style: TextStyle(
-              color: palette.primary,
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-            ),
+            version.date!,
+            style: TextStyle(color: palette.textSecondary, fontSize: 12),
           ),
         ],
-        ...version.sections.expand((section) => [
-              const SizedBox(height: 14),
-              Text(
-                section.typeName,
-                style: TextStyle(
-                  color: palette.textPrimary,
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
+      ],
+    );
+  }
+
+  /// 分类条数摘要，如「变更 6 · 修复 7」
+  String _summary(_VersionSection version) {
+    return version.sections
+        .map((s) => '${s.typeName} ${s.items.length}')
+        .join(' · ');
+  }
+}
+
+/// 版本详情页路由：淡入 + 轻微上滑的平滑过渡
+/// 时长与曲线与底部导航切换一致（300ms easeOutCubic），保持全局动效统一
+class _VersionDetailRoute extends PageRouteBuilder<void> {
+  _VersionDetailRoute(_VersionSection version)
+      : super(
+          transitionDuration: const Duration(milliseconds: 300),
+          reverseTransitionDuration: const Duration(milliseconds: 250),
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              _ChangelogDetailPage(version: version),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeInCubic,
+            );
+            return FadeTransition(
+              opacity: curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.04),
+                  end: Offset.zero,
+                ).animate(curved),
+                child: child,
+              ),
+            );
+          },
+        );
+}
+
+/// 版本详情页：完整展示该版本所有分类与变更条目
+class _ChangelogDetailPage extends StatelessWidget {
+  const _ChangelogDetailPage({required this.version});
+
+  final _VersionSection version;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return AppPageScaffold(
+      title: '更新日志',
+      showBack: true,
+      child: Scrollbar(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          children: [
+            // 大号版本标题，承接列表卡片飞入的 Hero 过渡
+            Hero(
+              tag: 'changelog-version-${version.version}',
+              child: Material(
+                type: MaterialType.transparency,
+                child: Text(
+                  version.version == '未发布'
+                      ? version.version
+                      : 'v${version.version}',
+                  style: TextStyle(
+                    color: palette.primary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              ...section.items.map((item) => _buildItem(palette, item)),
-            ]),
+            ),
+            if (version.date != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                // 发布日期，统一 YYYY-MM-DD（与 CHANGELOG.md 源格式一致）
+                '发布于 ${version.date}',
+                style: TextStyle(
+                  color: palette.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+            ...version.sections.expand(
+              (section) => [
+                const SizedBox(height: 20),
+                _buildSection(palette, section),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 单个类型分组：类型标题 + 条目列表
+  Widget _buildSection(AppPalette palette, _TypeSection section) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          section.typeName,
+          style: TextStyle(
+            color: palette.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...section.items.map((item) => _buildItem(palette, item)),
       ],
     );
   }
