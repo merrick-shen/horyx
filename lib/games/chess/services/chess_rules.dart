@@ -1,6 +1,14 @@
 import 'package:horyx/games/chess/models/chess_board.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
 
+/// 对局终局原因
+/// 将死/困毙由局面判定（judgeEnd）；认输由对局流程直接设置，不参与局面判定
+enum ChessEndReason {
+  checkmate, // 将死：被将军且无任何合法着法
+  stalemate, // 困毙：未被将军但无任何合法着法（中国象棋中判负，非和棋）
+  resign, // 认输
+}
+
 /// 象棋规则引擎（纯静态逻辑，无 UI 依赖）
 /// 本地对局页与联机控制器共用，保证两侧规则永远同源。
 ///
@@ -128,6 +136,8 @@ abstract final class ChessRules {
     for (final (dx, dy) in diagonals) {
       final toCol = from.$1 + dx;
       final toRow = from.$2 + dy;
+      // 目标出界直接跳过：底线象的越界田字方向连象眼都在盘外，需先于眼检查拦截
+      if (!_inBoard(toCol, toRow)) continue;
       // 塞象眼：田字中心（对角中点）有子则不可走
       if (board.pieceAt((from.$1 + dx ~/ 2, from.$2 + dy ~/ 2)) != null) continue;
       // 不过河：红象活动于 row 0-4，黑象活动于 row 5-9
@@ -337,5 +347,24 @@ abstract final class ChessRules {
       if (!illegal) result.add(move);
     }
     return result;
+  }
+
+  /// 终局判定：[colorToMove] 方是否已无路可走
+  ///
+  /// 返回 null 表示对局继续；否则该方被判负（胜方为对方）：
+  /// - [ChessEndReason.checkmate]：被将军且无任何合法着法（将死）
+  /// - [ChessEndReason.stalemate]：未被将军但无任何合法着法（困毙，判负）
+  static ChessEndReason? judgeEnd(ChessBoard board, ChessColor colorToMove) {
+    for (var row = 0; row < ChessBoard.rows; row++) {
+      for (var col = 0; col < ChessBoard.cols; col++) {
+        final p = board.pieceAt((col, row));
+        if (p == null || p.color != colorToMove) continue;
+        // 任一子存在合法着法即对局继续（合法着法内部已含将军/照面过滤）
+        if (legalMovesFor(board, (col, row)).isNotEmpty) return null;
+      }
+    }
+    return isInCheck(board, colorToMove)
+        ? ChessEndReason.checkmate
+        : ChessEndReason.stalemate;
   }
 }

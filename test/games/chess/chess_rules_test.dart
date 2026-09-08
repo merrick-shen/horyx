@@ -821,4 +821,50 @@ void main() {
       expect(destinations(ChessRules.legalMovesFor(board, (4, 0))), {(4, 1)});
     });
   });
+
+  group('judgeEnd：终局判定', () {
+    test('将死：黑将被红车将军且无法解将（象位自堵 + 照面封吃车线）', () {
+      final board = boardOf([
+        '....K....', // row 0 红帅 (4,0)
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....R....', // row 8 红车直邻将军
+        '...bkb...', // row 9 黑象 (3,9)(5,9) 自堵两侧、黑将 (4,9)
+      ]);
+      expect(ChessRules.isInCheck(board, ChessColor.black), isTrue);
+      expect(ChessRules.judgeEnd(board, ChessColor.black), ChessEndReason.checkmate);
+      // 红方仍有着法，对局视角上红方行棋不终局
+      expect(ChessRules.judgeEnd(board, ChessColor.red), isNull);
+    });
+
+    test('困毙：黑将未被将军但无任何合法着法（判负而非和棋）', () {
+      final board = boardOf([
+        '...K.....', // row 0 红帅 (3,0)，与黑将不同列避免照面
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '...R.R...', // row 8 红车 (3,8)(5,8) 封锁宫侧
+        '....k....', // row 9 黑将 (4,9)
+      ]);
+      expect(ChessRules.isInCheck(board, ChessColor.black), isFalse);
+      // (3,9)(5,9)(4,8) 被车攻击，(3,8)(5,8) 吃车后立即暴露于另一车攻击线
+      expect(ChessRules.judgeEnd(board, ChessColor.black), ChessEndReason.stalemate);
+      expect(ChessRules.judgeEnd(board, ChessColor.red), isNull);
+    });
+
+    test('开局双方均有着法，对局继续', () {
+      final board = ChessBoard.initial();
+      expect(ChessRules.judgeEnd(board, ChessColor.red), isNull);
+      expect(ChessRules.judgeEnd(board, ChessColor.black), isNull);
+    });
+  });
 }
