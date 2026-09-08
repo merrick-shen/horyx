@@ -11,6 +11,12 @@ abstract final class ChessRules {
   /// 四个正交方向（车炮直线、帅直行共用）
   static const List<(int, int)> _orthogonal = [(1, 0), (-1, 0), (0, 1), (0, -1)];
 
+  /// 马的八个日字偏移（走子生成与攻击检测反向查询共用）
+  static const List<(int, int)> _knightJumps = [
+    (1, 2), (-1, 2), (1, -2), (-1, -2),
+    (2, 1), (-2, 1), (2, -1), (-2, -1),
+  ];
+
   /// 生成 [pos] 处棋子的伪合法走法
   ///
   /// 「伪合法」= 满足棋子自身走子规则、目标格非己方棋子；
@@ -103,11 +109,7 @@ abstract final class ChessRules {
   /// 腿上有子则该轴向上的两跳全部被蹩
   static List<ChessMove> _knightMoves(ChessBoard board, ChessPos from, ChessColor color) {
     final moves = <ChessMove>[];
-    const jumps = [
-      (1, 2), (-1, 2), (1, -2), (-1, -2),
-      (2, 1), (-2, 1), (2, -1), (-2, -1),
-    ];
-    for (final (dx, dy) in jumps) {
+    for (final (dx, dy) in _knightJumps) {
       final legCol = from.$1 + (dx.abs() == 2 ? dx ~/ 2 : 0);
       final legRow = from.$2 + (dy.abs() == 2 ? dy ~/ 2 : 0);
       // 腿格盘外时目标必在盘外，一并跳过
@@ -175,5 +177,165 @@ abstract final class ChessRules {
       _addTarget(moves, board, from, (from.$1 + dx, from.$2 + dy), color);
     }
     return moves;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 攻击检测与合法着法过滤
+  // ---------------------------------------------------------------------------
+
+  /// 查找某方帅/将的位置（王唯一性由开局与存档结构校验保证）
+  static ChessPos _findKing(ChessBoard board, ChessColor color) {
+    for (var row = 0; row < ChessBoard.rows; row++) {
+      for (var col = 0; col < ChessBoard.cols; col++) {
+        final p = board.pieceAt((col, row));
+        if (p != null && p.color == color && p.type == ChessPieceType.king) {
+          return (col, row);
+        }
+      }
+    }
+    throw StateError('找不到 $color 方的帅/将');
+  }
+
+  /// [pos] 是否被 [byColor] 一方攻击（可被其下一手吃到）
+  ///
+  /// 覆盖：车（直线直达）、炮（隔恰好一子）、马（反向日字 + 蹩腿）、
+  /// 兵/卒（前进 + 过河横移）、帅/将（九宫内直邻）。
+  /// 相/仕不纳入：它们活动不出自方半场/九宫，永远攻击不到对方九宫，
+  /// 对「王是否被将军」的判定无影响，省去可简化检测
+  static bool isSquareAttacked(ChessBoard board, ChessPos pos, ChessColor byColor) {
+    final (col, row) = pos;
+
+    // 直线系：每方向第一个子若是 byColor 的车则攻击；
+    // 第二个子若是 byColor 的炮（中间恰好一个遮挡）则攻击
+    for (final (dx, dy) in _orthogonal) {
+      var c = col + dx;
+      var r = row + dy;
+      var firstSeen = false;
+      while (_inBoard(c, r)) {
+        final p = board.pieceAt((c, r));
+        if (p != null) {
+          if (!firstSeen) {
+            if (p.color == byColor && p.type == ChessPieceType.rook) return true;
+            firstSeen = true;
+          } else {
+            if (p.color == byColor && p.type == ChessPieceType.cannon) return true;
+            break;
+          }
+        }
+        c += dx;
+        r += dy;
+      }
+    }
+
+    // 马：候选马位在日字偏移处，蹩腿位（马位朝目标的主轴一步）无子即构成攻击
+    for (final (dx, dy) in _knightJumps) {
+      final mCol = col + dx;
+      final mRow = row + dy;
+      if (!_inBoard(mCol, mRow)) continue;
+      final p = board.pieceAt((mCol, mRow));
+      if (p == null || p.color != byColor || p.type != ChessPieceType.knight) {
+        continue;
+      }
+      final legCol = dx.abs() == 2 ? mCol - dx ~/ 2 : mCol;
+      final legRow = dy.abs() == 2 ? mRow - dy ~/ 2 : mRow;
+      if (board.pieceAt((legCol, legRow)) == null) return true;
+    }
+
+    // 兵/卒：byColor 兵攻击 X = 兵在其前进方向邻格，或（该兵已过河）左右横移邻格
+    if (byColor == ChessColor.red) {
+      if (_inBoard(col, row - 1)) {
+        final p = board.pieceAt((col, row - 1));
+        if (p != null && p.color == ChessColor.red && p.type == ChessPieceType.pawn) {
+          return true;
+        }
+      }
+      if (row >= 5) {
+        for (final dc in const [-1, 1]) {
+          if (!_inBoard(col + dc, row)) continue;
+          final p = board.pieceAt((col + dc, row));
+          if (p != null && p.color == ChessColor.red && p.type == ChessPieceType.pawn) {
+            return true;
+          }
+        }
+      }
+    } else {
+      if (_inBoard(col, row + 1)) {
+        final p = board.pieceAt((col, row + 1));
+        if (p != null && p.color == ChessColor.black && p.type == ChessPieceType.pawn) {
+          return true;
+        }
+      }
+      if (row <= 4) {
+        for (final dc in const [-1, 1]) {
+          if (!_inBoard(col + dc, row)) continue;
+          final p = board.pieceAt((col + dc, row));
+          if (p != null && p.color == ChessColor.black && p.type == ChessPieceType.pawn) {
+            return true;
+          }
+        }
+      }
+    }
+
+    // 帅/将：byColor 王在九宫内直邻一格攻击（王吃不到宫外子，故要求 X 在其九宫内）
+    if (_inPalace(col, row, byColor)) {
+      for (final (dx, dy) in _orthogonal) {
+        if (!_inBoard(col + dx, row + dy)) continue;
+        final p = board.pieceAt((col + dx, row + dy));
+        if (p != null && p.color == byColor && p.type == ChessPieceType.king) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  /// 将帅照面：两王同列且中间无遮挡
+  /// 中国象棋中形成照面的走法不合法；缺王（对局已终结的中间态）不视为照面
+  static bool kingsFacing(ChessBoard board) {
+    ChessPos? redKing;
+    ChessPos? blackKing;
+    for (var row = 0; row < ChessBoard.rows; row++) {
+      for (var col = 0; col < ChessBoard.cols; col++) {
+        final p = board.pieceAt((col, row));
+        if (p == null || p.type != ChessPieceType.king) continue;
+        if (p.color == ChessColor.red) {
+          redKing = (col, row);
+        } else {
+          blackKing = (col, row);
+        }
+      }
+    }
+    if (redKing == null || blackKing == null) return false;
+    if (redKing.$1 != blackKing.$1) return false;
+    // 王必在各自九宫，只可能同列照面（不会同行），沿列逐格查遮挡
+    for (var r = redKing.$2 + 1; r < blackKing.$2; r++) {
+      if (board.pieceAt((redKing.$1, r)) != null) return false;
+    }
+    return true;
+  }
+
+  /// [color] 方是否正被将军（其帅/将被对方攻击），供对局页将军提示共用
+  static bool isInCheck(ChessBoard board, ChessColor color) {
+    final enemy = color == ChessColor.red ? ChessColor.black : ChessColor.red;
+    return isSquareAttacked(board, _findKing(board, color), enemy);
+  }
+
+  /// [pos] 处棋子的合法着法：伪合法走法过滤「走后己帅被将军」与「走后将帅照面」
+  /// 被将军时天然只剩解将着法（走后仍被将军的一律滤除）
+  static List<ChessMove> legalMovesFor(ChessBoard board, ChessPos pos) {
+    final piece = board.pieceAt(pos);
+    assert(piece != null, 'legalMovesFor 的起点无棋子：$pos');
+    final enemy = piece!.color == ChessColor.red ? ChessColor.black : ChessColor.red;
+    final result = <ChessMove>[];
+    for (final move in movesFor(board, pos)) {
+      final captured = board.applyMove(move);
+      final kingPos = _findKing(board, piece.color);
+      final illegal =
+          isSquareAttacked(board, kingPos, enemy) || kingsFacing(board);
+      board.revertMove(move, captured);
+      if (!illegal) result.add(move);
+    }
+    return result;
   }
 }

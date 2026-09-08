@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:horyx/games/chess/models/chess_board.dart';
+import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/games/chess/services/chess_rules.dart';
 
 /// 阶段 2：七类棋子伪合法走法生成单测
@@ -483,6 +484,341 @@ void main() {
         destinations(ChessRules.movesFor(board, (4, 4))),
         {(4, 3), (3, 4), (5, 4)},
       );
+    });
+  });
+
+  group('isSquareAttacked：攻击来源覆盖', () {
+    test('车直达攻击，直线无遮挡即攻击', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        'R........', // row 4 红车与目标同线
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(board, (4, 4), ChessColor.red), isTrue);
+    });
+
+    test('车被中途棋子遮挡则不攻击', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        'R.P......', // row 4 红兵挡在车与目标之间
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(board, (4, 4), ChessColor.red), isFalse);
+    });
+
+    test('炮隔恰好一个子攻击', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        'C.P......', // row 4 红炮 (0,4)、红兵 (2,4) 作架
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(board, (4, 4), ChessColor.red), isTrue);
+    });
+
+    test('炮与目标之间有两个子（双架）不攻击', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        'C.PP.....', // row 4 两个红兵作架
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(board, (4, 4), ChessColor.red), isFalse);
+    });
+
+    test('马攻击与蹩马腿（反向检测）', () {
+      final noLeg = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '...N.....', // row 3 红马 (3,3)，攻击 (4,5) 的腿 (3,4) 为空
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(noLeg, (4, 5), ChessColor.red), isTrue);
+
+      final legBlocked = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '...N.....',
+        '...P.....', // row 4 红兵塞住马腿
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(legBlocked, (4, 5), ChessColor.red), isFalse);
+    });
+
+    test('红兵前进攻击下一格', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '....P....', // row 4 红兵
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(board, (4, 5), ChessColor.red), isTrue);
+    });
+
+    test('红兵过河后横移攻击，未过河不横移', () {
+      final crossed = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '...P.....', // row 5 红兵已过河
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(crossed, (4, 5), ChessColor.red), isTrue);
+
+      final notCrossed = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '...P.....', // row 4 红兵未过河
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(notCrossed, (4, 4), ChessColor.red), isFalse);
+    });
+
+    test('黑卒对称：前进攻击、未过河不横移', () {
+      final forward = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....p....', // row 6 黑卒
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(forward, (4, 5), ChessColor.black), isTrue);
+
+      final notCrossed = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '...p.....', // row 5 黑卒未过河（黑卒过河线为 row ≤ 4）
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(notCrossed, (4, 5), ChessColor.black), isFalse);
+    });
+
+    test('帅/将只攻击九宫内直邻格', () {
+      final palaceTarget = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....', // row 8 黑将
+        '.........', // (4,9) 为黑宫内空格
+      ]);
+      expect(ChessRules.isSquareAttacked(palaceTarget, (4, 9), ChessColor.black), isTrue);
+
+      final outsideTarget = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........', // (4,3) 不在红宫（红宫 row 0-2）
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(outsideTarget, (4, 3), ChessColor.red), isFalse);
+    });
+
+    test('相/仕不纳入攻击检测（活动范围到不了对方九宫）', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '..b......', // row 2 黑象贴近红帅所在半场
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isSquareAttacked(board, (4, 0), ChessColor.black), isFalse);
+    });
+
+    test('健全性：初始局面双方均未被将军、无照面', () {
+      final board = ChessBoard.initial();
+      expect(ChessRules.isInCheck(board, ChessColor.red), isFalse);
+      expect(ChessRules.isInCheck(board, ChessColor.black), isFalse);
+      expect(ChessRules.kingsFacing(board), isFalse);
+    });
+  });
+
+  group('kingsFacing：将帅照面', () {
+    test('同列且中间无遮挡为照面', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.kingsFacing(board), isTrue);
+    });
+
+    test('同列但有子遮挡不构成照面', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....P....', // row 5 任意棋子遮挡
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.kingsFacing(board), isFalse);
+    });
+
+    test('两王不同列不构成照面', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        'k........', // 黑将 (0,9)
+      ]);
+      expect(ChessRules.kingsFacing(board), isFalse);
+    });
+  });
+
+  group('legalMovesFor：合法着法过滤', () {
+    test('被将军时只剩解将着法（马跳垫将位）', () {
+      final board = boardOf([
+        '....K....', // 红帅 (4,0)
+        '.........',
+        '...N.....', // 红马 (3,2)
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....r....', // 黑车 (4,7) 沿 4 列将军
+        '.........',
+        '....k....',
+      ]);
+      expect(ChessRules.isInCheck(board, ChessColor.red), isTrue);
+      // 马的各跳点中只有 (4,4) 能挡住 4 列车路，其余走后帅仍被攻击
+      expect(destinations(ChessRules.legalMovesFor(board, (3, 2))), {(4, 4)});
+    });
+
+    test('帅自走解将：不能走到仍被攻击的格', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....r....', // 黑车 (4,7) 将军
+        '.........',
+        'k........', // 黑将 (0,9) 避开 4 列
+      ]);
+      // (4,1) 仍在黑车攻击线上被滤，(3,0) (5,0) 离开攻击线合法
+      expect(destinations(ChessRules.legalMovesFor(board, (4, 0))), {(3, 0), (5, 0)});
+    });
+
+    test('形成将帅照面的走法全部被过滤（马离开中间列即照面）', () {
+      final board = boardOf([
+        '....K....',
+        '.........',
+        '.........',
+        '.........',
+        '....N....', // 红马 (4,4) 是帅将间唯一遮挡
+        '.........',
+        '.........',
+        '.........',
+        '.........',
+        '....k....',
+      ]);
+      // 马有 8 个伪合法跳点，但全部离开 4 列，走后即照面
+      expect(ChessRules.movesFor(board, (4, 4)), hasLength(8));
+      expect(ChessRules.legalMovesFor(board, (4, 4)), isEmpty);
+    });
+
+    test('无将军无照面时合法着法与伪合法一致（开局红帅，(3,0)(5,0) 有仕不可进）', () {
+      final board = ChessBoard.initial();
+      expect(destinations(ChessRules.legalMovesFor(board, (4, 0))), {(4, 1)});
     });
   });
 }
