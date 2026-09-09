@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 更新日志页面重构：改为版本列表 + 详情页结构，列表展示版本号与发布日期，点击查看该版本完整更新内容
+- 五子棋「开始对局」按钮图标调整为火焰样式，与其他游戏统一
 
 ## [0.8.0] - 2026-09-06
 

@@ -102,7 +102,7 @@ class _GomokuSetupViewState extends State<GomokuSetupView> {
           label: _isLan ? '创建房间' : '开始对局',
           icon: _isLan
               ? Icons.wifi_tethering_rounded
-              : Icons.sports_esports_rounded,
+              : Icons.local_fire_department_rounded,
           onPressed: _isLan
               ? () => widget.onCreateRoom(widget.boardSize)
               : widget.onStart,
