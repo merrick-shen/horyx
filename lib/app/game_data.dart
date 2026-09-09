@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/game/game_info.dart';
+import 'package:horyx/games/chess/pages/chess_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_page.dart';
 import 'package:horyx/games/scoreboard/pages/scoreboard_page.dart';
@@ -51,6 +52,16 @@ abstract final class GameData {
         TankOnlinePage.client(client: client),
   );
 
+  /// 中国象棋
+  /// 玩法暂未实现：先开放首页入口与对局模式设置（本地/局域网），
+  /// 棋盘对局视图与联机对局页后续接入（联机满员后停留等待页过渡态）
+  static final GameInfo chess = GameInfo(
+    name: ChessPage.gameName,
+    description: '楚河汉界双人对弈，将死对方取胜',
+    icon: ChessPage.gameIcon,
+    pageBuilder: (context) => const ChessPage(),
+  );
+
   /// 计分器（纯本地工具，无联机对局页）
   static final GameInfo scoreboard = GameInfo(
     name: '计分器',
@@ -64,6 +75,7 @@ abstract final class GameData {
     wordPk,
     gomoku,
     tank,
+    chess,
     scoreboard,
   ];
 
