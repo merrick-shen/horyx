@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/games/chess/models/chess_board.dart';
+import 'package:horyx/games/chess/widgets/chess_board_view.dart';
 import 'package:horyx/games/chess/widgets/chess_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
-import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 
 /// 中国象棋游戏页
 /// 当前为骨架阶段：设置视图提供对局模式选择（本地/局域网），
-/// 对局视图暂为空白占位，棋盘玩法后续接入
+/// 对局视图暂为静态棋盘展示（走子交互与终局流程后续接入）
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class ChessPage extends StatefulWidget {
   const ChessPage({super.key});
@@ -27,9 +28,15 @@ class _ChessPageState extends State<ChessPage> {
   /// 是否已开始对局（false = 对局模式设置阶段）
   bool _started = false;
 
-  /// 开始本地对局：进入对局视图（棋盘玩法暂未实现，先展示占位）
+  /// 对局棋盘（开始对局时初始化为开局局面；走子状态阶段 6 接入）
+  ChessBoard? _board;
+
+  /// 开始本地对局：进入对局视图，展示静态开局局面
   void _onStart() {
-    setState(() => _started = true);
+    setState(() {
+      _board = ChessBoard.initial();
+      _started = true;
+    });
   }
 
   /// 局域网模式：创建房间并进入等待页（固定 2 人，自己为玩家 1）
@@ -79,11 +86,11 @@ class _ChessPageState extends State<ChessPage> {
                 onBack: _requestExit,
               ),
               Expanded(
-                // 阶段切换动画：设置视图 <-> 对局视图（暂为空白占位）
+                // 阶段切换动画：设置视图 <-> 对局视图
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: _started
-                      ? _buildGamePlaceholder()
+                      ? _buildGameView()
                       : ChessSetupView(
                           key: const ValueKey('setup'),
                           onStart: _onStart,
@@ -98,16 +105,17 @@ class _ChessPageState extends State<ChessPage> {
     );
   }
 
-  /// 对局视图占位：棋盘玩法实现前的空白展示
-  Widget _buildGamePlaceholder() {
-    return Center(
-      child: Text(
-        '对局页面开发中',
-        style: TextStyle(
-          color: context.palette.textSecondary,
-          fontSize: 14,
-        ),
-      ),
+  /// 对局视图：静态棋盘展示（选子/走子交互在阶段 6 接入）
+  Widget _buildGameView() {
+    final board = _board;
+    if (board == null) {
+      // _started 时必有棋盘；空值兜底回设置视图，防御异常路径
+      _backToSetup();
+      return const SizedBox.shrink();
+    }
+    return ChessBoardView(
+      key: const ValueKey('board'),
+      board: board,
     );
   }
 }
