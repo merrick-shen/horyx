@@ -6,9 +6,9 @@ import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 /// 单词校验服务
 /// 基于本地词表（约 37 万词）离线校验：无网络请求、毫秒级响应，
 /// 满足「检测响应不超过 1 秒」的质量标准
-class WordValidator {
+class WordPkValidator {
   /// 工具类禁止实例化
-  WordValidator._();
+  WordPkValidator._();
 
   /// 词表资源路径
   static const String _assetPath = 'assets/words/english_words.txt';
@@ -30,7 +30,7 @@ class WordValidator {
       };
     } catch (e) {
       // 保留失败痕迹（release 下自动静音），便于排查「单词全判无效」类问题
-      debugPrint('WordValidator: 词表加载失败，降级为空词表 —— $e');
+      debugPrint('WordPkValidator: 词表加载失败，降级为空词表 —— $e');
       _dictionary = const <String>{};
     }
   }
@@ -56,7 +56,7 @@ class WordValidator {
   /// 本地对局与联机房主提交共用，返回统一拒绝文案；通过返回 null。
   /// [raw] 为原始输入（内部统一 trim + 小写后参与比较），
   /// [entries] 为已生效单词表（存储的均为归一化后的单词）
-  static String? validateWord(String raw, List<WordEntry> entries) {
+  static String? validateWord(String raw, List<WordPkEntry> entries) {
     final formatError = validateFormat(raw);
     if (formatError != null) return formatError;
     final word = raw.trim().toLowerCase();

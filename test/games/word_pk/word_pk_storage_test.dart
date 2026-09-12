@@ -19,8 +19,8 @@ void main() {
         playerCount: 3,
         currentPlayer: 2,
         entries: const [
-          WordEntry(word: 'banana', playerIndex: 2),
-          WordEntry(word: 'apple', playerIndex: 1),
+          WordPkEntry(word: 'banana', playerIndex: 2),
+          WordPkEntry(word: 'apple', playerIndex: 1),
         ],
         savedAt: DateTime(2026, 8, 15, 12, 30),
       );
@@ -54,7 +54,7 @@ void main() {
       final state = WordPkGameState(
         playerCount: 2,
         currentPlayer: 2,
-        entries: const [WordEntry(word: 'apple', playerIndex: 1)],
+        entries: const [WordPkEntry(word: 'apple', playerIndex: 1)],
         savedAt: DateTime(2026, 8, 15),
       );
       await WordPkStorage.instance.save(state);

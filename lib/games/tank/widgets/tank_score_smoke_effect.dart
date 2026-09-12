@@ -14,17 +14,17 @@ import 'package:horyx/shared/utils/asset_image.dart';
 /// 全部长度参数按数字宽高归一化，且绘制时裁剪到数字自身矩形——
 /// 烟雾（含底部出生点）绝不超出数字范围。
 /// 纯渲染叠加：不拦截手势、不读写游戏逻辑状态。
-class ScoreSmokeEffect extends StatefulWidget {
-  const ScoreSmokeEffect({super.key, required this.tick});
+class TankScoreSmokeEffect extends StatefulWidget {
+  const TankScoreSmokeEffect({super.key, required this.tick});
 
   /// 触发计数：每次自增爆一团烟雾（0=不触发）
   final int tick;
 
   @override
-  State<ScoreSmokeEffect> createState() => _ScoreSmokeEffectState();
+  State<TankScoreSmokeEffect> createState() => _TankScoreSmokeEffectState();
 }
 
-class _ScoreSmokeEffectState extends State<ScoreSmokeEffect>
+class _TankScoreSmokeEffectState extends State<TankScoreSmokeEffect>
     with SingleTickerProviderStateMixin {
   Ticker? _ticker;
   Duration _last = Duration.zero;
@@ -53,7 +53,7 @@ class _ScoreSmokeEffectState extends State<ScoreSmokeEffect>
   }
 
   @override
-  void didUpdateWidget(ScoreSmokeEffect oldWidget) {
+  void didUpdateWidget(TankScoreSmokeEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 数字变化立即爆烟（tick 自增即一次得分）
     if (widget.tick != oldWidget.tick && widget.tick > 0) _burst();

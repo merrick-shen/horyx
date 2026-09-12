@@ -1,6 +1,6 @@
 /// 已验证通过的 PK 单词条目
-class WordEntry {
-  const WordEntry({required this.word, required this.playerIndex});
+class WordPkEntry {
+  const WordPkEntry({required this.word, required this.playerIndex});
 
   /// 单词文本（统一小写存储，便于重复检测时忽略大小写）
   final String word;

@@ -57,7 +57,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
   int currentPlayer = 1;
 
   /// 已生效单词（最新置顶，与本地对局展示一致）
-  final List<WordEntry> entries = [];
+  final List<WordPkEntry> entries = [];
 
   /// 是否轮到自己输入（终局后禁止继续，与 gomoku 联机控制器防线一致）
   bool get isMyTurn => currentPlayer == mySeat && gameEndedText == null;
@@ -67,8 +67,8 @@ class WordPkOnlineController extends OnlineGameControllerBase
   bool submitWord(String raw) {
     // 终局后拒绝提交（gomoku submitStone 同款入口拦截：不提示、不受理）
     if (gameEndedText != null) return false;
-    // 词法规则（空串/纯字母）统一走 WordValidator，与本地对局同源
-    final formatError = WordValidator.validateFormat(raw);
+    // 词法规则（空串/纯字母）统一走 WordPkValidator，与本地对局同源
+    final formatError = WordPkValidator.validateFormat(raw);
     if (formatError != null) {
       onHint?.call(formatError);
       return false;
@@ -78,14 +78,14 @@ class WordPkOnlineController extends OnlineGameControllerBase
   }
 
   /// 房主提交：本地完成全部校验（重复/词表），通过即生效并广播
-  /// （校验链唯一来源 WordValidator.validateWord，与本地对局共用；
+  /// （校验链唯一来源 WordPkValidator.validateWord，与本地对局共用；
   /// [word] 已由 submitWord 归一化，重复传入不影响结果）
   bool _submitAsHost(String word) {
     if (!isMyTurn) {
       onHint?.call('还没轮到你');
       return false;
     }
-    final error = WordValidator.validateWord(word, entries);
+    final error = WordPkValidator.validateWord(word, entries);
     if (error != null) {
       onHint?.call(error);
       return false;
@@ -103,7 +103,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
       onHint?.call('还没轮到你');
       return false;
     }
-    final error = WordValidator.validateWord(word, entries);
+    final error = WordPkValidator.validateWord(word, entries);
     if (error != null) {
       onHint?.call(error);
       return false;
@@ -130,8 +130,8 @@ class WordPkOnlineController extends OnlineGameControllerBase
       host?.sendTo(seat, resultMessage(false, 'notYourTurn'));
       return;
     }
-    // 词法规则与各端同源（WordValidator.validateFormat）
-    if (WordValidator.validateFormat(word) != null) {
+    // 词法规则与各端同源（WordPkValidator.validateFormat）
+    if (WordPkValidator.validateFormat(word) != null) {
       host?.sendTo(seat, resultMessage(false, 'format'));
       return;
     }
@@ -139,7 +139,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
       host?.sendTo(seat, resultMessage(false, 'duplicate'));
       return;
     }
-    if (!WordValidator.isValid(word)) {
+    if (!WordPkValidator.isValid(word)) {
       host?.sendTo(seat, resultMessage(false, 'invalid'));
       return;
     }
@@ -149,7 +149,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
 
   /// 单词生效：入列 + 轮换到下一在线座位；房主侧同步广播
   void _applyWord(String word, int seat) {
-    entries.insert(0, WordEntry(word: word, playerIndex: seat));
+    entries.insert(0, WordPkEntry(word: word, playerIndex: seat));
     currentPlayer = _nextActiveSeat(currentPlayer);
     notifyListeners();
     host?.broadcast(
@@ -202,7 +202,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
       case NetMessageType.wordApplied:
         entries.insert(
           0,
-          WordEntry(
+          WordPkEntry(
             word: (message.payload['word'] as String?) ?? '',
             playerIndex: (message.payload['player'] as int?) ?? 0,
           ),

@@ -29,7 +29,7 @@ class WordPkBoardView extends StatefulWidget {
   final int currentPlayer;
 
   /// 已验证通过的单词列表（最新置顶）
-  final List<WordEntry> entries;
+  final List<WordPkEntry> entries;
 
   /// 提交输入单词；返回 true 表示校验通过（组件据此清空输入框）
   final bool Function(String word) onSubmit;

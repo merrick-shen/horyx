@@ -32,7 +32,7 @@ class TankScoreView extends StatelessWidget {
         score: score,
         mirrored: mirrored,
         numberOverlay: IgnorePointer(
-          child: ScoreSmokeEffect(tick: smokeTick),
+          child: TankScoreSmokeEffect(tick: smokeTick),
         ),
       );
 

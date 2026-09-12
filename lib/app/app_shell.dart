@@ -33,7 +33,7 @@ class _AppShellState extends State<AppShell> {
     // 未加载完成的窗口内 isValid 返回 false 在真实操作路径上不可感知。
     // 放在 app 层骨架而非 main 入口：入口不依赖具体游戏模块，
     // 挂载时机与原先几乎一致（runApp 后首帧）
-    unawaited(WordValidator.load());
+    unawaited(WordPkValidator.load());
   }
 
   @override

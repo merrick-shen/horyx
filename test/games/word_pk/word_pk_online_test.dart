@@ -14,7 +14,7 @@ void main() {
   // 词表为 assets 资源（房主端校验依赖），测试前需完成加载
   setUpAll(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    await WordValidator.load();
+    await WordPkValidator.load();
   });
 
   // 轮询等待异步事件（网络消息到达无回调可 await，只能按状态轮询）

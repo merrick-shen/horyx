@@ -45,7 +45,7 @@ class _WordPkPageState
   int _currentPlayer = 1;
 
   /// 已验证通过的单词列表（最新置顶）
-  final List<WordEntry> _entries = [];
+  final List<WordPkEntry> _entries = [];
 
   @override
   ArchiveStorage<WordPkGameState> get archiveStorage =>
@@ -137,10 +137,10 @@ class _WordPkPageState
     );
   }
 
-  /// 提交校验（规则唯一来源 WordValidator.validateWord）：
+  /// 提交校验（规则唯一来源 WordPkValidator.validateWord）：
   /// 通过则入列并轮换，返回是否通过
   bool _submitWord(String raw) {
-    final error = WordValidator.validateWord(raw, _entries);
+    final error = WordPkValidator.validateWord(raw, _entries);
     if (error != null) {
       showAlertDialog(context, message: error);
       return false;
@@ -149,7 +149,7 @@ class _WordPkPageState
     // 全部校验通过：统一小写后插入列表头部（最新置顶）并轮换至下一位输入者
     final word = raw.trim().toLowerCase();
     setState(() {
-      _entries.insert(0, WordEntry(word: word, playerIndex: _currentPlayer));
+      _entries.insert(0, WordPkEntry(word: word, playerIndex: _currentPlayer));
       _currentPlayer = _currentPlayer % _playerCount + 1;
     });
     // 新输入成功时清除遗留的错误提示，避免信息干扰

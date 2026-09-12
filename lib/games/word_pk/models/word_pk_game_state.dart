@@ -17,7 +17,7 @@ class WordPkGameState {
   final int currentPlayer;
 
   /// 已验证通过的单词列表
-  final List<WordEntry> entries;
+  final List<WordPkEntry> entries;
 
   /// 存档时间
   final DateTime savedAt;
@@ -47,7 +47,7 @@ class WordPkGameState {
       currentPlayer: json['currentPlayer'] as int,
       entries: [
         for (final e in entryList)
-          WordEntry(
+          WordPkEntry(
             word: (e as Map<String, dynamic>)['word'] as String,
             playerIndex: e['playerIndex'] as int,
           ),
