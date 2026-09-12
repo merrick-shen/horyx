@@ -364,6 +364,9 @@ class _BoardView extends StatelessWidget {
                     legalTargets: legalTargets,
                     pendingMove: pendingMove,
                     onCellTap: onCellTap,
+                    // 执黑方整盘旋转 180°：自己的棋子显示在屏幕下方，
+                    // 棋子相对位置与真实对面视角一致（文字朝向不变）
+                    flipped: controller.myColor == ChessColor.black,
                   ),
                 ),
                 const SizedBox(height: 16),

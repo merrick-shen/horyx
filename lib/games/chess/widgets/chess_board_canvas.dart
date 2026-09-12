@@ -16,6 +16,7 @@ class ChessBoardCanvas extends StatelessWidget {
     required this.legalTargets,
     required this.pendingMove,
     required this.onCellTap,
+    this.flipped = false,
   });
 
   final ChessBoard board;
@@ -32,6 +33,9 @@ class ChessBoardCanvas extends StatelessWidget {
   /// 点击棋盘格回调（换算后的格坐标）
   final void Function(ChessPos pos) onCellTap;
 
+  /// 是否整盘旋转 180°（联机执黑方为 true：己方棋子显示在屏幕下方）
+  final bool flipped;
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
@@ -39,7 +43,10 @@ class ChessBoardCanvas extends StatelessWidget {
     return Center(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final geometry = ChessBoardGeometry.forSize(constraints.biggest);
+          final geometry = ChessBoardGeometry.forSize(
+            constraints.biggest,
+            flipped: flipped,
+          );
           return GestureDetector(
             onTapUp: (details) {
               // 点击换算为格坐标，棋盘外不响应
