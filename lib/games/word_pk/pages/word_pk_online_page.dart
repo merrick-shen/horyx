@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/word_pk/services/word_pk_online_controller.dart';
-import 'package:horyx/games/word_pk/widgets/board_view.dart';
+import 'package:horyx/games/word_pk/widgets/word_pk_board_view.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:horyx/games/word_pk/services/word_validator.dart';
+import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 
 void main() {
   // 词表为 assets 资源，测试前需初始化绑定并完成加载

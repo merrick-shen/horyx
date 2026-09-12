@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/word_pk/models/word_entry.dart';
+import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 import 'package:horyx/games/word_pk/models/word_pk_game_state.dart';
 import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
-import 'package:horyx/games/word_pk/services/word_validator.dart';
+import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/hint_bar.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
-import 'package:horyx/games/word_pk/widgets/board_view.dart';
-import 'package:horyx/games/word_pk/widgets/setup_view.dart';
+import 'package:horyx/games/word_pk/widgets/word_pk_board_view.dart';
+import 'package:horyx/games/word_pk/widgets/word_pk_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 

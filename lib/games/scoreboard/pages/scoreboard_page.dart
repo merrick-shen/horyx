@@ -10,7 +10,7 @@ import 'package:horyx/shared/utils/landscape_immersive_mixin.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/scoreboard/widgets/scoreboard_view.dart';
-import 'package:horyx/games/scoreboard/widgets/setup_view.dart';
+import 'package:horyx/games/scoreboard/widgets/scoreboard_setup_view.dart';
 
 /// 计分器页面
 /// 持有整场计分状态（局分、当前局比分、撤销快照），统一负责：

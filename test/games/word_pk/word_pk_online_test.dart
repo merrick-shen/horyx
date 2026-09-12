@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/games/word_pk/services/word_pk_online_controller.dart';
-import 'package:horyx/games/word_pk/services/word_validator.dart';
+import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 
 /// 单词PK 联机对局集成测试：本机回环真实 TCP 连接
 /// 覆盖：满员开局后三方状态同步、校验拒绝路径、

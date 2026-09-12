@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 
-import 'package:horyx/games/word_pk/models/word_entry.dart';
+import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 
 /// 单词校验服务
 /// 基于本地词表（约 37 万词）离线校验：无网络请求、毫秒级响应，

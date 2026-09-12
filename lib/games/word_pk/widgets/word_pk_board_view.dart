@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/word_pk/models/word_entry.dart';
+import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_text_field.dart';
 import 'package:horyx/shared/widgets/page_content.dart';

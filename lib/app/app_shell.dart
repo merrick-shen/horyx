@@ -6,7 +6,7 @@ import 'package:horyx/app/game_data.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/app/pages/home_page.dart';
 import 'package:horyx/app/pages/more_page.dart';
-import 'package:horyx/games/word_pk/services/word_validator.dart';
+import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 import 'package:horyx/shared/pages/room_list_page.dart';
 
 /// 应用根骨架：底部导航栏 + 首页/联机/更多页切换

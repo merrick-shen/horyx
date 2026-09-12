@@ -1,4 +1,4 @@
-import 'package:horyx/games/word_pk/models/word_entry.dart';
+import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 
 /// 单词PK未完成对局的存档状态
 /// 用于「保存并退出」时持久化，下次进入应用可恢复对战
