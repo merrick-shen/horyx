@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/game/game_info.dart';
+import 'package:horyx/games/chess/pages/chess_online_page.dart';
 import 'package:horyx/games/chess/pages/chess_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_page.dart';
@@ -53,13 +54,15 @@ abstract final class GameData {
   );
 
   /// 中国象棋
-  /// 玩法暂未实现：先开放首页入口与对局模式设置（本地/局域网），
-  /// 棋盘对局视图与联机对局页后续接入（联机满员后停留等待页过渡态）
+  /// 本地完整对局 + 局域网联机（房主权威校验走子，详见
+  /// lib/games/chess/services/chess_online_controller.dart）
   static final GameInfo chess = GameInfo(
     name: ChessPage.gameName,
     description: '楚河汉界双人对弈，将死对方取胜',
     icon: ChessPage.gameIcon,
     pageBuilder: (context) => const ChessPage(),
+    onlineClientBuilder: (context, client) =>
+        ChessOnlinePage.client(client: client),
   );
 
   /// 计分器（纯本地工具，无联机对局页）

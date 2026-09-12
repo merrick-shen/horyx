@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:horyx/games/chess/models/chess_board.dart';
 import 'package:horyx/games/chess/models/chess_game_state.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
+import 'package:horyx/games/chess/pages/chess_online_page.dart';
 import 'package:horyx/games/chess/services/chess_rules.dart';
 import 'package:horyx/games/chess/services/chess_storage.dart';
 import 'package:horyx/games/chess/widgets/chess_board_view.dart';
@@ -252,7 +253,8 @@ class _ChessPageState
   }
 
   /// 局域网模式：创建房间并进入等待页（固定 2 人，自己为玩家 1）
-  /// 联机对局页尚未接入：满员后停留在等待页「即将开始」过渡态
+  /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）；
+  /// 象棋无规格选项，gameStartPayload 保持空对象
   void _createRoom() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -260,6 +262,7 @@ class _ChessPageState
           gameName: ChessPage.gameName,
           icon: ChessPage.gameIcon,
           capacity: 2,
+          hostGameBuilder: (context, host) => ChessOnlinePage.host(host: host),
         ),
       ),
     );
