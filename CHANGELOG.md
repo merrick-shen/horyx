@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- 新增中国象棋游戏：支持本地双人同屏对战与局域网联机对战
+
 ### Changed
 
 - 更新日志页面重构：改为版本列表 + 详情页结构，列表展示版本号与发布日期，点击查看该版本完整更新内容
