@@ -52,8 +52,9 @@ class _ChessPageState
   /// 待确认走法（ConfirmMoveRow 显示中）；null 表示无预选
   ChessMove? _pendingMove;
 
-  /// 已确认走子序列（存档与悔棋的数据底座，悔棋 UI 阶段 9 接入）
-  final List<ChessMove> _history = [];
+  /// 已确认走子序列（存档与悔棋的数据底座）；同时记录每步被吃子，
+  /// 悔棋 revertMove 时需恢复被吃子（存档序列化时仅取走子部分）
+  final List<(ChessMove, ChessPiece?)> _history = [];
 
   /// 终局锁定（分出胜负后棋盘不可再走子）
   bool _gameOver = false;
@@ -80,19 +81,36 @@ class _ChessPageState
   void _resumeSaved() {
     final saved = savedState;
     if (saved == null) return;
-    setState(() {
-      // 编码在存档读取时已通过结构校验，decode 理论上不会失败
-      _board = ChessBoard.decode(saved.boardCode);
-      _turn = saved.turn;
-      _history
-        ..clear()
-        ..addAll(saved.moves);
-      _clearSelection();
-      _gameOver = false;
-      _checkFlashTrigger = 0;
-      _started = true;
-      savedState = null;
-    });
+    try {
+      // 从初始局面正向重放走子序列还原棋盘，并顺带收集每步被吃子
+      // （悔棋 revertMove 需要；存档只存走子不存被吃子，无法直接还原），
+      // 重放终局面与 boardCode 不一致视为存档内部矛盾（损坏）
+      final board = ChessBoard.initial();
+      final history = <(ChessMove, ChessPiece?)>[];
+      for (final move in saved.moves) {
+        history.add((move, board.applyMove(move)));
+      }
+      if (board.encode() != saved.boardCode) {
+        throw const FormatException('存档走子序列与局面不一致');
+      }
+      setState(() {
+        _board = board;
+        _turn = saved.turn;
+        _history
+          ..clear()
+          ..addAll(history);
+        _clearSelection();
+        _gameOver = false;
+        _checkFlashTrigger = 0;
+        _started = true;
+        savedState = null;
+      });
+    } catch (_) {
+      // 存档损坏（局面编码非法/历史矛盾）：清档并关闭恢复入口，
+      // 与 ArchiveStorage 读侧「损坏数据视为无存档」的容错风格一致
+      ChessStorage.instance.clear();
+      setState(() => savedState = null);
+    }
   }
 
   /// 开始本地对局：进入对局视图，初始化开局局面（红先）
@@ -153,14 +171,27 @@ class _ChessPageState
     setState(() => _pendingMove = null);
   }
 
+  /// 悔棋：撤销最近一步（棋子搬回起点并恢复被吃子），行棋方回退，
+  /// 同时清除选中与待确认状态；无子可悔时不响应
+  void _undo() {
+    final board = _board;
+    if (board == null || _history.isEmpty) return;
+    setState(() {
+      final (move, captured) = _history.removeLast();
+      board.revertMove(move, captured);
+      _clearSelection();
+      _turn = _turn == ChessColor.red ? ChessColor.black : ChessColor.red;
+    });
+  }
+
   /// 确认走子：执行走法、记录历史、行棋方轮换，随后做将军/终局判定
   void _confirmMove() {
     final move = _pendingMove;
     final board = _board;
     if (move == null || board == null) return;
     setState(() {
-      board.applyMove(move);
-      _history.add(move);
+      final captured = board.applyMove(move);
+      _history.add((move, captured));
       _clearSelection();
       _turn = _turn == ChessColor.red ? ChessColor.black : ChessColor.red;
     });
@@ -187,7 +218,7 @@ class _ChessPageState
     final message = switch (reason) {
       ChessEndReason.checkmate => '将死对方，$winner赢得本局',
       ChessEndReason.stalemate => '对方无子可动（困毙），$winner获胜',
-      ChessEndReason.resign => '$winner获胜', // 认输流程在阶段 9 接入
+      ChessEndReason.resign => '$winner获胜', // 认输首版不实现，本地无该入口
     };
     final result = await showConfirmDialog(
       context,
@@ -277,7 +308,7 @@ class _ChessPageState
         ChessGameState(
           boardCode: board.encode(),
           turn: _turn,
-          moves: List.of(_history),
+          moves: [for (final (move, _) in _history) move],
           savedAt: DateTime.now(),
         ),
       ),
@@ -342,9 +373,13 @@ class _ChessPageState
       legalTargets: {for (final m in _legalMoves) m.to},
       pendingMove: _pendingMove,
       checkFlashTrigger: _checkFlashTrigger,
+      gameOver: _gameOver,
+      canUndo: _history.isNotEmpty,
       onCellTap: _onCellTap,
       onCancelMove: _cancelMove,
       onConfirmMove: _confirmMove,
+      onUndo: _undo,
+      onRestart: _restartMatch,
     );
   }
 }

@@ -6,9 +6,10 @@ import 'package:horyx/games/chess/widgets/chess_board_painter.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
+import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
 
-/// 中国象棋 - 对局视图：当前行棋提示 + 棋盘（手势交互）+ 落子确认行
+/// 中国象棋 - 对局视图：当前行棋提示 + 棋盘（手势交互）+ 落子确认行 + 操作按钮
 /// 交互逻辑（选子/走子/终局判定）在页面层，本视图只做展示与点击转发：
 /// 手势经几何换算转为格坐标后回调 [onCellTap]（棋盘外点击不回调）；
 /// [checkFlashTrigger] 递增时在棋盘中央播放「将军」渐现渐隐提示
@@ -21,9 +22,13 @@ class ChessBoardView extends StatelessWidget {
     required this.legalTargets,
     required this.pendingMove,
     required this.checkFlashTrigger,
+    required this.gameOver,
+    required this.canUndo,
     required this.onCellTap,
     required this.onCancelMove,
     required this.onConfirmMove,
+    required this.onUndo,
+    required this.onRestart,
   });
 
   final ChessBoard board;
@@ -43,6 +48,12 @@ class ChessBoardView extends StatelessWidget {
   /// 「将军」提示触发计数（页面层每检测到将军递增一次）
   final int checkFlashTrigger;
 
+  /// 是否已终局（true 时悔棋按钮替换为再来一局）
+  final bool gameOver;
+
+  /// 是否有子可悔（无走子历史时悔棋按钮禁用）
+  final bool canUndo;
+
   /// 点击棋盘格回调（换算后的格坐标；点击棋盘外不回调）
   final void Function(ChessPos pos) onCellTap;
 
@@ -51,6 +62,12 @@ class ChessBoardView extends StatelessWidget {
 
   /// 点击「确认走子」回调：执行待确认走法
   final VoidCallback onConfirmMove;
+
+  /// 点击「悔棋」回调：撤销最近一步
+  final VoidCallback onUndo;
+
+  /// 终局后点击「再来一局」回调：重开新对局
+  final VoidCallback onRestart;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +131,21 @@ class ChessBoardView extends StatelessWidget {
                   onCancelMove: onCancelMove,
                   onConfirmMove: onConfirmMove,
                 ),
+                const SizedBox(height: 12),
+                if (gameOver)
+                  // 终局：悔棋替换为再来一局，方便查看棋型后重开
+                  PrimaryButton(
+                    label: '再来一局',
+                    icon: Icons.refresh_rounded,
+                    onPressed: onRestart,
+                  )
+                else
+                  // 对局中：无子可悔时按钮禁用（灰底不可点击）
+                  PrimaryButton(
+                    label: '悔棋',
+                    icon: Icons.undo_rounded,
+                    onPressed: canUndo ? onUndo : null,
+                  ),
               ],
             ),
           ),
