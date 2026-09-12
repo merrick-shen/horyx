@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/games/chess/models/chess_game_state.dart';
+import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/shared/widgets/lan_mode_panel.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
+import 'package:horyx/shared/widgets/resume_card.dart';
 
 /// 中国象棋 - 对局模式设置视图
-/// 仅提供对局模式选择（本地/局域网），无其他设置项
+/// 顶部展示未完成对局的恢复入口（存在存档时），
+/// 下方为对局模式选择（本地/局域网）与开始/创建房间按钮
 class ChessSetupView extends StatefulWidget {
   const ChessSetupView({
     super.key,
     required this.onStart,
     required this.onCreateRoom,
+    this.savedState,
+    this.onResume,
   });
 
   /// 点击「开始对局」回调（本地模式）
@@ -17,6 +23,12 @@ class ChessSetupView extends StatefulWidget {
 
   /// 局域网模式点击「创建房间」回调
   final VoidCallback onCreateRoom;
+
+  /// 未完成对局的存档；null 时不显示恢复入口
+  final ChessGameState? savedState;
+
+  /// 点击「继续上次对局」回调
+  final VoidCallback? onResume;
 
   @override
   State<ChessSetupView> createState() => _ChessSetupViewState();
@@ -28,6 +40,8 @@ class _ChessSetupViewState extends State<ChessSetupView> {
 
   @override
   Widget build(BuildContext context) {
+    final saved = widget.savedState;
+
     return SizedBox.expand(
       child: Center(
         // 平板/桌面端限制内容宽度，居中展示
@@ -39,6 +53,16 @@ class _ChessSetupViewState extends State<ChessSetupView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 存在未完成对局时展示恢复入口（摘要：行棋方 + 已走手数）
+                if (saved != null) ...[
+                  ResumeCard(
+                    summary:
+                        '${saved.turn == ChessColor.red ? '红方' : '黑方'}行棋 · '
+                        '已走 ${saved.moves.length} 手',
+                    onTap: widget.onResume,
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 // 对局模式选择面板（象棋当前唯一的设置项）
                 LanModePanel(
                   isLan: _isLan,

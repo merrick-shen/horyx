@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/games/chess/models/chess_piece.dart';
+import 'package:horyx/games/chess/services/chess_storage.dart';
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
 import 'package:horyx/games/tank/services/tank_storage.dart';
@@ -41,6 +43,7 @@ class _ArchivePageState extends State<ArchivePage> {
     final gomoku = await GomokuStorage.instance.load();
     final scoreboard = await ScoreboardStorage.instance.load();
     final tank = await TankStorage.instance.load();
+    final chess = await ChessStorage.instance.load();
 
     // 摘要文案与各游戏设置页「继续上次对局」卡片保持一致；
     // clear 绑定对应游戏的存档清除服务，删除时由页面统一调用
@@ -83,6 +86,17 @@ class _ArchivePageState extends State<ArchivePage> {
           summary: '当前比分 ${tank.redScore}:${tank.greenScore}',
           savedAt: tank.savedAt,
           clear: TankStorage.instance.clear,
+        ),
+      // 象棋列在末位，与首页卡片顺序一致
+      if (chess != null)
+        _ArchiveEntry(
+          name: '中国象棋',
+          icon: Icons.grid_on_rounded, // 与 ChessPage.gameIcon 一致
+          summary:
+              '${chess.turn == ChessColor.red ? '红方' : '黑方'}行棋 · '
+              '已走 ${chess.moves.length} 手',
+          savedAt: chess.savedAt,
+          clear: ChessStorage.instance.clear,
         ),
     ];
 

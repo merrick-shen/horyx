@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/chess/models/chess_board.dart';
+import 'package:horyx/games/chess/models/chess_game_state.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/games/chess/services/chess_rules.dart';
+import 'package:horyx/games/chess/services/chess_storage.dart';
 import 'package:horyx/games/chess/widgets/chess_board_view.dart';
 import 'package:horyx/games/chess/widgets/chess_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
+import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 
 /// 中国象棋游戏页
 /// 持有对局状态（棋盘、行棋方、选中/预选走法、走子历史），统一负责：
-/// 选子与走子交互、行棋方轮换、将军提示、将死/困毙终局弹窗、局域网建房入口
-/// 存档恢复与悔棋在后续阶段接入
+/// 选子与走子交互、行棋方轮换、将军提示、将死/困毙终局弹窗、
+/// 退出存档与恢复续玩、局域网建房入口
+/// 悔棋在后续阶段接入
 class ChessPage extends StatefulWidget {
   const ChessPage({super.key});
 
@@ -27,7 +32,8 @@ class ChessPage extends StatefulWidget {
   State<ChessPage> createState() => _ChessPageState();
 }
 
-class _ChessPageState extends State<ChessPage> {
+class _ChessPageState
+    extends GameArchiveStateBase<ChessPage, ChessGameState> {
   /// 是否已开始对局（false = 对局模式设置阶段）
   bool _started = false;
 
@@ -46,7 +52,7 @@ class _ChessPageState extends State<ChessPage> {
   /// 待确认走法（ConfirmMoveRow 显示中）；null 表示无预选
   ChessMove? _pendingMove;
 
-  /// 已确认走子序列（悔棋与存档的底层数据，阶段 8/9 接入 UI）
+  /// 已确认走子序列（存档与悔棋的数据底座，悔棋 UI 阶段 9 接入）
   final List<ChessMove> _history = [];
 
   /// 终局锁定（分出胜负后棋盘不可再走子）
@@ -55,6 +61,39 @@ class _ChessPageState extends State<ChessPage> {
   /// 「将军」闪烁提示触发计数：每检测到一次将军递增，
   /// 视图层据此重放一次渐现渐隐动画
   int _checkFlashTrigger = 0;
+
+  @override
+  ArchiveStorage<ChessGameState> get archiveStorage =>
+      ChessStorage.instance;
+
+  @override
+  bool get isInSetupPhase => !_started;
+
+  @override
+  void initState() {
+    super.initState();
+    // 进入页面即检测未完成存档，存在则在设置视图展示恢复入口
+    loadSavedState();
+  }
+
+  /// 恢复未完成对局：从存档还原局面、轮次与走子历史
+  void _resumeSaved() {
+    final saved = savedState;
+    if (saved == null) return;
+    setState(() {
+      // 编码在存档读取时已通过结构校验，decode 理论上不会失败
+      _board = ChessBoard.decode(saved.boardCode);
+      _turn = saved.turn;
+      _history
+        ..clear()
+        ..addAll(saved.moves);
+      _clearSelection();
+      _gameOver = false;
+      _checkFlashTrigger = 0;
+      _started = true;
+      savedState = null;
+    });
+  }
 
   /// 开始本地对局：进入对局视图，初始化开局局面（红先）
   void _onStart() {
@@ -66,6 +105,8 @@ class _ChessPageState extends State<ChessPage> {
       _gameOver = false;
       _checkFlashTrigger = 0;
       _started = true;
+      // 开启新对局后不再展示旧存档入口
+      savedState = null;
     });
   }
 
@@ -126,7 +167,9 @@ class _ChessPageState extends State<ChessPage> {
 
     final endReason = ChessRules.judgeEnd(board, _turn);
     if (endReason != null) {
-      // 终局：锁定棋盘并弹出胜负弹窗（将死/困毙）
+      // 终局：对局已分胜负，立即清除存档（避免重进恢复出已结束的局面），
+      // 随后锁定棋盘并弹出胜负弹窗（将死/困毙）
+      ChessStorage.instance.clear();
       setState(() => _gameOver = true);
       _showEndDialog(endReason);
       return;
@@ -191,7 +234,9 @@ class _ChessPageState extends State<ChessPage> {
     );
   }
 
-  /// 回到设置视图并清空对局状态
+  /// 回到设置视图并清空对局状态；
+  /// 同时重新检测存档刷新恢复入口——开局时入口已被置空（savedState = null），
+  /// 未走子即退回设置时磁盘上的旧存档仍在，回设置后应重新展示
   void _backToSetup() {
     setState(() {
       _board = null;
@@ -202,15 +247,43 @@ class _ChessPageState extends State<ChessPage> {
       _gameOver = false;
       _checkFlashTrigger = 0;
     });
+    loadSavedState();
   }
 
-  /// 退出请求：设置阶段与终局锁定阶段直接退出页面，对局阶段回设置视图
-  void _requestExit() {
+  /// 退出请求：设置阶段与终局查看阶段直接退出页面；
+  /// 对局中未走子时无进行中内容，直接回设置视图（不打扰）；
+  /// 已有走子弹出三选项确认弹窗（保存并退出/直接退出/取消）
+  Future<void> _requestExit() async {
     if (!_started || _gameOver) {
       Navigator.of(context).pop();
       return;
     }
-    _backToSetup();
+    // 开局后还没走任何一步：不打扰，直接回设置
+    if (_history.isEmpty) {
+      _backToSetup();
+      return;
+    }
+    // 捕获局部引用：弹窗为异步流程，保存时页面状态可能已变化
+    final board = _board;
+    if (board == null) {
+      // _started 时必有棋盘，异常路径直接退出页面
+      Navigator.of(context).pop();
+      return;
+    }
+    await confirmExitWithArchive(
+      this,
+      // 持久化完整对局状态（局面/轮次/走子历史）后退出页面
+      onSave: () => ChessStorage.instance.save(
+        ChessGameState(
+          boardCode: board.encode(),
+          turn: _turn,
+          moves: List.of(_history),
+          savedAt: DateTime.now(),
+        ),
+      ),
+      onDiscard: ChessStorage.instance.clear,
+      onExit: () => Navigator.of(context).pop(),
+    );
   }
 
   @override
@@ -241,6 +314,8 @@ class _ChessPageState extends State<ChessPage> {
                           key: const ValueKey('setup'),
                           onStart: _onStart,
                           onCreateRoom: _createRoom,
+                          savedState: savedState,
+                          onResume: _resumeSaved,
                         ),
                 ),
               ),
