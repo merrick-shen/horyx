@@ -54,7 +54,7 @@ class ChessBoardGeometry {
   }
 }
 
-/// 棋盘绘制器：底板、线路、河界、九宫、炮兵位标记与全部棋子
+/// 棋盘绘制器：底板、线路、河界、九宫、炮兵位标记、全部棋子与交互高亮
 /// 线路颜色由 view 层从当前主题调色板注入（painter 无 BuildContext）；
 /// 棋子的米色底面与红黑字色为游戏内容色（模拟真实木质棋面），
 /// 属于素材色而非主题语义色，故按固定色值绘制
@@ -65,6 +65,10 @@ class ChessBoardPainter extends CustomPainter {
     required this.surfaceColor,
     required this.strokeColor,
     required this.textSecondaryColor,
+    required this.primaryColor,
+    this.selected,
+    this.legalTargets = const {},
+    this.pendingMove,
   });
 
   final ChessBoard board;
@@ -74,11 +78,21 @@ class ChessBoardPainter extends CustomPainter {
   final Color surfaceColor; // 底板面板色
   final Color strokeColor; // 线路与标记色
   final Color textSecondaryColor; // 河界文字色
+  final Color primaryColor; // 选中/走点/预选等交互高亮色
 
-  /// 棋子内容色（素材色，非主题色）
-  static const Color _pieceFace = Color(0xFFF3E9D2); // 木质棋面米色
-  static const Color _redPiece = Color(0xFFB03A2E); // 红方棋子字色/描边
-  static const Color _blackPiece = Color(0xFF2F3A4A); // 黑方棋子字色/描边
+  /// 当前选中的己方棋子；null 表示无选中
+  final ChessPos? selected;
+
+  /// 选中棋子的合法落点集合（空格画走点、敌子格画可吃环）
+  final Set<ChessPos> legalTargets;
+
+  /// 待确认走法（ConfirmMoveRow 出现时高亮起点与终点）
+  final ChessMove? pendingMove;
+
+  /// 棋子内容色统一引用模型层常量（执子卡共用同一来源）
+  static const Color _pieceFace = ChessPieceColors.face;
+  static const Color _redPiece = ChessPieceColors.red;
+  static const Color _blackPiece = ChessPieceColors.black;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -88,6 +102,8 @@ class ChessBoardPainter extends CustomPainter {
     _paintRiverText(canvas);
     _paintPositionMarks(canvas);
     _paintPieces(canvas);
+    // 高亮最后绘制，确保叠在棋子上层
+    _paintHighlights(canvas);
   }
 
   /// 底板：圆角面板 + 描边外框
@@ -260,6 +276,52 @@ class ChessBoardPainter extends CustomPainter {
     }
   }
 
+  /// 交互高亮：选中棋子环、合法走点、待确认走法起终点
+  /// 可吃敌子格不做任何高亮（敌子本身即视觉提示）；确认走法时走点保持显示
+  void _paintHighlights(Canvas canvas) {
+    // 描边环绘制辅助（局部函数声明，避免闭包赋值的 lint 告警）
+    Paint ringPaint(double width, Color color) => Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..color = color;
+
+    // 选中棋子高亮环
+    final sel = selected;
+    if (sel != null) {
+      canvas.drawCircle(
+        geometry.posToOffset(sel),
+        geometry.cell * 0.52,
+        ringPaint(geometry.cell * 0.045, primaryColor),
+      );
+      // 合法走点：仅空格画半透明圆点（落点上有棋子则不画）
+      final dotPaint = Paint()
+        ..color = primaryColor.withValues(alpha: 0.55);
+      for (final target in legalTargets) {
+        if (board.pieceAt(target) != null) continue;
+        canvas.drawCircle(
+          geometry.posToOffset(target),
+          geometry.cell * 0.15,
+          dotPaint,
+        );
+      }
+    }
+
+    // 待确认走法：起点与终点高亮环（尺寸与选中环一致；不 return，走点提示保持显示）
+    final pending = pendingMove;
+    if (pending != null) {
+      canvas.drawCircle(
+        geometry.posToOffset(pending.from),
+        geometry.cell * 0.52,
+        ringPaint(geometry.cell * 0.045, primaryColor),
+      );
+      canvas.drawCircle(
+        geometry.posToOffset(pending.to),
+        geometry.cell * 0.52,
+        ringPaint(geometry.cell * 0.045, primaryColor),
+      );
+    }
+  }
+
   /// 居中绘制文字
   void _paintCenteredText(Canvas canvas, String text, Offset center, TextStyle style) {
     final tp = TextPainter(
@@ -275,5 +337,9 @@ class ChessBoardPainter extends CustomPainter {
       oldDelegate.geometry != geometry ||
       oldDelegate.surfaceColor != surfaceColor ||
       oldDelegate.strokeColor != strokeColor ||
-      oldDelegate.textSecondaryColor != textSecondaryColor;
+      oldDelegate.textSecondaryColor != textSecondaryColor ||
+      oldDelegate.primaryColor != primaryColor ||
+      oldDelegate.selected != selected ||
+      oldDelegate.legalTargets != legalTargets ||
+      oldDelegate.pendingMove != pendingMove;
 }

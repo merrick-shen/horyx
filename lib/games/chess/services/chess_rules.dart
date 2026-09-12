@@ -215,6 +215,11 @@ abstract final class ChessRules {
   static bool isSquareAttacked(ChessBoard board, ChessPos pos, ChessColor byColor) {
     final (col, row) = pos;
 
+    // pos 上是 byColor 自己的子时不可能被 byColor 攻击（己方子不可被己方吃），
+    // 否则直线系会把「己方车/炮贴着己方子」误判为攻击
+    final occupant = board.pieceAt(pos);
+    if (occupant != null && occupant.color == byColor) return false;
+
     // 直线系：每方向第一个子若是 byColor 的车则攻击；
     // 第二个子若是 byColor 的炮（中间恰好一个遮挡）则攻击
     for (final (dx, dy) in _orthogonal) {
@@ -318,9 +323,13 @@ abstract final class ChessRules {
     }
     if (redKing == null || blackKing == null) return false;
     if (redKing.$1 != blackKing.$1) return false;
-    // 王必在各自九宫，只可能同列照面（不会同行），沿列逐格查遮挡
-    for (var r = redKing.$2 + 1; r < blackKing.$2; r++) {
-      if (board.pieceAt((redKing.$1, r)) != null) return false;
+    // 沿两王之间的行区间（取较小行到较大行）逐格查遮挡；
+    // 不假定红下黑上的行序，避免非常规局面下区间为空导致误判
+    final col = redKing.$1;
+    final from = redKing.$2 < blackKing.$2 ? redKing.$2 : blackKing.$2;
+    final to = redKing.$2 < blackKing.$2 ? blackKing.$2 : redKing.$2;
+    for (var r = from + 1; r < to; r++) {
+      if (board.pieceAt((col, r)) != null) return false;
     }
     return true;
   }

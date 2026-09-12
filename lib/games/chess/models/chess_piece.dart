@@ -1,5 +1,7 @@
-// 象棋棋子模型（纯数据，无 UI 依赖）
-// 编码字符沿用 Xiangqi FEN 惯例：KABNRCP 七类，红方大写、黑方小写
+import 'dart:ui' show Color;
+
+/// 象棋棋子模型（纯数据，无 UI 依赖）
+/// 编码字符沿用 Xiangqi FEN 惯例：KABNRCP 七类，红方大写、黑方小写
 
 /// 棋子颜色：红方先行，黑方后行
 enum ChessColor { red, black }
@@ -66,4 +68,18 @@ class ChessPiece {
 
   @override
   int get hashCode => Object.hash(color, type);
+}
+
+/// 象棋棋子内容色（素材色，模拟真实木质棋面与红黑漆字）
+/// 属于游戏素材色而非主题语义色，故为固定色值（深浅主题下均清晰可辨），
+/// 绘制器与对局视图的执子卡共用同一来源
+abstract final class ChessPieceColors {
+  /// 棋面米色底
+  static const Color face = Color(0xFFF3E9D2);
+
+  /// 红方棋子字色/描边
+  static const Color red = Color(0xFFB03A2E);
+
+  /// 黑方棋子字色/描边
+  static const Color black = Color(0xFF2F3A4A);
 }
