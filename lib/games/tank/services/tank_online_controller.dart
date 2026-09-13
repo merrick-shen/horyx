@@ -138,11 +138,14 @@ class TankOnlineController extends OnlineGameControllerBase {
   }
 
   /// 摇杆输入是否与上次等价（角度/油门均在阈值内视为未变化；
-  /// 空与非空必然不等——停车与行驶是硬状态切换）
+  /// 空与非空必然不等——停车与行驶是硬状态切换）。
+  /// 角度差用 [Tank.angleDelta] 做 2π 回绕：直接相减在 ±π 接缝
+  /// （摇杆指向正左）会得到 ≈2π 的假差值，导致该方向节流失效
   static bool _sameInput(TankDriveInput? a, TankDriveInput? b) {
     if (identical(a, b)) return true;
     if (a == null || b == null) return false;
-    return (a.targetAngle - b.targetAngle).abs() < _driveEpsilon &&
+    return Tank.angleDelta(a.targetAngle, b.targetAngle).abs() <
+            _driveEpsilon &&
         (a.speedFactor - b.speedFactor).abs() < _driveEpsilon;
   }
 
