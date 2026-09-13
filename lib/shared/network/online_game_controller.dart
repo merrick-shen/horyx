@@ -58,6 +58,14 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
   /// 我的座位号（房主固定 1 号位；客户端为实际分配座位）
   final int mySeat;
 
+  /// 两人局座位互补（1↔2）：指定座位的对端座位
+  /// （如房主侧按认输方座位推算胜者座位）
+  int peerSeatOf(int seat) => 3 - seat;
+
+  /// 唯一对端的座位（两人局）：消息定向发送与胜负判定共用，
+  /// 不硬编码座位号
+  int get peerSeat => peerSeatOf(mySeat);
+
   /// 校验拒绝等提示回调（由 OnlineGamePageShell 接 showAlertDialog 弹窗展示；拒绝理由来自房主）
   void Function(String message)? onHint;
 
