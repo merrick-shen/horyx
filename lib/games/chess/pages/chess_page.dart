@@ -364,8 +364,10 @@ class _ChessPageState
   Widget _buildGameView() {
     final board = _board;
     if (board == null) {
-      // _started 时必有棋盘；空值兜底回设置视图，防御异常路径
-      _backToSetup();
+      // 不变式：_started 为 true 时必有棋盘，此分支不可达（纯防御）。
+      // 不可在 build 期间调 _backToSetup()（内含 setState 会抛框架错误），
+      // 改为 debug 断言暴露回归、release 渲染占位帧；顶栏返回仍可退出
+      assert(false, '_started 为 true 时 _board 不应为 null');
       return const SizedBox.shrink();
     }
     return ChessBoardView(
