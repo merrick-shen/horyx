@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/gomoku/models/gomoku_game_state.dart';
@@ -91,8 +93,14 @@ class _GomokuPageState
     final blackMoved = _moves.length.isOdd;
     if (GomokuRules.hasFiveInRow(_moves, _boardSize, col, row, blackMoved)) {
       setState(() => _winner = blackMoved ? '黑方' : '白方');
-      // 对局已分胜负，立即清除存档：避免重进页面恢复出已结束的局面
-      GomokuStorage.instance.clear();
+      // 对局已分胜负，立即清除存档：避免重进页面恢复出已结束的局面。
+      // 清档 fire-and-forget：无需等待写入；失败仅留调试线索（残留存档
+      // 无害——下次进入提示恢复已终局对局，开新局即覆盖）
+      unawaited(
+        GomokuStorage.instance.clear().onError((e, stackTrace) {
+          debugPrint('终局清档失败: $e');
+        }),
+      );
       _showWinDialog();
     }
   }

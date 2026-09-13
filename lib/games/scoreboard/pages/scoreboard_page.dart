@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -126,8 +128,14 @@ class _ScoreboardPageState
     // 弹窗在 setState 之后调用，避免构建期间弹 showDialog
     if (matchWon) {
       // 整场已分胜负，立即清除存档：无论后续选哪条路径（再来一场/返回设置/查看比分），
-      // 都不能让已结束的比分被当作进行中对局恢复
-      ScoreboardStorage.instance.clear();
+      // 都不能让已结束的比分被当作进行中对局恢复。
+      // 清档 fire-and-forget：无需等待写入；失败仅留调试线索（残留存档
+      // 无害——下次进入提示恢复已终局比赛，开新局即覆盖）
+      unawaited(
+        ScoreboardStorage.instance.clear().onError((e, stackTrace) {
+          debugPrint('终局清档失败: $e');
+        }),
+      );
       _showMatchWinDialog();
     } else if (gameWon) {
       _showGameWinDialog(red);
