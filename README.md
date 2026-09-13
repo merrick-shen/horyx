@@ -22,7 +22,7 @@ lib/
 ├── main.dart               # 应用入口：恢复主题（含启动异常兜底）
 ├── app/                    # 应用层
 │   ├── app_shell.dart      # 底部导航壳（首页/联机/更多，PageView 保活；挂载时预热单词PK词表）
-│   ├── game_data.dart      # 游戏注册中心（全部游戏元数据与路由的组合根）
+│   ├── game_registry.dart  # 游戏注册中心（全部游戏元数据与路由的组合根）
 │   ├── pages/              # 应用级页面（主页、更多）
 │   │   └── settings/       # 设置页（主题/存档管理/关于/更新日志）
 │   └── widgets/            # 主页组件（游戏卡片、游戏网格）
@@ -33,7 +33,7 @@ lib/
 │   ├── chess/              # 中国象棋（CustomPainter 绘制棋盘与棋子、规则引擎、联机对局控制器、存档）
 │   └── scoreboard/         # 计分器（BO 赛制规则引擎、存档）
 ├── shared/                 # 共享层
-│   ├── game/               # 游戏元数据模型（GameInfo，注册组合根位于 app/game_data.dart）
+│   ├── game/               # 游戏元数据模型（GameInfo，注册组合根位于 app/game_registry.dart）
 │   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、对局控制器基类）
 │   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页）
 │   ├── storage/            # 存档读写泛型基类、主题持久化

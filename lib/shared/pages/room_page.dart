@@ -76,7 +76,7 @@ class RoomPage extends StatefulWidget {
   /// （注册表组合根位于 app 层，shared 页面不反向依赖）
   final GameInfo? Function(String gameName)? gameResolver;
 
-  /// 未登记游戏在标识卡的回退图标（原 GameData.iconFor 的回退逻辑）
+  /// 未登记游戏在标识卡的回退图标（原 GameRegistry.iconFor 的回退逻辑）
   static const IconData _fallbackGameIcon = Icons.sports_esports_rounded;
 
   /// 是否房主模式

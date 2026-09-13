@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:horyx/app/game_data.dart';
+import 'package:horyx/app/game_registry.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/app/pages/home_page.dart';
 import 'package:horyx/app/pages/more_page.dart';
@@ -52,7 +52,7 @@ class _AppShellState extends State<AppShell> {
         children: [
           _PageKeeper(child: HomePage()),
           // 注册表查询由 app 层注入：等待页据此解析图标与联机对局页构建器
-          _PageKeeper(child: RoomJoinPage(gameResolver: GameData.byName)),
+          _PageKeeper(child: RoomJoinPage(gameResolver: GameRegistry.byName)),
           _PageKeeper(child: MorePage()),
         ],
       ),

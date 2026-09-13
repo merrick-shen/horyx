@@ -19,7 +19,7 @@ import 'package:horyx/games/word_pk/pages/word_pk_page.dart';
 /// 建房入口共用同一常量），本类只做汇总登记。
 /// 新增/恢复游戏只需在此登记一处，首页入口、房间图标与
 /// 客户端联机跳转均自动生效（无需再改各 UI 层的硬编码映射）
-abstract final class GameData {
+abstract final class GameRegistry {
   /// 单词PK
   static final GameInfo wordPk = GameInfo(
     name: WordPkPage.gameName,

@@ -315,7 +315,7 @@ class _ArchiveEntry {
   /// 游戏名（与主页卡片一致）
   final String name;
 
-  /// 游戏图标（与 GameData 一致）
+  /// 游戏图标（与 GameRegistry 一致）
   final IconData icon;
 
   /// 进度摘要（与各游戏恢复卡片文案一致）

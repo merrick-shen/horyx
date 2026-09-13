@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/app/widgets/game_card.dart';
-import 'package:horyx/app/game_data.dart';
+import 'package:horyx/app/game_registry.dart';
 
 /// 游戏列表区域：根据可用宽度自动切换列数（响应式布局）
 /// 手机 2 列 / 平板 3 列 / 小桌面 4 列 / 大桌面 5 列
@@ -33,12 +33,12 @@ class GameGrid extends StatelessWidget {
             // 卡片内容高度是定值，固定高度可保证任意列数下都不溢出
             mainAxisExtent: 212,
           ),
-          itemCount: GameData.games.length,
+          itemCount: GameRegistry.games.length,
           itemBuilder: (context, index) {
-            final game = GameData.games[index];
+            final game = GameRegistry.games[index];
             return GameCard(
               game: game,
-              // 跳转目标来自注册表（GameData），本组件不感知具体游戏页；
+              // 跳转目标来自注册表（GameRegistry），本组件不感知具体游戏页；
               // 未登记跳转的游戏卡片禁用点击（当前不存在此情况）
               onTap: game.pageBuilder == null
                   ? null

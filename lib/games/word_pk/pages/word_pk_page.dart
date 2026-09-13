@@ -22,7 +22,7 @@ import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 class WordPkPage extends StatefulWidget {
   const WordPkPage({super.key});
 
-  /// 联机房间标识名：GameData 登记、建房入口与房间标识卡共用的
+  /// 联机房间标识名：GameRegistry 登记、建房入口与房间标识卡共用的
   /// 单一事实来源（注册数据归游戏模块自身，注册中心只做汇总）
   static const String gameName = '单词PK';
 
