@@ -58,7 +58,7 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
   /// 我的座位号（房主固定 1 号位；客户端为实际分配座位）
   final int mySeat;
 
-  /// 校验拒绝等提示回调（页面接 SnackBar 展示；拒绝理由来自房主）
+  /// 校验拒绝等提示回调（由 OnlineGamePageShell 接 showAlertDialog 弹窗展示；拒绝理由来自房主）
   void Function(String message)? onHint;
 
   /// 对局终止信号（对方离开/房主解散/连接断开等无胜负的终止）；
