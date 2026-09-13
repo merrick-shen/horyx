@@ -91,8 +91,9 @@ class _TankOnlinePageState extends State<TankOnlinePage>
     return controller;
   }
 
-  /// 比分变化 diff（由控制器通知驱动的构建时机调用）：
-  /// 比分上升瞬间自增烟雾计数；比分本体以战场为准，页面只读
+  /// 比分变化 diff（经骨架 onControllerChanged 在 build 路径外调用）：
+  /// 比分上升瞬间自增烟雾计数，重建时比分数字与烟雾特效同步出现；
+  /// 比分本体以战场为准，页面只读
   void _diffScores() {
     if (_game.redScore != _lastRedScore) {
       if (_game.redScore > _lastRedScore) _redSmokeTick++;
@@ -134,14 +135,12 @@ class _TankOnlinePageState extends State<TankOnlinePage>
       title: '坦克动荡 · 联机',
       exitMessage: '退出后将断开与房间的连接，对局将结束',
       createController: _createController,
+      onControllerChanged: (controller) => _diffScores(),
       // 与本地对局页一致：横屏沉浸无顶栏（退出经系统返回触发确认流程）；
       // 退出确认/终局弹窗后先还原竖屏再 pop（旋转与转场动画并行，无延迟退出）
       showTopBar: false,
       onBeforeExit: restorePortrait,
       buildGameView: (context, controller, requestExit) {
-        // 控制器通知（含比分变化）驱动的重建时机：先 diff 得分瞬间
-        // 再构建视图，保证比分数字与烟雾特效同步出现
-        _diffScores();
         return LayoutBuilder(
           builder: (context, constraints) {
             // 挖孔/刘海在横屏下只产生单侧 inset，取较大值避让，

@@ -27,6 +27,7 @@ class OnlineGamePageShell<TController extends OnlineGameControllerBase>
     required this.exitMessage,
     required this.createController,
     required this.buildGameView,
+    this.onControllerChanged,
     this.onGameEvent,
     this.showTopBar = true,
     this.onBeforeExit,
@@ -48,6 +49,11 @@ class OnlineGamePageShell<TController extends OnlineGameControllerBase>
     TController controller,
     VoidCallback requestExit,
   ) buildGameView;
+
+  /// 控制器每次通知时的页面回调（先于 [onGameEvent] 与视图重建调用）：
+  /// 供页面在 build 路径外同步派生状态（如将军闪屏计数、比分烟雾
+  /// 触发计数），避免 buildGameView 构建过程中修改页面 State 字段
+  final void Function(TController controller)? onControllerChanged;
 
   /// 游戏特有事件钩子：控制器每次通知时先于通用终局判定调用。
   /// [markEndShown] 供游戏自行处理终局（胜负弹窗）后标记——
@@ -103,6 +109,7 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
   /// 控制器状态变化：先给游戏事件钩子（悔棋请求/胜负弹窗），
   /// 未消费则做通用终局判定（无胜负终止弹窗，只弹一次）
   void _onControllerChanged() {
+    widget.onControllerChanged?.call(_controller);
     if (widget.onGameEvent?.call(_controller, _markEndShown) ?? false) return;
     if (_endDialogShown) return;
     final reason = _controller.gameEndReason;

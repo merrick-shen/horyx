@@ -225,6 +225,25 @@ class _ChessOnlinePageState extends State<ChessOnlinePage> {
     exitPageClean(context);
   }
 
+  /// 控制器通知回调（经骨架 onControllerChanged 在 build 路径外调用）：
+  /// 检测走子数变化——新增走子时按当前行棋方判定一次将军并递增闪屏
+  /// 触发器；悔棋回退（走子数减少）时清除本方选中与预选——对方棋子
+  /// 归位后走法集已变化，残留的高亮与待确认走法基于回退前局面，属于
+  /// 过期状态
+  void _onControllerChanged(ChessOnlineController controller) {
+    if (controller.moves.length == _lastMoveCount) return;
+    final reverted = controller.moves.length < _lastMoveCount;
+    _lastMoveCount = controller.moves.length;
+    if (reverted) {
+      _selected = null;
+      _legalMoves = const [];
+      _pendingMove = null;
+    }
+    if (ChessRules.isInCheck(controller.board, controller.turnColor)) {
+      _checkFlashTrigger++;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return OnlineGamePageShell<ChessOnlineController>(
@@ -233,24 +252,9 @@ class _ChessOnlinePageState extends State<ChessOnlinePage> {
       createController: () => widget.host != null
           ? ChessOnlineController.host(widget.host!)
           : ChessOnlineController.client(widget.client!),
+      onControllerChanged: _onControllerChanged,
       onGameEvent: _onGameEvent,
       buildGameView: (context, controller, requestExit) {
-        // 检测走子数变化：新增走子时按当前行棋方判定一次将军；
-        // 悔棋回退（走子数减少）时清除本方选中与预选——对方棋子归位后
-        // 走法集已变化，残留的高亮与待确认走法基于回退前局面，属于过期状态
-        // （在 ListenableBuilder 重建路径上更新字段，无需 setState）
-        if (controller.moves.length != _lastMoveCount) {
-          final reverted = controller.moves.length < _lastMoveCount;
-          _lastMoveCount = controller.moves.length;
-          if (reverted) {
-            _selected = null;
-            _legalMoves = const [];
-            _pendingMove = null;
-          }
-          if (ChessRules.isInCheck(controller.board, controller.turnColor)) {
-            _checkFlashTrigger++;
-          }
-        }
         return _BoardView(
           controller: controller,
           selected: _selected,
