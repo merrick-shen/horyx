@@ -61,6 +61,13 @@ class TankMazeGame extends FlameGame {
   /// 每辆坦克同屏子弹上限：达上限后需等任一子弹消失才能继续发射
   static const int _maxBulletsPerTank = 5;
 
+  /// 子弹出生偏移系数：出生圆心 = 炮口 + radius * 该系数。
+  /// 炮管碰撞矩形末端恰在炮口，出生偏移若取 radius 整倍则出生圆缘
+  /// 与炮管矩形精确相切，hitByCircle 的 <= 判定会把"相切"算作命中——
+  /// 当前依赖"先移动子弹、后检测命中"的帧内顺序才不出膛自杀；
+  /// 加 1% 余量使出生圆缘与炮管矩形严格分离，消除对该帧序的依赖
+  static const double _bulletSpawnFactor = 1.01;
+
   // ============ 远程快照驱动模式（remote = true）专属状态 ============
 
   /// 坦克位置平滑目标（迷宫坐标 + 朝向）：由最新快照写入，
@@ -225,7 +232,8 @@ class TankMazeGame extends FlameGame {
             math.cos(tank.angle),
             math.sin(tank.angle),
           ) *
-              Bullet.radius,
+              Bullet.radius *
+              _bulletSpawnFactor,
       angle: tank.angle,
     );
     bullets.add(bullet);
