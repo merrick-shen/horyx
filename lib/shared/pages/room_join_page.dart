@@ -13,8 +13,8 @@ import 'package:horyx/shared/widgets/primary_button.dart';
 /// 局域网加入房间页（「联机」tab 常驻页）
 /// 输入房主在房间等待页显示的地址（IP:端口）直接加入；
 /// 连接与入座流程由房间等待页负责
-class RoomListPage extends StatefulWidget {
-  const RoomListPage({super.key, this.gameResolver});
+class RoomJoinPage extends StatefulWidget {
+  const RoomJoinPage({super.key, this.gameResolver});
 
   /// 游戏注册表查询（app 层注入）：等待页据此解析标识卡图标与
   /// 满员开局的联机对局页构建器。注册表组合根位于 app 层，
@@ -22,10 +22,10 @@ class RoomListPage extends StatefulWidget {
   final GameInfo? Function(String gameName)? gameResolver;
 
   @override
-  State<RoomListPage> createState() => _RoomListPageState();
+  State<RoomJoinPage> createState() => _RoomJoinPageState();
 }
 
-class _RoomListPageState extends State<RoomListPage> {
+class _RoomJoinPageState extends State<RoomJoinPage> {
   /// 房主地址输入框
   final _addressController = TextEditingController();
 
