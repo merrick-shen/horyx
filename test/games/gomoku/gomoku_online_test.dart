@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/games/gomoku/services/gomoku_online_controller.dart';
+import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 
@@ -164,6 +165,42 @@ void main() {
 
     hostCtrl.dispose();
     clientCtrl.dispose();
+  });
+
+  test('客户端对矛盾落子广播的最低校验：重复/越界即数据异常终局', () async {
+    // 重复落点广播（先落一手合法棋，回归保护：合法广播仍生效）
+    final (hostCtrl, clientCtrl) = await setupGame({'boardSize': 15});
+    expect(hostCtrl.submitStone(7, 7), isTrue);
+    await until(() => clientCtrl.moves.length == 1);
+
+    clientCtrl.onClientGameMessage(
+      const NetMessage(
+        type: NetMessageType.stoneApplied,
+        payload: {'col': 7, 'row': 7},
+      ),
+    );
+    expect(clientCtrl.gameEndReason, EndGameReason.dataError);
+    expect(clientCtrl.gameEndedText, '对局数据异常，对局结束');
+    expect(clientCtrl.winnerSeat, isNull); // 无胜负
+    expect(clientCtrl.moves.length, 1); // 落子序列未被污染
+    expect(clientCtrl.moves.single, (7, 7));
+
+    hostCtrl.dispose();
+    clientCtrl.dispose();
+
+    // 越界广播（全新对局，未走任何子）
+    final (hostCtrl2, clientCtrl2) = await setupGame({'boardSize': 15});
+    clientCtrl2.onClientGameMessage(
+      const NetMessage(
+        type: NetMessageType.stoneApplied,
+        payload: {'col': -1, 'row': 0},
+      ),
+    );
+    expect(clientCtrl2.gameEndReason, EndGameReason.dataError);
+    expect(clientCtrl2.moves, isEmpty);
+
+    hostCtrl2.dispose();
+    clientCtrl2.dispose();
   });
 
   test('五连终局：黑方五连后双端判定胜负并停止落子', () async {

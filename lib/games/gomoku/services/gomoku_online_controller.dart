@@ -25,7 +25,8 @@ enum UndoState {
 /// 来自混入 [SubmissionReceiptMixin]，本类只实现五子棋游戏逻辑：
 /// 落子校验与广播、五连判定、悔棋协商、认输。
 /// 房主端：校验落子（轮次 + 落点）并广播生效，五连时判定胜负；
-/// 客户端：提交落子交房主校验，棋盘状态随广播同步，不自行判定。
+/// 客户端：提交落子交房主校验，棋盘状态随广播同步，不自行判定合法性
+/// （仅对广播做最低一致性校验：落点在盘内且未重复，矛盾即终局）。
 /// 执子规则固定：创建者（座位 1）执黑先行，加入者（座位 2）执白。
 /// 悔棋为双方协商：请求 -> 对方应答 -> 房主广播回退，全程房主仲裁；
 /// 认输为单方声明：房主收到即判对方获胜并广播终局；
@@ -350,6 +351,19 @@ class GomokuOnlineController extends OnlineGameControllerBase
         final col = msg.payload['col'];
         final row = msg.payload['row'];
         if (col is! int || row is! int) return;
+        // 客户端对房主广播的最低一致性校验（与象棋 moveApplied 对齐）：
+        // 落点须在盘内且未被占用。矛盾广播（房主侧异常/协议演进）说明
+        // 棋盘已不可信且无重同步手段，走 dataError 终局而非静默应用
+        // 污染落子序列（回合奇偶推导、执子卡、渲染全部失真）
+        if (col < 0 ||
+            col >= boardSize ||
+            row < 0 ||
+            row >= boardSize ||
+            _occupied(col, row)) {
+          endGame(EndGameReason.dataError);
+          notifyListeners();
+          return;
+        }
         moves.add((col, row));
         winnerSeat = msg.payload['winner'] as int?;
         notifyListeners();
