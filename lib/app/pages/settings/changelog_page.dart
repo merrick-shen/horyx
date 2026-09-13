@@ -3,6 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 更新日志页（版本列表）
 /// 列表仅展示「版本号 + 发布日期 + 分类摘要」，点击进入详情页查看完整内容；
@@ -73,48 +74,50 @@ class _ChangelogPageState extends State<ChangelogPage> {
 
   /// 版本卡片：版本号 + 发布日期 + 分类摘要，点击进入详情页
   Widget _buildVersionCard(AppPalette palette, _VersionSection version) {
-    return Material(
-      color: palette.surfaceBg,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.of(context).push(_VersionDetailRoute(version)),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 版本号与日期，与详情页大标题建立 Hero 共享元素过渡
-                    Hero(
-                      tag: 'changelog-version-${version.version}',
-                      child: Material(
-                        type: MaterialType.transparency,
-                        child: _buildVersionTitle(palette, version),
+    return PanelCard(
+      padding: EdgeInsets.zero,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => Navigator.of(context).push(_VersionDetailRoute(version)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 版本号与日期，与详情页大标题建立 Hero 共享元素过渡
+                      Hero(
+                        tag: 'changelog-version-${version.version}',
+                        child: Material(
+                          type: MaterialType.transparency,
+                          child: _buildVersionTitle(palette, version),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _summary(version),
-                      style: TextStyle(
-                        color: palette.textSecondary,
-                        fontSize: 12.5,
+                      const SizedBox(height: 4),
+                      Text(
+                        _summary(version),
+                        style: TextStyle(
+                          color: palette.textSecondary,
+                          fontSize: 12.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: palette.textSecondary,
-              ),
-            ],
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: palette.textSecondary,
+                ),
+              ],
+            ),
           ),
         ),
       ),
