@@ -6,16 +6,16 @@ import 'package:horyx/shared/network/net_message.dart';
 /// 坦克动荡联机消息的编解码层（纯数据，不做任何模拟/渲染）
 ///
 /// 协议分工（房主权威模型，见 tank_online_plan.md）：
-/// - 房主本地跑完整模拟，20Hz 广播 [TankNetSnapshot] 状态快照；
+/// - 房主本地跑完整模拟，30Hz 广播 [TankNetSnapshot] 状态快照；
 /// - 客户端只上报驾驶/开火输入，影子战场按快照驱动渲染；
 /// - 迷宫一致性靠 [TankNetRoundStart] 的随机种子：双端以
 ///   `Random(seed)` 生成同一迷宫，无需传输墙体数据；
 /// - 开火音效走 [NetMessageType.tankFireEvent] 即时事件，
-///   不等 20Hz 快照（子弹本体仍由快照承载）。
+///   不等 30Hz 快照（子弹本体仍由快照承载）。
 ///
 /// 所有解码函数对载荷做类型校验：字段缺失/类型不符一律返回 null，
 /// 由调用方丢弃该消息（同版本协议下不应发生，防御异常/篡改载荷）。
-/// 快照 20Hz 传输，载荷键名取短名控制报文体积。
+/// 快照 30Hz 传输，载荷键名取短名控制报文体积。
 
 /// 战场阶段（与本地对局状态机一一对应）
 enum TankBattlePhase {

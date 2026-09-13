@@ -60,7 +60,7 @@ class TankOnlineController extends OnlineGameControllerBase {
 
   // ---------- 房主端状态 ----------
 
-  /// 20Hz 快照定时器（对局终止即取消）
+  /// 30Hz 快照定时器（对局终止即取消）
   Timer? _snapshotTimer;
 
   /// 子弹身份映射（Bullet 未覆写 ==，按引用身份）：
@@ -76,7 +76,7 @@ class TankOnlineController extends OnlineGameControllerBase {
 
   // ---------- 双端共用 ----------
 
-  /// 上次通知页面的比分（变化才 notify，避免 20Hz 重建页面）
+  /// 上次通知页面的比分（变化才 notify，避免 30Hz 重建页面）
   int _lastRedScore = -1;
   int _lastGreenScore = -1;
 
