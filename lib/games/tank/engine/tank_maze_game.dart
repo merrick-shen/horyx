@@ -205,10 +205,15 @@ class TankMazeGame extends FlameGame {
   /// 联机快照组装所需：指定玩家的坦克（只读访问；素材加载前为 null）
   Tank? tank(TankPlayer player) => _tanks[player];
 
-  /// 联机快照组装所需：按发射方分组的在场子弹（只读视图；
-  /// 列表内容仅由战场内部维护，外部只遍历）
-  Map<TankPlayer, List<Bullet>> get bulletsByPlayer =>
-      UnmodifiableMapView(_bulletsByPlayer);
+  /// 联机快照组装所需：按发射方分组的在场子弹（只读视图；外层 Map 与
+  /// 内层 List 均不可变，列表内容仅由战场内部经 [_bulletsByPlayer] 增删，
+  /// 外部只遍历）
+  Map<TankPlayer, List<Bullet>> get bulletsByPlayer => UnmodifiableMapView(
+        {
+          for (final entry in _bulletsByPlayer.entries)
+            entry.key: UnmodifiableListView(entry.value),
+        },
+      );
 
   /// 开火：从炮口沿车身朝向射出子弹。
   /// 每辆坦克同屏最多 5 发：达到上限后需等任一子弹消失才能继续发射。
