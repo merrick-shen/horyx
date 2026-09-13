@@ -74,16 +74,24 @@ class ChessOnlineController extends OnlineGameControllerBase
   /// 发起时快照：协商期间对方若又走子，同意后一并回退到快照（B9）
   int _undoTarget = 0;
 
+  // ---- 座位/手数 → 执子颜色映射（单点维护，勿内联展开）----
+
+  /// 座位 → 执子颜色：座位 1（房主）执红、座位 2（客户端）执黑
+  static ChessColor colorOfSeat(int seat) =>
+      seat == 1 ? ChessColor.red : ChessColor.black;
+
+  /// 第 [index] 手（0 基）的执子颜色：红先，随奇偶推导
+  static ChessColor colorOfMoveIndex(int index) =>
+      index.isEven ? ChessColor.red : ChessColor.black;
+
   /// 当前行棋方颜色（红先，随走子数奇偶推导，避免独立状态失同步）
-  ChessColor get turnColor =>
-      moves.length.isEven ? ChessColor.red : ChessColor.black;
+  ChessColor get turnColor => colorOfMoveIndex(moves.length);
 
   /// 当前行棋座位（红=座位 1 起，随走子数奇偶推导）
   int get currentSeat => moves.length.isEven ? 1 : 2;
 
   /// 我执子的颜色（座位 1 执红）
-  ChessColor get myColor =>
-      mySeat == 1 ? ChessColor.red : ChessColor.black;
+  ChessColor get myColor => colorOfSeat(mySeat);
 
   /// 胜方文案（'红方'/'黑方'）；对局进行中为 null
   String? get winnerText =>
@@ -244,7 +252,7 @@ class ChessOnlineController extends OnlineGameControllerBase
     // 起点棋子须为提交方执子颜色（防止「替对方走子」或以空格/敌子为起点）
     final piece = board.pieceAt(move.from);
     if (piece == null ||
-        piece.color != (seat == 1 ? ChessColor.red : ChessColor.black)) {
+        piece.color != colorOfSeat(seat)) {
       host?.sendTo(seat, resultMessage(false, 'invalidMove'));
       return;
     }
@@ -266,8 +274,8 @@ class ChessOnlineController extends OnlineGameControllerBase
     if (undoState != UndoState.idle) return; // 已有协商进行中
     final count = msg.payload['count'];
     if (count is! int || count < 1 || count > moves.length) return;
-    // 快照末位（索引 count-1）的执子方须为请求方：偶索引=红=座位1
-    if ((count - 1).isEven != (seat == 1)) return;
+    // 快照末手（索引 count-1）的执子方须为请求方执子颜色
+    if (colorOfMoveIndex(count - 1) != colorOfSeat(seat)) return;
     _undoTarget = count - 1;
     undoState = UndoState.peerRequesting;
     notifyListeners();
