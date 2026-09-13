@@ -31,8 +31,10 @@ abstract final class ChessRules {
   /// 不含自杀着法与将帅照面过滤（由合法着法过滤阶段处理）
   static List<ChessMove> movesFor(ChessBoard board, ChessPos pos) {
     final piece = board.pieceAt(pos);
-    assert(piece != null, 'movesFor 的起点无棋子：$pos');
-    return switch (piece!.type) {
+    // 显式判空而非 assert：release 下 assert 被剥离，piece! 会抛 null
+    // check 异常——防御未来新调用方漏判起点有子
+    if (piece == null) return const [];
+    return switch (piece.type) {
       ChessPieceType.rook => _rookMoves(board, pos, piece.color),
       ChessPieceType.cannon => _cannonMoves(board, pos, piece.color),
       ChessPieceType.knight => _knightMoves(board, pos, piece.color),
@@ -291,7 +293,11 @@ abstract final class ChessRules {
       }
     }
 
-    // 帅/将：byColor 王在九宫内直邻一格攻击（王吃不到宫外子，故要求 X 在其九宫内）
+    // 帅/将：byColor 王在九宫内直邻一格攻击（王吃不到宫外子，故要求 X 在其九宫内）。
+    // 注意：该分支在当前全部调用方下不可达——反向攻击检测的目标格恒为
+    // 敌方帅位（敌九宫），永远不会落在 byColor 王直邻的己方九宫格内；
+    // 两王直邻实为将帅照面，由 kingsFacing 单独负责。保留本分支仅为
+    // 规则完整性，勿据此假设将军判定依赖王贴脸攻击。
     if (_inPalace(col, row, byColor)) {
       for (final (dx, dy) in _orthogonal) {
         if (!_inBoard(col + dx, row + dy)) continue;
@@ -344,8 +350,9 @@ abstract final class ChessRules {
   /// 被将军时天然只剩解将着法（走后仍被将军的一律滤除）
   static List<ChessMove> legalMovesFor(ChessBoard board, ChessPos pos) {
     final piece = board.pieceAt(pos);
-    assert(piece != null, 'legalMovesFor 的起点无棋子：$pos');
-    final enemy = piece!.color == ChessColor.red ? ChessColor.black : ChessColor.red;
+    // 同 movesFor：显式判空防御 release 下的漏判调用
+    if (piece == null) return const [];
+    final enemy = piece.color == ChessColor.red ? ChessColor.black : ChessColor.red;
     final result = <ChessMove>[];
     for (final move in movesFor(board, pos)) {
       final captured = board.applyMove(move);
