@@ -9,7 +9,7 @@
 
 | 目录/文件 | 职责 |
 | --- | --- |
-| `models/` | 纯数据与算法：`TankPlayer`（玩家与双方颜色/驾驶输入）、`TankMaze`（迷宫生成与墙查询，支持指定种子复现）、`TankGameState`（比分存档模型） |
+| `models/` | 纯数据与算法：`TankPlayer`（玩家与双方颜色/驾驶输入）、`TankBattlePhase`（战场阶段，本地/联机同源）、`TankMaze`（迷宫生成与墙查询，支持指定种子复现）、`TankGameState`（比分存档模型） |
 | `pages/` | `tank_page` 设置页（本地/局域网模式选择 + 继续上次对战入口）、`tank_battle_page` 横屏对局页（比分 UI、输入下发、横屏沉浸、退出存档确认）、`tank_online_page` 联机对局页（布局复刻本地，仅保留己方控件） |
 | `widgets/` | UI 组件：四向摇杆（油门）、开火按钮、比分视图（含得分烟雾覆盖层）、模式面板 |
 | `services/` | `tank_storage` 比分存档服务（SharedPreferences 单键 JSON）、`tank_online_controller` 联机对局控制器（快照广播/输入上报/终局处理）、`tank_net_models` 联机协议编解码（纯数据模型，全字段类型校验） |

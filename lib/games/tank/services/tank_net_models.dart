@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:horyx/games/tank/models/tank_battle_phase.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/shared/network/net_message.dart';
 
@@ -16,29 +17,6 @@ import 'package:horyx/shared/network/net_message.dart';
 /// 所有解码函数对载荷做类型校验：字段缺失/类型不符一律返回 null，
 /// 由调用方丢弃该消息（同版本协议下不应发生，防御异常/篡改载荷）。
 /// 快照 30Hz 传输，载荷键名取短名控制报文体积。
-
-/// 战场阶段（与本地对局状态机一一对应）
-enum TankBattlePhase {
-  /// 对局进行中（含开局摇杆可动）
-  playing,
-
-  /// 击毁后的结算展示期：战场继续推进，残弹可命中（双杀可能发生）
-  settling,
-
-  /// 计分定格期：全场静止展示比分，到点开新一局
-  frozen;
-
-  /// 编码为载荷字符串
-  String toPayload() => name;
-
-  /// 从载荷解码；未知值返回 null
-  static TankBattlePhase? tryParse(Object? value) {
-    for (final phase in TankBattlePhase.values) {
-      if (phase.name == value) return phase;
-    }
-    return null;
-  }
-}
 
 /// 单辆坦克的快照状态（迷宫坐标系，单位=格，与本地实体一致）
 class TankNetTankState {
