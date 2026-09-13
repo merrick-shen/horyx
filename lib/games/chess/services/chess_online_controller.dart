@@ -234,7 +234,9 @@ class ChessOnlineController extends OnlineGameControllerBase
 
   /// 房主收走子提交：坐标边界 -> 轮次 -> 起点己方棋子 -> 合法着法，逐层拒绝
   void _onHostMoveSubmit(int seat, NetMessage msg) {
-    if (winnerSeat != null) return; // 对局已结束，忽略迟到的提交
+    if (winnerSeat != null || gameEndedText != null) {
+      return; // 对局已结束，忽略迟到的提交
+    }
     final move = _moveFromPayload(msg.payload);
     if (move == null) return; // 字段缺失/类型错误/坐标越界，静默丢弃
     if (seat != currentSeat) {
