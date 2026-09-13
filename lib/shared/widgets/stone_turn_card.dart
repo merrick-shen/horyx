@@ -5,7 +5,7 @@ import 'package:horyx/shared/widgets/turn_card.dart';
 
 /// 棋类执子提示卡：封装 TurnCard 在黑白棋对局中的通用推导
 /// （对局中显示当前执子方，终局显示胜方；图标颜色对应棋子颜色）
-/// 五子棋本地/联机与围棋三个棋盘视图共用，消除各自的重复三目推导
+/// 五子棋本地/联机两个棋盘视图共用，消除各自的重复三目推导
 class StoneTurnCard extends StatelessWidget {
   const StoneTurnCard({
     super.key,
