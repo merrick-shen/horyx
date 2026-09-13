@@ -8,7 +8,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 /// 象棋棋盘画布：棋盘按可用空间等比缩放 + 点击手势命中
 /// （本地对局视图与联机对局视图共用）；
 /// 几何换算与绘制来自 [ChessBoardGeometry]/[ChessBoardPainter]，
-/// 点击经换算转为格坐标后回调 [onCellTap]（棋盘外点击不回调）
+/// 点击经换算吸附到最近交点后回调 [onCellTap]（棋盘外框以外点击不回调）
 class ChessBoardCanvas extends StatelessWidget {
   const ChessBoardCanvas({
     super.key,
@@ -50,7 +50,7 @@ class ChessBoardCanvas extends StatelessWidget {
           );
           return GestureDetector(
             onTapUp: (details) {
-              // 点击换算为格坐标，棋盘外不响应
+              // 点击吸附到最近线路交点，棋盘外框以外不响应
               final pos = geometry.offsetToPos(details.localPosition);
               if (pos != null) onCellTap(pos);
             },

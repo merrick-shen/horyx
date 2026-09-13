@@ -54,7 +54,7 @@ class ChessBoardView extends StatelessWidget {
   /// 是否有子可悔（无走子历史时悔棋按钮禁用）
   final bool canUndo;
 
-  /// 点击棋盘格回调（换算后的格坐标；点击棋盘外不回调）
+  /// 点击棋盘格回调（吸附到最近交点后的格坐标；棋盘外框以外点击不回调）
   final void Function(ChessPos pos) onCellTap;
 
   /// 点击「取消」回调：清除待确认走法

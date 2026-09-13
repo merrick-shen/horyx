@@ -56,7 +56,10 @@ class ChessBoardGeometry {
     return Offset(margin + x, margin + y);
   }
 
-  /// 屏幕点 → 最近格坐标；超出棋盘范围返回 null（与 [posToOffset] 互逆）
+  /// 屏幕点 → 最近线路交点（与 [posToOffset] 互逆）。
+  /// 命中为吸附式：横/纵方向距最近交点均不超过半格即吸附命中——
+  /// 整个棋盘面（含留白外框以内）的点击都会命中最近交点，利于
+  /// 粗手指点选边线棋子，属有意设计；外框以外的点击返回 null
   ChessPos? offsetToPos(Offset o) {
     var col = ((o.dx - margin) / cell).round();
     final rowFromEdge = ((o.dy - margin) / cell).round();
