@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:horyx/games/tank/game/bullet.dart';
-import 'package:horyx/games/tank/game/tank.dart';
-import 'package:horyx/games/tank/game/tank_maze_game.dart';
+import 'package:horyx/games/tank/engine/bullet.dart';
+import 'package:horyx/games/tank/engine/tank.dart';
+import 'package:horyx/games/tank/engine/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
 import 'package:horyx/shared/network/net_message.dart';

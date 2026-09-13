@@ -5,12 +5,12 @@ import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/game/bullet.dart';
-import 'package:horyx/games/tank/game/effects/bullet_expire_effect.dart';
-import 'package:horyx/games/tank/game/effects/tank_explosion_effect.dart';
-import 'package:horyx/games/tank/game/tank.dart';
-import 'package:horyx/games/tank/game/tank_audio.dart';
-import 'package:horyx/games/tank/game/tint_filter.dart';
+import 'package:horyx/games/tank/engine/bullet.dart';
+import 'package:horyx/games/tank/engine/effects/bullet_expire_effect.dart';
+import 'package:horyx/games/tank/engine/effects/tank_explosion_effect.dart';
+import 'package:horyx/games/tank/engine/tank.dart';
+import 'package:horyx/games/tank/engine/tank_audio.dart';
+import 'package:horyx/games/tank/engine/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';

@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/game/effects/particle_emitter.dart';
+import 'package:horyx/games/tank/engine/effects/particle_emitter.dart';
 
 /// 子弹消失消散特效（命中目标或达到射程极限时触发，总时长 0.6 秒）：
 /// 一小股黑烟在消失点全向原地散开、缓慢膨胀淡出（俯视视角，不上飘）。

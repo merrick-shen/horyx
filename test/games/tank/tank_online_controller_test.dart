@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:horyx/games/tank/game/tank_maze_game.dart';
+import 'package:horyx/games/tank/engine/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_online_controller.dart';

@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/game/effects/particle_emitter.dart';
+import 'package:horyx/games/tank/engine/effects/particle_emitter.dart';
 
 /// 坦克被击中爆炸特效（"碎片拖尾 + 撞墙残骸"模型，素材提取自坦克动荡 APK）。
 /// 整体时长上限 3 秒：

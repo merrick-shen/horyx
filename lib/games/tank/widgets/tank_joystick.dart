@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/game/tint_filter.dart';
+import 'package:horyx/games/tank/engine/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 
 /// 原版同款摇杆：灰色四箭头底座（素材原色）+ 玩家色中心钮（白模染色）。

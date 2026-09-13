@@ -4,7 +4,7 @@ import 'dart:ui' show Offset, Rect;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vector_math/vector_math.dart';
 
-import 'package:horyx/games/tank/game/tank.dart';
+import 'package:horyx/games/tank/engine/tank.dart';
 
 /// 坦克 SAT 碰撞几何测试：验证车体/炮管双矩形与墙的相交判定与推出向量
 void main() {
