@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/engine/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/tint_filter.dart';
 
 /// 原版同款摇杆：灰色四箭头底座（素材原色）+ 玩家色中心钮（白模染色）。
 /// 原版操控语义：圆钮未超出底座边界时坦克只旋转（转向摇杆指向的角度），

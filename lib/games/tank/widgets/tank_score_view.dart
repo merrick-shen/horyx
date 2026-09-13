@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/engine/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/tint_filter.dart';
 import 'package:horyx/games/tank/widgets/tank_score_smoke_overlay.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 

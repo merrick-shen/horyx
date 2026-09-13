@@ -3,8 +3,8 @@ import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/tank/engine/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/tint_filter.dart';
 
 /// 顶视坦克实体：车体与炮塔随朝向整体旋转，原版摇杆驾驶。
 /// 状态存于迷宫坐标系（[logicalPos] 单位=格，原点迷宫左上角），
