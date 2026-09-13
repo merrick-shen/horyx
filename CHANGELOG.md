@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 更新日志版本卡片添加描边
+- 五子棋棋盘加大（收窄页边距与棋盘外围留白）
 
 ### Fixed
 

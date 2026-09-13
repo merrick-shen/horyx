@@ -37,6 +37,10 @@ class StoneBoard extends StatelessWidget {
   static const Color blackStone = Color(0xFF17181D);
   static const Color whiteStone = Color(0xFFFFFFFF);
 
+  /// 棋盘绘制边距占格距比例：半格即可容纳边线棋子（半径 0.42 格），
+  /// 更大的边距在 19 路等密路数下会浪费过多宽度、棋盘显小
+  static const double _boardMarginRatio = 0.5;
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
@@ -45,7 +49,7 @@ class StoneBoard extends StatelessWidget {
       // 棋盘保持正方形
       aspectRatio: 1,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: palette.surfaceBg,
           borderRadius: BorderRadius.circular(20),
@@ -55,8 +59,10 @@ class StoneBoard extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final boardWidth = constraints.maxWidth;
-            // 交叉点间距：画布宽 / (路数 + 1)，首个交叉点位于一格边距处
-            final cell = boardWidth / (size + 1);
+            // 交叉点间距：画布宽 / (路数 - 1 + 2*边距比例)，
+            // 首个交叉点位于半格边距处（见 [_boardMarginRatio]）
+            final cell =
+                boardWidth / (size - 1 + _boardMarginRatio * 2);
 
             return GestureDetector(
               // opaque 保证棋盘空白区域也可响应点击
@@ -88,12 +94,12 @@ class StoneBoard extends StatelessWidget {
     final callback = onCellTap;
     if (callback == null) return;
 
-    // 交叉点坐标 = 一格边距 + col*cell，反推 col 并钳制到 [0, size-1]
+    // 交叉点坐标 = 半格边距 + col*cell，反推 col 并钳制到 [0, size-1]
     int clampIndex(double raw) =>
         raw.round().clamp(0, size - 1);
 
-    final col = clampIndex(position.dx / cell - 1);
-    final row = clampIndex(position.dy / cell - 1);
+    final col = clampIndex(position.dx / cell - _boardMarginRatio);
+    final row = clampIndex(position.dy / cell - _boardMarginRatio);
     callback(col, row);
   }
 }
@@ -139,8 +145,9 @@ class _BoardPainter extends CustomPainter {
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 
-    // 边距取一格宽度，保证四周留白与内部格距一致
-    final cell = canvasSize.width / (size + 1);
+    // 边距取半格宽度：外围留白收敛到最小必要量（边线棋子半径
+    // 0.42 格仍在边距内、不被圆角裁切），把宽度尽量让给网格本身
+    final cell = canvasSize.width / (size - 1 + StoneBoard._boardMarginRatio * 2);
     final board = cell * (size - 1);
     final origin = (canvasSize.width - board) / 2;
 
