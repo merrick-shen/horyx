@@ -1,8 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:horyx/shared/theme/app_theme.dart';
-
 /// 棋盘上的一颗棋子：位置 + 颜色
 /// 颜色需显式存储而非按落子顺序推导：
 /// 为提子等无法从奇偶推断黑白的规则场景预留
@@ -41,9 +39,36 @@ class StoneBoard extends StatelessWidget {
   /// 更大的边距在 19 路等密路数下会浪费过多宽度、棋盘显小
   static const double _boardMarginRatio = 0.5;
 
+  // ---- 棋盘固定配色（木色系，不随主题色板变化）----
+  // 此前底色用 palette.surfaceBg：浅色主题为纯白与白子同色、深色主题
+  // 为深色与黑子同色，棋子只剩描边可辨。木色与黑白棋子均保持足够
+  // 明度差，也是棋类棋盘的传统观感；仅按明暗主题区分深浅两套
+
+  /// 浅色主题棋盘底色（暖木色）
+  static const Color _boardColorLight = Color(0xFFE2C289);
+
+  /// 深色主题棋盘底色（深木色）
+  static const Color _boardColorDark = Color(0xFF473A29);
+
+  /// 浅色主题网格线/星位/棋子描边（深棕）
+  static const Color _linesColorLight = Color(0xFF7A5C33);
+
+  /// 深色主题网格线/星位/棋子描边（浅棕）
+  static const Color _linesColorDark = Color(0xFF97815A);
+
+  /// 浅色主题卡片边框（较底色深的木框）
+  static const Color _frameColorLight = Color(0xFFC9A96A);
+
+  /// 深色主题卡片边框（较底色深的木框）
+  static const Color _frameColorDark = Color(0xFF2B2115);
+
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
+    // 棋盘配色为固定木色系（不随主题色板变化），仅按明暗主题取深浅
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final boardColor = isDark ? _boardColorDark : _boardColorLight;
+    final frameColor = isDark ? _frameColorDark : _frameColorLight;
+    final linesColor = isDark ? _linesColorDark : _linesColorLight;
 
     return AspectRatio(
       // 棋盘保持正方形
@@ -51,9 +76,9 @@ class StoneBoard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
-          color: palette.surfaceBg,
+          color: boardColor,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: palette.stroke),
+          border: Border.all(color: frameColor),
         ),
         // LayoutBuilder 提供绘制区域尺寸，用于点击坐标换算
         child: LayoutBuilder(
@@ -75,7 +100,7 @@ class StoneBoard extends StatelessWidget {
                 child: CustomPaint(
                   size: Size.infinite,
                   painter: _BoardPainter(
-                    linesColor: palette.stroke,
+                    linesColor: linesColor,
                     size: size,
                     stones: stones,
                     pending: pending,
