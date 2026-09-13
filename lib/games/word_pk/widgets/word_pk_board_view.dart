@@ -4,6 +4,7 @@ import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_text_field.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
 
@@ -125,13 +126,8 @@ class _WordPkBoardViewState extends State<WordPkBoardView> {
             const SizedBox(height: 16),
             // 已验证单词列表：占据剩余空间，超出滚动
             Expanded(
-              child: Container(
+              child: PanelCard(
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                decoration: BoxDecoration(
-                  color: palette.surfaceBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: palette.stroke),
-                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
