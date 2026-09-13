@@ -126,64 +126,77 @@ class _WordPkPlayViewState extends State<WordPkPlayView> {
             const SizedBox(height: 16),
             // 已验证单词列表：占据剩余空间，超出滚动
             Expanded(
-              child: PanelCard(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          '已验证单词',
-                          style: TextStyle(
-                            color: palette.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // 数量徽标随列表数据自动变化
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: palette.scaffoldBg,
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: palette.stroke),
-                          ),
-                          child: Text(
-                            '${widget.entries.length} 个',
-                            style: TextStyle(
-                              color: palette.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: widget.entries.isEmpty
-                          ? const _EmptyState()
-                          : ListView.separated(
-                              padding: EdgeInsets.zero,
-                              itemCount: widget.entries.length,
-                              separatorBuilder: (_, _) =>
-                                  const SizedBox(height: 10),
-                              itemBuilder: (context, index) => _WordChip(
-                                word: widget.entries[index].word,
-                                playerIndex: widget.entries[index].playerIndex,
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
-              ),
+              child: _VerifiedWordsCard(entries: widget.entries),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 已验证单词卡片：标题 + 数量徽标 + 单词列表（空态/滚动列表）
+class _VerifiedWordsCard extends StatelessWidget {
+  const _VerifiedWordsCard({required this.entries});
+
+  final List<WordPkEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return PanelCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '已验证单词',
+                style: TextStyle(
+                  color: palette.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 数量徽标随列表数据自动变化
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: palette.scaffoldBg,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: palette.stroke),
+                ),
+                child: Text(
+                  '${entries.length} 个',
+                  style: TextStyle(
+                    color: palette.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: entries.isEmpty
+                ? const _EmptyState()
+                : ListView.separated(
+                    padding: EdgeInsets.zero,
+                    itemCount: entries.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) => _WordChip(
+                      word: entries[index].word,
+                      playerIndex: entries[index].playerIndex,
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
