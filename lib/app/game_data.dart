@@ -13,7 +13,7 @@ import 'package:horyx/games/word_pk/pages/word_pk_page.dart';
 
 /// 游戏注册中心：所有游戏的单一事实来源（组合根）。
 /// 位于 app 层：注册表需引用全部游戏页面，放 shared 会让最底层
-/// 模块反向依赖所有上层游戏（见 CODE_REVIEW 5.1）；
+/// 模块反向依赖所有上层游戏；
 /// game_info.dart 纯数据模型保留 shared 供各层使用。
 /// 名称/图标等注册数据以各游戏页面常量为源（游戏模块与注册表、
 /// 建房入口共用同一常量），本类只做汇总登记。
