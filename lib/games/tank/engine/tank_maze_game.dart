@@ -69,6 +69,10 @@ class TankMazeGame extends FlameGame {
   /// 加 1% 余量使出生圆缘与炮管矩形严格分离，消除对该帧序的依赖
   static const double _bulletSpawnFactor = 1.01;
 
+  /// 素材坐标系中坦克体长（pt）：特效 pt 参数统一按
+  /// `_cell / _assetTankLengthPt` 换算为当前战场像素，保持与坦克同比例观感
+  static const double _assetTankLengthPt = 48;
+
   // ============ 远程快照驱动模式（remote = true）专属状态 ============
 
   /// 坦克位置平滑目标（迷宫坐标 + 朝向）：由最新快照写入，
@@ -365,8 +369,9 @@ class TankMazeGame extends FlameGame {
   /// 击毁爆炸：音效 + 在爆点叠加爆炸特效（本地与远程快照驱动共用）。
   /// position 为上帧同步的屏幕坐标（击毁瞬间即最终位置）。
   /// 特效为纯渲染叠加组件，不参与碰撞，不影响子弹/坦克逻辑。
-  /// 尺寸换算：素材坐标中坦克体长 48pt，本战场坦克缩放为 _cell 像素
-  /// （scale=_cell），粒子参数（pt）乘 _cell/48 才能与坦克保持一致比例观感
+  /// 尺寸换算：素材坐标中坦克体长 [_assetTankLengthPt]，本战场坦克缩放为
+  /// _cell 像素（scale=_cell），粒子参数（pt）按 _cell/[_assetTankLengthPt]
+  /// 换算才能与坦克保持一致比例观感
   void _spawnExplosion(TankPlayer victim) {
     TankAudio.explosion();
     final shard = _shardSprite;
@@ -380,7 +385,7 @@ class TankMazeGame extends FlameGame {
           flashSprite: flash,
           position: _tanks[victim]!.position.clone(),
           color: _tanks[victim]!.color,
-          sizeScale: _cell / 48,
+          sizeScale: _cell / _assetTankLengthPt,
           // 碎片撞墙查询：屏幕坐标 → 迷宫逻辑坐标，命中任一墙矩形即停
           hitTest: (p) {
             final lx = (p.x - _boardOffset.x) / _cell;
@@ -630,7 +635,7 @@ class TankMazeGame extends FlameGame {
       BulletExpireEffect(
         smokeSprite: smoke,
         position: screenPos.clone(),
-        sizeScale: _cell / 48,
+        sizeScale: _cell / _assetTankLengthPt,
       ),
     );
   }

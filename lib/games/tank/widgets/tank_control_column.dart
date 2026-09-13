@@ -24,15 +24,21 @@ class TankControlColumn extends StatelessWidget {
   final Widget? bottom;
 
   /// 摇杆列四周留白：圆钮推出底座时会越过摇杆区域约半个钮径
-  /// （最大约槽高 12%+，140 槽时约 34px），留白必须覆盖之——
+  /// （最大约槽高 12%+，[_maxSlotHeight] 槽时约 34px），留白必须覆盖之——
   /// 否则圆钮会被后绘制的地图区盖住、下方会伸出屏幕外
   static const double _panelPadding = 40;
 
-  /// 三行等高槽位随屏幕高度收缩（下限 104 防控件过小），
+  /// 槽高下限：小屏防控件过小，保证摇杆/开火钮可触面积
+  static const double _minSlotHeight = 104;
+
+  /// 槽高上限：大屏不无限放大，维持观感比例
+  static const double _maxSlotHeight = 140;
+
+  /// 三行等高槽位随屏幕高度收缩（区间 [_minSlotHeight, _maxSlotHeight]），
   /// 避免固定槽高在小屏横屏下纵向溢出；
   /// 80 = 摇杆列上下留白（[_panelPadding]）×2
   static double slotHeightFor(double maxHeight) =>
-      math.max(104.0, math.min(140.0, (maxHeight - 80) / 3));
+      math.max(_minSlotHeight, math.min(_maxSlotHeight, (maxHeight - 80) / 3));
 
   @override
   Widget build(BuildContext context) {

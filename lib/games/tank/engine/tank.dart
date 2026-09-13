@@ -18,6 +18,31 @@ import 'package:horyx/games/tank/tint_filter.dart';
 /// 旋转穿墙沿最小穿透方向弹开（_depenetrate）。
 /// 组件的 position/scale 仅作渲染用途，由战场按逻辑状态驱动。
 class Tank extends PositionComponent {
+  // ---- 车体/炮塔素材换算常数（单位=素材像素；更换素材只需改这里）----
+  /// 车体素材长（素材 0° 朝右）
+  static const double _hullTextureLength = 135;
+
+  /// 车体素材宽
+  static const double _hullTextureWidth = 103;
+
+  /// 炮塔素材长（Bullet0 裁边后）
+  static const double _cannonTextureLength = 125;
+
+  /// 炮塔素材宽
+  static const double _cannonTextureWidth = 74;
+
+  /// 炮塔圆顶中心 X（素材像素坐标，渲染时与车体中心对齐）
+  static const double _cannonDomeCenterX = 36.5;
+
+  /// 炮塔圆顶中心 Y（素材像素坐标）
+  static const double _cannonDomeCenterY = 37;
+
+  /// 炮管厚的一半（素材像素；炮管碰撞矩形高取炮管厚）
+  static const double _cannonBarrelHalfThickness = 12.5;
+
+  /// 炮塔缩放比：圆顶直径 ≈ 车宽 75%（原版截图实测，勿回退，见 README）
+  static const double _turretScaleRatio = 0.75;
+
   Tank({
     required this.walls,
     required this.color,
@@ -34,13 +59,13 @@ class Tank extends PositionComponent {
     this.angle = angle;
 
     // 车体长 0.5 格（参考原版车长/通道比例），
-    // 其余尺寸按素材比例换算（素材 0° 朝右，单位=格）：
-    // 车体素材 135×103；炮塔素材（Bullet0 裁边后）125×74（圆顶中心 36.5,37）。
+    // 其余尺寸按素材比例换算（素材 0° 朝右，单位=格，素材尺寸见类首常数）。
     // 炮塔缩放按原版截图实测：圆顶直径 ≈ 车宽 75%，
     // 此时炮管伸出车头 ≈ 车长 24%、炮管厚 ≈ 车宽 26%，均与参考图吻合
     const hullLength = 0.50;
-    final hullWidth = hullLength * 103 / 135;
-    final cannonScale = hullWidth * 0.75 / 74;
+    final hullWidth = hullLength * _hullTextureWidth / _hullTextureLength;
+    final cannonScale =
+        hullWidth * _turretScaleRatio / _cannonTextureWidth;
     size = Vector2(hullLength, hullWidth);
 
     // 车体铺满容器；炮塔图圆顶中心对齐车体中心
@@ -54,10 +79,13 @@ class Tank extends PositionComponent {
     add(
       SpriteComponent(
         sprite: cannonSprite,
-        size: Vector2(125 * cannonScale, 74 * cannonScale),
+        size: Vector2(
+          _cannonTextureLength * cannonScale,
+          _cannonTextureWidth * cannonScale,
+        ),
         position: Vector2(
-          hullLength / 2 - 36.5 * cannonScale,
-          hullWidth / 2 - 37 * cannonScale,
+          hullLength / 2 - _cannonDomeCenterX * cannonScale,
+          hullWidth / 2 - _cannonDomeCenterY * cannonScale,
         ),
         paint: Paint()..colorFilter = tintFilter(color),
       ),
@@ -65,13 +93,13 @@ class Tank extends PositionComponent {
 
     // 碰撞矩形（车体中心局部坐标）：车体矩形 + 炮管矩形
     // （圆顶中心到炮口，宽取炮管厚）
-    final muzzle = (125 - 36.5) * cannonScale;
+    final muzzle = (_cannonTextureLength - _cannonDomeCenterX) * cannonScale;
     muzzleDist = muzzle;
     _collisionRects = [
       (Vector2.zero(), Vector2(hullLength / 2, hullWidth / 2)),
       (
         Vector2(muzzle / 2, 0),
-        Vector2(muzzle / 2, 12.5 * cannonScale),
+        Vector2(muzzle / 2, _cannonBarrelHalfThickness * cannonScale),
       ),
     ];
   }
