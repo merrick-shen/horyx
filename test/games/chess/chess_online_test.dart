@@ -7,6 +7,7 @@ import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/games/chess/services/chess_online_controller.dart';
 import 'package:horyx/games/chess/services/chess_rules.dart';
 import 'package:horyx/shared/network/net_message.dart';
+import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 
@@ -182,6 +183,42 @@ void main() {
 
     hostCtrl.dispose();
     clientCtrl.dispose();
+  });
+
+  test('客户端对矛盾广播的最低校验：起点无子/轮次不符即数据异常终局', () async {
+    final (hostCtrl, clientCtrl) = await setupGame();
+    final initialCode = clientCtrl.board.encode();
+
+    // 矛盾广播一：起点无子（初始局面 (4,4) 为空格）
+    clientCtrl.onClientGameMessage(
+      const NetMessage(
+        type: NetMessageType.moveApplied,
+        payload: {'fromCol': 4, 'fromRow': 4, 'toCol': 4, 'toRow': 1},
+      ),
+    );
+    expect(clientCtrl.gameEndReason, EndGameReason.dataError);
+    expect(clientCtrl.gameEndedText, '对局数据异常，对局结束');
+    expect(clientCtrl.winnerSeat, isNull); // 无胜负
+    expect(clientCtrl.moves, isEmpty); // 未应用广播
+    expect(clientCtrl.board.encode(), initialCode); // 棋盘未被污染
+
+    hostCtrl.dispose();
+    clientCtrl.dispose();
+
+    // 矛盾广播二：起点是棋子但轮次不符（初始局面红先，广播黑炮为起点）
+    final (hostCtrl2, clientCtrl2) = await setupGame();
+    clientCtrl2.onClientGameMessage(
+      const NetMessage(
+        type: NetMessageType.moveApplied,
+        payload: {'fromCol': 1, 'fromRow': 7, 'toCol': 4, 'toRow': 7},
+      ),
+    );
+    expect(clientCtrl2.gameEndReason, EndGameReason.dataError);
+    expect(clientCtrl2.moves, isEmpty);
+    expect(clientCtrl2.board.encode(), ChessBoard.initial().encode());
+
+    hostCtrl2.dispose();
+    clientCtrl2.dispose();
   });
 
   test('将死终局：双端同判且停止走子（重炮杀实战序列）', () async {

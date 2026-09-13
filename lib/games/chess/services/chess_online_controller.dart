@@ -28,7 +28,8 @@ enum UndoState {
 /// 走子校验与广播、将死/困毙判定、悔棋协商、认输。
 /// 房主端：全量校验走子（轮次 + 起点己方棋子 + 合法着法 + 坐标边界）并广播，
 /// 走子后用与本地对局同一规则引擎判定将死/困毙；
-/// 客户端：提交走子交房主校验，棋盘状态随广播同步，不自行判定。
+/// 客户端：提交走子交房主校验，棋盘状态随广播同步，不自行判定合法性
+/// （仅对广播做最低一致性校验：起点有子且轮次匹配，矛盾即终局）。
 /// 执子规则固定：创建者（座位 1）执红先行，加入者（座位 2）执黑。
 /// 悔棋为双方协商：只能悔自己的上一手，轮到对方走子时才可发起（与五子棋
 /// 规则一致，避免历史坑），全程房主仲裁；
@@ -362,6 +363,16 @@ class ChessOnlineController extends OnlineGameControllerBase
       case NetMessageType.moveApplied:
         final move = _moveFromPayload(msg.payload);
         if (move == null) return;
+        // 客户端对房主广播的最低一致性校验：起点须有棋子且为当前
+        // 行棋方棋子（即轮次匹配）。applyMove 是纯搬运无规则校验，
+        // 矛盾广播（房主侧异常/协议演进）若直接应用，release 下会
+        // 静默破坏局面且无重同步手段——此时棋盘已不可信，终局处理
+        final piece = board.pieceAt(move.from);
+        if (piece == null || piece.color != turnColor) {
+          endGame(EndGameReason.dataError);
+          notifyListeners();
+          return;
+        }
         board.applyMove(move);
         moves.add(move);
         winnerSeat = msg.payload['winner'] as int?;
