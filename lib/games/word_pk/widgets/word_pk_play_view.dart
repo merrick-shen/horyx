@@ -12,8 +12,8 @@ import 'package:horyx/shared/widgets/turn_card.dart';
 /// 受控组件：对局状态（当前输入者、单词列表）由父级持有，
 /// 本组件负责展示与输入，提交经 [onSubmit] 交由父级校验处理
 /// 本地对局与联机对局共用（联机通过 [inputEnabled] 控制非本人回合禁输）
-class WordPkBoardView extends StatefulWidget {
-  const WordPkBoardView({
+class WordPkPlayView extends StatefulWidget {
+  const WordPkPlayView({
     super.key,
     required this.playerCount,
     required this.currentPlayer,
@@ -42,10 +42,10 @@ class WordPkBoardView extends StatefulWidget {
   final int? selfSeat;
 
   @override
-  State<WordPkBoardView> createState() => _WordPkBoardViewState();
+  State<WordPkPlayView> createState() => _WordPkPlayViewState();
 }
 
-class _WordPkBoardViewState extends State<WordPkBoardView> {
+class _WordPkPlayViewState extends State<WordPkPlayView> {
   final _inputController = TextEditingController();
   final _focusNode = FocusNode();
 

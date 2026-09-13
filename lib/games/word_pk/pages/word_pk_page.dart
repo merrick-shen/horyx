@@ -10,7 +10,7 @@ import 'package:horyx/shared/utils/hint_bar.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
-import 'package:horyx/games/word_pk/widgets/word_pk_board_view.dart';
+import 'package:horyx/games/word_pk/widgets/word_pk_play_view.dart';
 import 'package:horyx/games/word_pk/widgets/word_pk_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
@@ -185,7 +185,7 @@ class _WordPkPageState
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
                   child: _started
-                      ? WordPkBoardView(
+                      ? WordPkPlayView(
                           key: const ValueKey('board'),
                           playerCount: _playerCount,
                           currentPlayer: _currentPlayer,
