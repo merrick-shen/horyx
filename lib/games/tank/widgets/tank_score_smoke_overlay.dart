@@ -7,24 +7,26 @@ import 'package:flutter/scheduler.dart';
 import 'package:horyx/games/tank/game/tint_filter.dart';
 import 'package:horyx/shared/utils/asset_image.dart';
 
-/// 比分数字烟雾特效（widget 层覆盖层，叠在比分数字上）：
+/// 比分数字烟雾覆盖层（widget 层，叠在比分数字上）：
 /// [tick] 每次自增立即从数字底部爆出一团黑烟，向上飘散并横向
 /// 散开、覆盖整个数字、线性淡出，总时长固定 1 秒（瞬发 + 寿命 1s）。
 /// 形态取自坦克动荡 APK 的 Scores Smoke 配置（10 粒上飘），
 /// 全部长度参数按数字宽高归一化，且绘制时裁剪到数字自身矩形——
 /// 烟雾（含底部出生点）绝不超出数字范围。
 /// 纯渲染叠加：不拦截手势、不读写游戏逻辑状态。
-class TankScoreSmokeEffect extends StatefulWidget {
-  const TankScoreSmokeEffect({super.key, required this.tick});
+/// 注：与 game/effects/ 下的 Flame Component 特效是两套体系，本组件
+/// 是普通 widget 覆盖层，故以 overlay 命名而非 effect
+class TankScoreSmokeOverlay extends StatefulWidget {
+  const TankScoreSmokeOverlay({super.key, required this.tick});
 
   /// 触发计数：每次自增爆一团烟雾（0=不触发）
   final int tick;
 
   @override
-  State<TankScoreSmokeEffect> createState() => _TankScoreSmokeEffectState();
+  State<TankScoreSmokeOverlay> createState() => _TankScoreSmokeOverlayState();
 }
 
-class _TankScoreSmokeEffectState extends State<TankScoreSmokeEffect>
+class _TankScoreSmokeOverlayState extends State<TankScoreSmokeOverlay>
     with SingleTickerProviderStateMixin {
   Ticker? _ticker;
   Duration _last = Duration.zero;
@@ -53,7 +55,7 @@ class _TankScoreSmokeEffectState extends State<TankScoreSmokeEffect>
   }
 
   @override
-  void didUpdateWidget(TankScoreSmokeEffect oldWidget) {
+  void didUpdateWidget(TankScoreSmokeOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 数字变化立即爆烟（tick 自增即一次得分）
     if (widget.tick != oldWidget.tick && widget.tick > 0) _burst();

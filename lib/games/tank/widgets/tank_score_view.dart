@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/tank/game/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
-import 'package:horyx/games/tank/widgets/tank_score_smoke_effect.dart';
+import 'package:horyx/games/tank/widgets/tank_score_smoke_overlay.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 比分显示：侧视小坦克图标（烘焙白模染色）+ 比分数字
@@ -32,7 +32,7 @@ class TankScoreView extends StatelessWidget {
         score: score,
         mirrored: mirrored,
         numberOverlay: IgnorePointer(
-          child: TankScoreSmokeEffect(tick: smokeTick),
+          child: TankScoreSmokeOverlay(tick: smokeTick),
         ),
       );
 
