@@ -5,9 +5,9 @@ import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/setting_tile.dart';
-import 'settings/about_page.dart';
-import 'settings/archive_page.dart';
-import 'settings/theme_settings_page.dart';
+import 'package:horyx/app/pages/settings/about_page.dart';
+import 'package:horyx/app/pages/settings/archive_page.dart';
+import 'package:horyx/app/pages/settings/theme_settings_page.dart';
 
 /// 更多页
 /// 按模块分组展示设置项，新增模块在 [MorePage.build] 中扩展
