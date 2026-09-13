@@ -229,7 +229,8 @@ class _ChessOnlinePageState extends State<ChessOnlinePage> {
   /// 检测走子数变化——新增走子时按当前行棋方判定一次将军并递增闪屏
   /// 触发器；悔棋回退（走子数减少）时清除本方选中与预选——对方棋子
   /// 归位后走法集已变化，残留的高亮与待确认走法基于回退前局面，属于
-  /// 过期状态
+  /// 过期状态。回退路径不递增闪屏触发器：回退是协商结果而非新走子，
+  /// 回退后恰好将军不应播放「将军」提示
   void _onControllerChanged(ChessOnlineController controller) {
     if (controller.moves.length == _lastMoveCount) return;
     final reverted = controller.moves.length < _lastMoveCount;
@@ -238,6 +239,7 @@ class _ChessOnlinePageState extends State<ChessOnlinePage> {
       _selected = null;
       _legalMoves = const [];
       _pendingMove = null;
+      return;
     }
     if (ChessRules.isInCheck(controller.board, controller.turnColor)) {
       _checkFlashTrigger++;

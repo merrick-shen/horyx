@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 更新日志版本卡片添加描边
 
+### Fixed
+
+- 修复联机象棋解将后悔棋回退误报「将军」提示的问题
+
 ## [0.9.0] - 2026-09-12
 
 ### Added
