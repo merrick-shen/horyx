@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/gomoku/services/gomoku_online_controller.dart';
+import 'package:horyx/games/gomoku/widgets/gomoku_game_layout.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/network/undo_resign_negotiation.dart';
 import 'package:horyx/shared/widgets/board_game_online_page.dart';
-import 'package:horyx/shared/widgets/confirm_move_row.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';
-import 'package:horyx/shared/widgets/page_content.dart';
-import 'package:horyx/shared/widgets/stone_board.dart';
-import 'package:horyx/shared/widgets/stone_turn_card.dart';
 
 /// 五子棋联机对局页
 /// 由房间等待页满员开局后接管房间连接（房主/客户端所有权移入本页）。
@@ -208,62 +205,28 @@ class _BoardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 落子确认按钮仅在棋盘上有预选棋子时出现
-    final hasPending = pending != null;
-    // 终局后无预选
-    final isOver = winnerSeat != null;
-    final blackTurn = moves.length.isEven;
+    // 落子确认按钮仅在棋盘上有预选棋子时出现（终局后无预选），由布局组件处理
     final winner = winnerSeat == null ? null : (winnerSeat == 1 ? '黑方' : '白方');
 
-    return SizedBox.expand(
-      child: PageContent(
-        // 对局页收窄页边距：棋盘卡片自带边框，把宽度尽量让给棋盘
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // 对局中提示执子方与等待对象；终局提示胜方（图标色对应棋子）
-            StoneTurnCard(
-              isOver: isOver,
-              blackToMove: blackTurn,
-              winner: winner,
-              subtitle: isMyTurn ? '轮到你落子' : '等待对方落子',
-            ),
-            const SizedBox(height: 16),
-            // 棋盘占据剩余空间，正方形自适应宽高较小者
-            Expanded(
-              child: Center(
-                child: StoneBoard(
-                  size: boardSize,
-                  stones: [
-                    for (int i = 0; i < moves.length; i++)
-                      (moves[i].$1, moves[i].$2, i.isEven),
-                  ],
-                  pending: pending == null
-                      ? null
-                      : (pending!.$1, pending!.$2, moves.length.isEven),
-                  onCellTap: onCellTap,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ConfirmMoveRow(
-              visible: hasPending,
-              onCancelMove: onCancelMove,
-              onConfirmMove: onConfirmMove,
-            ),
-            const SizedBox(height: 12),
-            BoardGameActionBar(
-              showExit: isOver || ended,
-              undoState: undoState,
-              hasMoves: hasMoves,
-              isMyTurn: isMyTurn,
-              onRequestUndo: onRequestUndo,
-              onResign: onResign,
-              onExit: onExit,
-            ),
-          ],
-        ),
+    // 布局骨架（执子卡 + 棋盘 + 确认行）与本地对局共用 [GomokuGameLayout]，
+    // 仅执子卡副标题（联机提示等待对象）与底部按钮集（协商制操作组）不同
+    return GomokuGameLayout(
+      boardSize: boardSize,
+      moves: moves,
+      pending: pending,
+      winner: winner,
+      turnSubtitle: isMyTurn ? '轮到你落子' : '等待对方落子',
+      onCellTap: onCellTap,
+      onCancelMove: onCancelMove,
+      onConfirmMove: onConfirmMove,
+      actions: BoardGameActionBar(
+        showExit: winner != null || ended,
+        undoState: undoState,
+        hasMoves: hasMoves,
+        isMyTurn: isMyTurn,
+        onRequestUndo: onRequestUndo,
+        onResign: onResign,
+        onExit: onExit,
       ),
     );
   }
