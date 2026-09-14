@@ -10,11 +10,11 @@ import 'package:horyx/games/tank/engine/effects/bullet_expire_effect.dart';
 import 'package:horyx/games/tank/engine/effects/tank_explosion_effect.dart';
 import 'package:horyx/games/tank/engine/tank.dart';
 import 'package:horyx/games/tank/engine/tank_audio.dart';
+import 'package:horyx/games/tank/engine/tank_remote_driver.dart';
 import 'package:horyx/games/tank/models/tank_battle_phase.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
-import 'package:horyx/games/tank/tint_filter.dart';
 import 'package:horyx/shared/utils/asset_image.dart';
 
 /// 坦克动荡战场游戏（Flame）：渲染每局随机生成的迷宫，并驱动坦克实体。
@@ -26,15 +26,22 @@ import 'package:horyx/shared/utils/asset_image.dart';
 /// 两种运行模式（联机架构见 tank_online_plan.md）：
 /// - 本地模拟（默认）：完整物理与回合结算，本地双人/房主端共用；
 /// - 远程快照驱动（[remote]）：客户端影子战场，不做本地物理与结算，
-///   状态全部由 [applySnapshot] 驱动，迷宫由 [startRemoteRound] 以
-///   房主广播的种子重建，输入（setDrive/fire）被忽略并经控制器上报。
-class TankMazeGame extends FlameGame {
+///   快照平滑/外推/远程子弹由协作类 [RemoteBattleDriver] 承载（经
+///   [RemoteBattleHost] 契约操作战场），状态全部由 [applySnapshot]
+///   驱动，迷宫由 [startRemoteRound] 以房主广播的种子重建，
+///   输入（setDrive/fire）被忽略并经控制器上报。
+class TankMazeGame extends FlameGame implements RemoteBattleHost {
   TankMazeGame({required this.maze, this.remote = false}) {
     _rebuildLogicalWalls();
+    if (remote) _remoteDriver = RemoteBattleDriver(this);
   }
 
   /// 远程快照驱动模式：true 时禁用本地物理推进与命中结算
   final bool remote;
+
+  /// 远程影子战场驱动器（客户端模式专属，构造时创建；本地模式为 null）：
+  /// 承载快照平滑/外推/远程子弹的全部状态与逻辑
+  RemoteBattleDriver? _remoteDriver;
 
   /// 本局迷宫（每局开始时重新生成，见 [_startNewRound]）
   TankMaze maze;
@@ -73,51 +80,20 @@ class TankMazeGame extends FlameGame {
   /// `_cell / _assetTankLengthPt` 换算为当前战场像素，保持与坦克同比例观感
   static const double _assetTankLengthPt = 48;
 
-  // ============ 远程快照驱动模式（remote = true）专属状态 ============
-
-  /// 坦克位置平滑目标（迷宫坐标 + 朝向）：由最新快照写入，
-  /// update 中指数平滑逼近。击毁的坦克不再平滑（隐身无意义）
-  final Map<TankPlayer, (Vector2, double)> _tankTargets = {};
-
-  /// 坦克平滑估计速度（迷宫格/秒）：由相邻快照差分估计（限幅坦克极速），
-  /// 快照间匀速外推——指数逼近固定目标会让坦克每个快照周期"追上后减速
-  final Map<TankPlayer, Vector2> _tankVelocities = {};
-
-  /// 上次快照到达时刻（秒，墙钟）：差分速度估计用
-  final Map<TankPlayer, double> _lastTargetTime = {};
-
-  /// 在场远程子弹（按房主分配的子弹 id 索引）：
-  /// 快照按 id 匹配做平滑，避免列表顺序变化导致渲染跳变
-  final Map<int, _RemoteBullet> _remoteBullets = {};
-
-  /// 最新快照写入的战场阶段（远程模式专属状态）；只读暴露见 [phase]
-  TankBattlePhase _phase = TankBattlePhase.playing;
-
-  /// 当前战场阶段（只读）：远程模式取最新快照写入值；本地模式（房主/双人）
-  /// 由回合状态机推导——冻结倒计时中为定格期，击毁后残弹展示期为 settling
-  /// （战场仍推进，客户端照常外推），其余为进行中。此前本地恒为 playing，
-  /// 广播后客户端在冻结定格期仍按估计速度外推，位置比房主超前约 0.2 格
-  TankBattlePhase get phase => remote
-      ? _phase
-      : _freezeCountdown > 0
-      ? TankBattlePhase.frozen
-      : _roundOver
-      ? TankBattlePhase.settling
-      : TankBattlePhase.playing;
-
-  /// 坦克位置平滑系数（指数平滑速率，1/秒）：
-  /// 30Hz 快照下滞后 ≈ 速度/系数（满速 2.6 格/秒约滞后 0.13 格，小于车宽）
-  static const double _remoteSmoothK = 20.0;
-
-  /// 快照年龄外推上限（秒，约 3 个快照周期）：渲染目标 = 快照位置 +
-  /// 估计速度 × 快照年龄，快照晚到时目标持续前进消除停顿；超过上限
-  /// （断流）后目标冻结在延伸位置，避免按旧速度无限外推冲出战场。
-  /// 上限放宽到 0.1s 容忍偶发到达抖动（满速外推 0.1s 偏差约 0.26 格，
-  /// 下条快照即校正）
-  static const double _maxExtrapolateAge = 0.1;
-
-  /// 最新快照到达时刻（秒，墙钟）：外推年龄基准
-  double _lastSnapshotAt = 0;
+  /// 当前战场阶段（只读）：远程模式取驱动器持有的最新快照值；本地模式
+  /// （房主/双人）由回合状态机推导——冻结倒计时中为定格期，击毁后残弹
+  /// 展示期为 settling（战场仍推进，客户端照常外推），其余为进行中。
+  /// 此前本地恒为 playing，广播后客户端在冻结定格期仍按估计速度外推，
+  /// 位置比房主超前约 0.2 格
+  TankBattlePhase get phase {
+    final driver = _remoteDriver;
+    if (driver != null) return driver.phase;
+    return _freezeCountdown > 0
+        ? TankBattlePhase.frozen
+        : _roundOver
+        ? TankBattlePhase.settling
+        : TankBattlePhase.playing;
+  }
 
   /// 新回合开始回调（本地模式自动开新局时触发；房主联机控制器挂接
   /// 以广播回合种子，本地双人/客户端模式无人挂接为 null）
@@ -146,8 +122,11 @@ class TankMazeGame extends FlameGame {
   Sprite? _smokeSprite;
   Sprite? _flashSprite;
 
-  /// 双方比分（对方坦克被击中即 +1，经 [onScored] 通知对局页）
+  /// 双方比分（对方坦克被击中即 +1，经 [onScored] 通知对局页；
+  /// 远程模式由驱动器按快照写入）
+  @override
   int redScore = 0;
+  @override
   int greenScore = 0;
 
   /// 得分回调（对局页据此刷新比分 UI）
@@ -203,6 +182,7 @@ class TankMazeGame extends FlameGame {
   }
 
   /// 联机快照组装所需：指定玩家的坦克（只读访问；素材加载前为 null）
+  @override
   Tank? tank(TankPlayer player) => _tanks[player];
 
   /// 联机快照组装所需：按发射方分组的在场子弹（只读视图；外层 Map 与
@@ -252,6 +232,27 @@ class TankMazeGame extends FlameGame {
     return true;
   }
 
+  // ============ RemoteBattleHost 契约实现（供远程驱动器操作战场） ============
+
+  /// 子弹白模素材（onLoad 完成前为 null，远程驱动器据此暂缓创建子弹）
+  @override
+  Sprite? get bulletSprite => _bulletSprite;
+
+  /// 画布几何：单元格边长（像素）
+  @override
+  double get cell => _cell;
+
+  /// 迷宫逻辑坐标 → 屏幕坐标（特效定位用）
+  @override
+  Vector2 logicalToScreen(Vector2 logicalPos) =>
+      _boardOffset + logicalPos * _cell;
+
+  /// 挂载组件到战场组件树
+  @override
+  void addComponent(Component component) {
+    add(component);
+  }
+
   // onGameResize 在首次挂载与每次画布尺寸变化时都会调用。
   // 对局页强制横屏的旋转过程中画布尺寸会突变，布局必须按最新尺寸重建，
   // 否则迷宫停留在旧尺寸坐标系里（表现为过小且偏离中心）
@@ -285,20 +286,14 @@ class TankMazeGame extends FlameGame {
   void update(double dt) {
     // 远程快照驱动模式：本地不做物理与回合结算——
     // 坦克与远程子弹朝按年龄外推的移动目标渲染（快照晚到不停滞），
-    // 渲染同步照常执行；比分/阶段由快照直接写入
-    if (remote) {
-      // 先算本帧快照年龄并写入子弹（super.update 会驱动子组件推进，
-      // 顺序颠倒会让子弹用到上一帧的年龄，产生恒定一帧的渲染滞后）。
-      // 冻结期语义是全场精确定格：快照位置静止而年龄持续增长会让外推
-      // 把坦克/子弹推到快照位置前方，故冻结期年龄视为 0（不做外推）
-      final age = _phase == TankBattlePhase.frozen
-          ? 0.0
-          : math.min(_nowSec() - _lastSnapshotAt, _maxExtrapolateAge);
-      for (final bullet in _remoteBullets.values) {
-        bullet.snapshotAge = age;
-      }
+    // 渲染同步照常执行；比分/阶段由快照直接写入。
+    // 顺序敏感：子弹快照年龄必须先于组件推进写入
+    // （见 [RemoteBattleDriver.beginFrame]），顺序颠倒会产生恒定一帧的渲染滞后
+    final driver = _remoteDriver;
+    if (driver != null) {
+      driver.beginFrame();
       super.update(dt);
-      _smoothTanks(dt, age);
+      driver.smoothTanks(dt);
       _syncTanks();
       _syncBullets();
       return;
@@ -347,7 +342,7 @@ class TankMazeGame extends FlameGame {
           if (tank.destroyed) continue;
           if (!tank.hitByCircle(bullet.logicalPos, Bullet.radius)) continue;
           victim = tankEntry.key;
-          _spawnBulletExpire(bullet.position);
+          spawnBulletExpire(bullet.position);
           bullet.removeFromParent();
           entry.value.remove(bullet);
           break;
@@ -366,7 +361,7 @@ class TankMazeGame extends FlameGame {
     _tanks[victim]!
       ..destroyed = true
       ..input = null;
-    _spawnExplosion(victim);
+    spawnExplosion(victim);
     _roundOver = true;
     _settleCountdown = _roundSettleDelay;
   }
@@ -377,7 +372,8 @@ class TankMazeGame extends FlameGame {
   /// 尺寸换算：素材坐标中坦克体长 [_assetTankLengthPt]，本战场坦克缩放为
   /// _cell 像素（scale=_cell），粒子参数（pt）按 _cell/[_assetTankLengthPt]
   /// 换算才能与坦克保持一致比例观感
-  void _spawnExplosion(TankPlayer victim) {
+  @override
+  void spawnExplosion(TankPlayer victim) {
     TankAudio.explosion();
     final shard = _shardSprite;
     final smoke = _smokeSprite;
@@ -420,27 +416,23 @@ class TankMazeGame extends FlameGame {
 
   /// 开新一局：重新生成迷宫、坦克回出生点并复活、清空场上子弹（比分保留）
   void _startNewRound() {
-    _applyNewMaze(TankMaze.generate());
+    resetBattlefield(TankMaze.generate());
     // 联机房主监听新局事件以广播回合种子（本地双人无挂接，null 跳过）
     onRoundStart?.call();
   }
 
-  /// 应用新迷宫并复位战场：本地新回合与远程回合开始（[startRemoteRound]）
-  /// 共用的战场重建流程——换墙、重建渲染、坦克复位、清场
-  void _applyNewMaze(TankMaze newMaze) {
+  /// 以指定迷宫重建战场并复位：本地新回合（[_startNewRound]）与远程回合
+  /// 开始（[RemoteBattleDriver.startRemoteRound]）共用的战场重建流程——
+  /// 换墙、重建渲染、坦克复位、清场，并联动复位远程驱动器状态
+  @override
+  void resetBattlefield(TankMaze newMaze) {
     maze = newMaze;
     _rebuildLogicalWalls();
     if (_lastCanvasSize != null) _buildMaze(_lastCanvasSize!);
     _resetTanks();
     _clearBullets();
-    _clearRemoteBullets();
     _clearEffects();
-    // 远程平滑状态一并复位：旧目标/估计速度不清会把复位的坦克
-    // 立即推离出生点（新局快照到达前坦克应停在出生点）
-    _tankTargets.clear();
-    _tankVelocities.clear();
-    _lastTargetTime.clear();
-    _lastSnapshotAt = 0;
+    _remoteDriver?.resetState();
     _scored = false;
     _roundOver = false;
     _settleCountdown = 0;
@@ -453,67 +445,21 @@ class TankMazeGame extends FlameGame {
         (c) => c is TankExplosionEffect || c is BulletExpireEffect);
   }
 
-  // ============ 远程快照驱动模式（remote = true）专属实现 ============
+  // ============ 远程快照驱动模式（remote = true）入口 ============
+  // 快照平滑/外推/远程子弹的全部实现见 RemoteBattleDriver，
+  // 此处仅保留控制器依赖的入口委托
 
   /// 远程模式：回合开始（房主广播迷宫种子同步）。
   /// 以同种子重建同一迷宫并复位战场，比分取广播值；
   /// 坦克实际位置由随后的快照驱动
   void startRemoteRound(TankNetRoundStart round) {
-    _applyNewMaze(
-      TankMaze.generate(
-        cols: round.cols,
-        rows: round.rows,
-        seed: round.seed,
-      ),
-    );
-    redScore = round.redScore;
-    greenScore = round.greenScore;
+    _remoteDriver!.startRemoteRound(round);
   }
 
-  /// 远程模式：应用房主状态快照（比分/阶段/坦克/子弹）。
-  /// 载荷已由控制器解码校验；坦克与子弹写入平滑目标，渲染逐帧逼近
+  /// 远程模式：应用房主状态快照（比分/阶段/坦克/子弹），
+  /// 委托远程驱动器执行（载荷已由控制器解码校验）
   void applySnapshot(TankNetSnapshot snapshot) {
-    _lastSnapshotAt = _nowSec();
-    redScore = snapshot.redScore;
-    greenScore = snapshot.greenScore;
-    _phase = snapshot.phase;
-
-    // 先处理坦克：记录本快照是否有坦克刚被击毁——命中场景子弹同时消失，
-    // 爆炸声已表达战果，子弹消失不再叠播消散音效
-    final justDestroyed = _applyTankTarget(TankPlayer.red, snapshot.redTank) |
-        _applyTankTarget(TankPlayer.green, snapshot.greenTank);
-
-    // 子弹按 id 增量同步：新 id 创建、已有 id 挪目标、
-    // 消失的 id 移除并叠消散烟雾（与本地到期/命中的视觉一致）
-    final seen = <int>{};
-    final sprite = _bulletSprite;
-    for (final state in snapshot.bullets) {
-      seen.add(state.id);
-      final existing = _remoteBullets[state.id];
-      if (existing != null) {
-        existing.retarget(state.x, state.y, state.angle);
-        continue;
-      }
-      // 素材未加载完成（onLoad 前）时暂不创建，待后续快照补齐
-      if (sprite == null) continue;
-      final bullet = _RemoteBullet(
-        sprite: sprite,
-        color: state.owner.color,
-        logicalPos: Vector2(state.x, state.y),
-        heading: state.angle,
-      );
-      _remoteBullets[state.id] = bullet;
-      add(bullet);
-    }
-    _remoteBullets.removeWhere((id, bullet) {
-      if (seen.contains(id)) return false;
-      // 消失位置按逻辑坐标换算：新子弹可能在首次渲染同步前就被移除
-      _spawnBulletExpire(_boardOffset + bullet.logicalPos * _cell);
-      // 消失音效同本地到期语义；命中场景（同快照有坦克刚击毁）由爆炸声表达
-      if (!justDestroyed) TankAudio.bulletExpire();
-      bullet.removeFromParent();
-      return true;
-    });
+    _remoteDriver!.applySnapshot(snapshot);
   }
 
   /// 远程模式：开火音效事件（房主即时广播）。
@@ -521,74 +467,6 @@ class TankMazeGame extends FlameGame {
   /// player 为开火方（保留语义，当前双端音效一致）
   void remoteFire(TankPlayer player) {
     TankAudio.shoot();
-  }
-
-  /// 写入单辆坦克的快照平滑目标，并差分估计其速度（供快照间匀速外推）；
-  /// destroyed 由存活变为击毁时触发爆炸特效（远程端唯一的爆炸触发点），
-  /// 返回本帧是否发生了击毁翻转
-  bool _applyTankTarget(TankPlayer player, TankNetTankState state) {
-    final tank = _tanks[player];
-    if (tank == null) return false; // 素材未加载完成（onLoad 前），跳过待下帧
-    var destroyedNow = false;
-    if (state.destroyed && !tank.destroyed) {
-      tank.destroyed = true;
-      _spawnExplosion(player);
-      destroyedNow = true;
-    } else if (!state.destroyed && tank.destroyed) {
-      // 击毁→复活仅出现在新回合（TCP 按序下先收 roundStart 复位，
-      // 此处为快照先于回合消息的时序兜底）
-      tank.destroyed = false;
-    }
-    final target = Vector2(state.x, state.y);
-    // 差分估计速度（EMA 平滑滤网络抖动）：间隔异常（首快照/断流后恢复）
-    // 或超极速时不更新，沿用上次估计（限幅保证外推不会快过真实坦克）
-    final now = _nowSec();
-    final last = _lastTargetTime[player];
-    final prev = _tankTargets[player];
-    if (last != null && prev != null) {
-      final dt = now - last;
-      if (dt > 0.005 && dt < 0.5) {
-        final v = (target - prev.$1) / dt;
-        final capped = v.length <= Tank.maxForwardSpeed
-            ? v
-            : (v / v.length) * Tank.maxForwardSpeed;
-        final old = _tankVelocities[player];
-        _tankVelocities[player] =
-            old == null ? capped : old + (capped - old) * 0.5;
-      }
-    }
-    _lastTargetTime[player] = now;
-    _tankTargets[player] = (target, state.angle);
-    return destroyedNow;
-  }
-
-  /// 坦克渲染平滑：朝按年龄外推的移动目标指数逼近（位置 + 最短弧朝向）。
-  /// 击毁的坦克跳过（隐身由渲染同步缩放归零处理）
-  void _smoothTanks(double dt, double age) {
-    final t = 1 - math.exp(-_remoteSmoothK * dt);
-    for (final entry in _tankTargets.entries) {
-      final tank = _tanks[entry.key];
-      if (tank == null || tank.destroyed) continue;
-      final (target, targetAngle) = entry.value;
-      // 渲染目标 = 快照位置 + 估计速度 × 快照年龄：快照晚到/间隔抖动时
-      // 目标持续前进，坦克不再"追上即停"（卡顿感根源）；
-      // 匀速假设下目标连续（快照位置本身按同速前进），无跳变
-      final v = _tankVelocities[entry.key];
-      final projected = v == null ? target : target + v * age;
-      tank.logicalPos += (projected - tank.logicalPos) * t;
-      tank.angle += Tank.angleDelta(tank.angle, targetAngle) * t;
-    }
-  }
-
-  /// 当前墙钟（秒）
-  static double _nowSec() => DateTime.now().microsecondsSinceEpoch / 1e6;
-
-  /// 清空全部远程子弹（新回合清场用；本地模式恒为空集）
-  void _clearRemoteBullets() {
-    for (final bullet in _remoteBullets.values) {
-      bullet.removeFromParent();
-    }
-    _remoteBullets.clear();
   }
 
   /// 坦克复位：回出生点、朝向复位、复活并清空输入
@@ -624,7 +502,7 @@ class TankMazeGame extends FlameGame {
   void _pruneExpiredBullets() {
     for (final entry in _bulletsByPlayer.entries) {
       for (final bullet in entry.value.where((b) => b.expired)) {
-        _spawnBulletExpire(bullet.position);
+        spawnBulletExpire(bullet.position);
         bullet.removeFromParent();
       }
       entry.value.removeWhere((b) => b.expired);
@@ -633,7 +511,8 @@ class TankMazeGame extends FlameGame {
 
   /// 子弹消失消散特效：position 为上帧同步的屏幕坐标。
   /// 纯渲染叠加组件，不参与碰撞，不影响子弹/坦克逻辑
-  void _spawnBulletExpire(Vector2 screenPos) {
+  @override
+  void spawnBulletExpire(Vector2 screenPos) {
     final smoke = _smokeSprite;
     if (smoke == null) return;
     add(
@@ -645,9 +524,8 @@ class TankMazeGame extends FlameGame {
     );
   }
 
-  /// 把子弹逻辑状态换算为渲染坐标（中心像素位置 + 单元格缩放）。
-  /// 远程子弹同样按迷宫坐标换算——远程模式下本地分组列表恒为空，
-  /// 漏掉这组同步会让子弹停在原点且只有逻辑尺寸（肉眼不可见）
+  /// 把子弹逻辑状态换算为渲染坐标（中心像素位置 + 单元格缩放），
+  /// 远程子弹由驱动器经 [RemoteBattleDriver.syncBullets] 一并同步
   void _syncBullets() {
     if (_cell == 0) return;
     for (final bullets in _bulletsByPlayer.values) {
@@ -657,11 +535,7 @@ class TankMazeGame extends FlameGame {
           ..scale = Vector2.all(_cell);
       }
     }
-    for (final bullet in _remoteBullets.values) {
-      bullet
-        ..position = _boardOffset + bullet.logicalPos * _cell
-        ..scale = Vector2.all(_cell);
-    }
+    _remoteDriver?.syncBullets();
   }
 
   /// 出生双方坦克（仅首次）：红方左下角朝右、绿方右上角朝左（点对称）。
@@ -772,71 +646,3 @@ class TankMazeGame extends FlameGame {
   static const double _wallThicknessRatio = 0.10;
 }
 
-/// 远程子弹：纯渲染组件（不参与本地物理与碰撞），位置由状态快照驱动。
-/// 渲染平滑：目标 = 快照位置沿飞行方向按快照年龄外推（真实速度），
-/// 每帧以 [Bullet.speed] 匀速推进——快照晚到时目标持续前进不停滞，
-/// 反弹折点呈短弧过渡；快照间隔短时两者几乎重合。
-/// 音效：快照朝向突变即房主侧发生反弹（直线飞行朝向恒定），
-/// 客户端无本地物理，撞墙声只能据此推断补播
-class _RemoteBullet extends PositionComponent {
-  /// 反弹判定阈值（弧度）：掠射反弹的方向变化为入射角的 2 倍，
-  /// 阈值覆盖入射角 3° 以上的反弹；更贴墙的滑行极罕见，漏一声可接受
-  static const double _bounceAngleThreshold = 0.1;
-
-  _RemoteBullet({
-    required Sprite sprite,
-    required Color color,
-    required Vector2 logicalPos,
-    required this.heading,
-  })  : logicalPos = logicalPos.clone(),
-        _target = logicalPos.clone() {
-    anchor = Anchor.center;
-    priority = 1;
-    size = Vector2.all(Bullet.radius * 2);
-    add(
-      SpriteComponent(
-        sprite: sprite,
-        size: Vector2.all(Bullet.radius * 2),
-        paint: Paint()..colorFilter = tintFilter(color),
-      ),
-    );
-  }
-
-  /// 子弹中心在迷宫坐标系下的位置（单位=格，与本地子弹同名同语义，
-  /// 供战场渲染同步与消失特效换算共用）
-  Vector2 logicalPos;
-
-  /// 最新快照位置（平滑目标）
-  Vector2 _target;
-
-  /// 当前飞行朝向（快照写入，弧度）：反弹检测与外推方向依据
-  double heading;
-
-  /// 快照年龄（秒，战场每帧写入，含断流上限）：目标位置沿飞行方向
-  /// 按年龄外推——快照晚到/间隔抖动时子弹持续推进，不再飞到快照
-  /// 位置就停滞等下一条快照（卡顿感根源）
-  double snapshotAge = 0;
-
-  /// 快照更新平滑目标；朝向突变（最短角差超阈值）补播撞墙音效
-  void retarget(double x, double y, double angle) {
-    if (Tank.angleDelta(heading, angle).abs() > _bounceAngleThreshold) {
-      TankAudio.wallBounce();
-    }
-    heading = angle;
-    _target = Vector2(x, y);
-  }
-
-  @override
-  void update(double dt) {
-    super.update(dt);
-    // 渲染目标 = 快照位置 + 飞行方向 × 真实速度 × 快照年龄；
-    // 匀速假设下目标随时间连续前移，推进保持匀速无锯齿
-    final dir = Vector2(math.cos(heading), math.sin(heading));
-    final projected = _target + dir * (Bullet.speed * snapshotAge);
-    final delta = projected - logicalPos;
-    final dist = delta.length;
-    if (dist <= 1e-6) return;
-    final step = math.min(Bullet.speed * dt, dist);
-    logicalPos += delta * (step / dist);
-  }
-}

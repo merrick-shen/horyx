@@ -13,7 +13,7 @@
 | `pages/` | `tank_page` 设置页（本地/局域网模式选择 + 继续上次对战入口）、`tank_battle_page` 横屏对局页（比分 UI、输入下发、横屏沉浸、退出存档确认）、`tank_online_page` 联机对局页（布局复刻本地，仅保留己方控件） |
 | `widgets/` | UI 组件：四向摇杆（油门）、开火按钮、比分视图（含得分烟雾覆盖层）、模式面板 |
 | `services/` | `tank_storage` 比分存档服务（SharedPreferences 单键 JSON）、`tank_online_controller` 联机对局控制器（快照广播/输入上报/终局处理）、`tank_net_models` 联机协议编解码（纯数据模型，全字段类型校验） |
-| `engine/` | Flame 游戏核心：`tank_maze_game`（战场：迷宫渲染/回合流程/开火/计分；双模式——本地完整模拟与远程快照驱动的影子战场）、`tank`（坦克实体与碰撞）、`bullet`（子弹实体与反弹）、`tank_audio`（音效） |
+| `engine/` | Flame 游戏核心：`tank_maze_game`（战场：迷宫渲染/回合流程/开火/计分；双模式——本地完整模拟与远程快照驱动的影子战场）、`tank_remote_driver`（远程影子战场驱动器：快照平滑/外推/远程子弹）、`tank`（坦克实体与碰撞）、`bullet`（子弹实体与反弹）、`tank_audio`（音效） |
 | `engine/effects/` | 粒子特效：`particle_emitter`（瞬发粒子发射器）、`tank_explosion_effect`（坦克爆炸）、`bullet_expire_effect`（子弹消散） |
 | 模块根目录 | `tint_filter`（白模素材染色滤镜：engine/ 与 widgets/ 两层共用，置于模块顶层） |
 
@@ -127,8 +127,8 @@
 | 迷宫规格 / 墙厚 | 10×7 格 / 0.1 格 | `TankMaze.generate` / `TankMazeGame._wallThicknessRatio` |
 | 摇杆死区 / 前进触发 / 油门 | 底座 10% / 圆钮边缘触底座边缘 / 超出幅度线性归一 | `TankJoystick` |
 | 快照广播频率 | 30Hz（33ms 间隔） | `TankOnlineController._snapshotInterval` |
-| 快照年龄外推上限 | 100ms（≈3 个快照周期，断流时冻结防冲出战场） | `TankMazeGame._maxExtrapolateAge` |
-| 坦克渲染平滑系数 | 20/秒（滞后 ≈ 0.13 格，小于车宽） | `TankMazeGame._remoteSmoothK` |
+| 快照年龄外推上限 | 100ms（≈3 个快照周期，断流时冻结防冲出战场） | `RemoteBattleDriver._maxExtrapolateAge` |
+| 坦克渲染平滑系数 | 20/秒（滞后 ≈ 0.13 格，小于车宽） | `RemoteBattleDriver._remoteSmoothK` |
 | 驾驶上报变化阈值 | 0.03（角度/油门；摇杆手抖不刷爆报文） | `TankOnlineController._driveEpsilon` |
 
 ## 注意事项（重要坑点）
