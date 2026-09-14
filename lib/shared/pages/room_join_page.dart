@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/game/game_info.dart';
+import 'package:horyx/shared/pages/qr_scan_page.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
@@ -54,6 +55,16 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
           gameResolver: widget.gameResolver,
         ),
       ),
+    );
+  }
+
+  /// 扫码加入：打开扫码页，扫到的二维码原文带回本页
+  /// （二维码解析与进房逻辑后续接入，当前仅提供扫码入口）
+  Future<void> _scanJoin() async {
+    // 与手输加入一致：进入扫码页前收起键盘
+    FocusScope.of(context).unfocus();
+    await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScanPage()),
     );
   }
 
@@ -163,6 +174,14 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
                     label: '加入房间',
                     icon: Icons.login_rounded,
                     onPressed: _join,
+                  ),
+                  const SizedBox(height: 12),
+                  // 扫码入口为次要操作：描边样式不抢主按钮
+                  PrimaryButton(
+                    label: '扫码加入',
+                    icon: Icons.qr_code_scanner_rounded,
+                    outlined: true,
+                    onPressed: _scanJoin,
                   ),
                 ],
               ),
