@@ -7,6 +7,7 @@ import 'package:horyx/games/gomoku/services/gomoku_online_controller.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/network/undo_resign_negotiation.dart';
 
 /// 五子棋联机对局集成测试：本机回环真实 TCP 连接
 /// 覆盖：开局规格同步、轮流落子全端一致、非本人回合/占用拒绝、

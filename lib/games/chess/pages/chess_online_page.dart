@@ -8,6 +8,7 @@ import 'package:horyx/games/chess/widgets/chess_board_canvas.dart';
 import 'package:horyx/games/chess/widgets/chess_check_flash.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/network/undo_resign_negotiation.dart';
 import 'package:horyx/shared/utils/hint_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';

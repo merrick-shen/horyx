@@ -10,6 +10,7 @@ import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/network/undo_resign_negotiation.dart';
 
 /// 中国象棋联机对局集成测试：本机回环真实 TCP 连接
 /// 覆盖：开局双端棋盘一致、轮流走子同步（含吃子）、非法提交本地拦截与
