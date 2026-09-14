@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/game/game_info.dart';
+import 'package:horyx/shared/network/net_utils.dart';
 import 'package:horyx/shared/pages/qr_scan_page.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
@@ -58,13 +59,30 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
     );
   }
 
-  /// 扫码加入：打开扫码页，扫到的二维码原文带回本页
-  /// （二维码解析与进房逻辑后续接入，当前仅提供扫码入口）
+  /// 扫码加入：解析扫码页带回的二维码原文，合法房间码直接进房；
+  /// 非本游戏房间码（含扫到无关内容）弹窗提示，手输流程不受影响
   Future<void> _scanJoin() async {
     // 与手输加入一致：进入扫码页前收起键盘
     FocusScope.of(context).unfocus();
-    await Navigator.of(context).push<String>(
+    final raw = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const QrScanPage()),
+    );
+    // 未扫码直接返回（pop 无结果）不处理
+    if (raw == null || !mounted) return;
+    final address = NetUtils.parseRoomJoinCode(raw);
+    if (!mounted) return;
+    if (address == null) {
+      showAlertDialog(context, message: '这不是本游戏的房间码');
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RoomPage.client(
+          address: address.host,
+          port: address.port,
+          gameResolver: widget.gameResolver,
+        ),
+      ),
     );
   }
 
