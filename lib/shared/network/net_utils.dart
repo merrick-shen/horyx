@@ -6,6 +6,60 @@ import 'package:flutter/foundation.dart';
 class NetUtils {
   NetUtils._();
 
+  /// 房间码的自定义 scheme：扫码加入房间使用专属 scheme，
+  /// 扫到其他 App 的二维码内容时可直接判定非法，给出明确提示
+  static const String _joinScheme = 'horyx';
+
+  /// 房间码 Uri 的 host 段（`horyx://join` 中的 join 即 Uri 的 host）
+  static const String _joinUriHost = 'join';
+
+  /// 构造扫码加入房间码：`horyx://join?host=<IPv4>&port=<端口>`
+  /// 房主等待页据此生成二维码；host 为 localIpv4 取到的局域网地址
+  static String buildRoomJoinCode({required String host, required int port}) {
+    return Uri(
+      scheme: _joinScheme,
+      host: _joinUriHost,
+      queryParameters: {'host': host, 'port': '$port'},
+    ).toString();
+  }
+
+  /// 解析扫码得到的房间码；内容非法（scheme 不符 / 缺参 / host 非 IPv4 /
+  /// 端口越界 / 百分号编码损坏）返回 null，由调用方提示"这不是本游戏的房间码"
+  /// host 仅接受 IPv4：房间码由本 App 生成（localIpv4 只取 IPv4），与
+  /// 加入页「IP:端口」手输格式不支持 IPv6 的限制保持一致
+  /// 额外参数忽略（宽松）：未来扩展字段不破坏旧版解析
+  static ({String host, int port})? parseRoomJoinCode(String raw) {
+    final uri = Uri.tryParse(raw.trim());
+    // scheme 与 Uri host 解析时归一化为小写，与常量直接比较即可
+    if (uri == null || uri.scheme != _joinScheme || uri.host != _joinUriHost) {
+      return null;
+    }
+    try {
+      final host = uri.queryParameters['host'];
+      final portValue = uri.queryParameters['port'];
+      final port = portValue == null ? null : int.tryParse(portValue);
+      if (host == null || port == null || !_isValidIpv4(host)) return null;
+      if (port < 1 || port > 65535) return null;
+      return (host: host, port: port);
+    } on FormatException {
+      // 百分号编码损坏（如 %zz）时 queryParameters 解码抛出，按非法内容处理
+      return null;
+    }
+  }
+
+  /// IPv4 格式校验：四段 0-255 的数字
+  /// 与加入页手输校验同规则；接入扫码入口时可收敛为共用本实现
+  static bool _isValidIpv4(String value) {
+    final segments = value.split('.');
+    if (segments.length != 4) return false;
+    for (final segment in segments) {
+      if (segment.isEmpty || segment.length > 3) return false;
+      final number = int.tryParse(segment);
+      if (number == null || number < 0 || number > 255) return false;
+    }
+    return true;
+  }
+
   /// 获取本机局域网 IPv4 地址；无可用网卡时返回 null
   /// 多网卡（Wi-Fi + 移动数据同时开启）时按网段优先级取最可能是
   /// 局域网的地址：192.168/16 > 172.16/12 > 10/8 > 其他——家庭/办公
