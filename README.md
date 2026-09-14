@@ -8,6 +8,7 @@
 - 游戏引擎：Flame（坦克动荡实时战场：迷宫、坦克、子弹的循环与渲染）
 - 音效：flutter_soloud（Soloud 引擎，预解码进内存的低延迟游戏音效）
 - 局域网联机：dart:io TCP（NDJSON 分帧协议、房主权威模型，零第三方网络依赖）
+- 房间扫码：qr_flutter 生成房间二维码 + mobile_scanner 扫码识别（好友扫码直接入座，需相机权限）
 - 持久化：SharedPreferences 单键 JSON 原子写入，读取容错，模型带 version 字段备迁移
 - SVG 渲染：flutter_svg（关于页 Logo 动态着色）
 - 版本信息：package_info_plus（关于页读取并展示应用版本号）
@@ -34,8 +35,8 @@ lib/
 │   └── scoreboard/         # 计分器（BO 赛制规则引擎、存档）
 ├── shared/                 # 共享层
 │   ├── game/               # 游戏元数据模型（GameInfo，注册组合根位于 app/game_registry.dart）
-│   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、对局控制器基类）
-│   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页）
+│   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、对局控制器基类、棋类通用悔棋/认输协商状态机、房间码编解码）
+│   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页、扫码页）
 │   ├── storage/            # 存档读写泛型基类、游戏页存档状态基类、主题持久化
 │   ├── theme/              # 主题系统（调色板、控制器）
 │   ├── utils/              # 通用工具（页面提示条、资产图片解码缓存、横屏沉浸式 mixin）
