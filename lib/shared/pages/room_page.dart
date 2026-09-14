@@ -13,6 +13,7 @@ import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 /// 局域网房间等待页（所有游戏通用）
 /// 房主模式：由各游戏的设置页创建，实时显示入座情况与加入地址；
@@ -293,9 +294,13 @@ class _RoomPageState extends State<RoomPage> {
           joinAddress: _hostAddress == null
               ? null
               : '$_hostAddress:${host.port}',
+          // 房间码供地址卡生成二维码；与地址同源取实际监听端口（兼容端口顺延）
+          joinCode: _hostAddress == null
+              ? null
+              : NetUtils.buildRoomJoinCode(host: _hostAddress!, port: host.port),
           hint: _hostAddress == null
               ? '未能获取本机 IP，请手动查询后与端口 ${host.port} 一并告知好友'
-              : '复制上方地址发给好友，在联机页输入即可加入本房间',
+              : '也可复制上方地址发给好友，在联机页输入加入',
         ),
       );
     }
@@ -397,6 +402,7 @@ class _RoomPageState extends State<RoomPage> {
     required int? mySeat,
     required String hint,
     String? joinAddress,
+    String? joinCode,
   }) {
     final remaining = capacity - seats.length;
     final full = remaining <= 0;
@@ -409,7 +415,7 @@ class _RoomPageState extends State<RoomPage> {
             _buildGameCard(capacity: capacity),
             if (joinAddress != null) ...[
               const SizedBox(height: 16),
-              _buildJoinAddressCard(joinAddress),
+              _buildJoinAddressCard(joinAddress, joinCode: joinCode),
             ],
             const SizedBox(height: 16),
             _buildSeatCard(capacity: capacity, seats: seats, mySeat: mySeat),
@@ -499,59 +505,89 @@ class _RoomPageState extends State<RoomPage> {
 
   /// 加入地址卡（房主模式）：好友输入该地址即可加入本房间
   /// 地址用强调色大字突出，配复制按钮；复制成功后图标短暂切换为对勾
-  Widget _buildJoinAddressCard(String address) {
+  /// [joinCode] 非空时在地址下方展示房间二维码，好友在加入页扫码直接入座
+  Widget _buildJoinAddressCard(String address, {String? joinCode}) {
     final palette = context.palette;
     return PanelCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '加入地址',
-                  style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 12.5,
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '加入地址',
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      address,
+                      style: TextStyle(
+                        color: palette.primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  address,
-                  style: TextStyle(
-                    color: palette.primary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              // 复制按钮：反馈仅切换图标（尺寸不变），不引起布局跳动；
+              // InkWell 波纹圆角与容器一致，不会溢出成圆形（IconButton 默认圆形波纹）
+              Container(
+                decoration: BoxDecoration(
+                  color: palette.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // 复制按钮：反馈仅切换图标（尺寸不变），不引起布局跳动；
-          // InkWell 波纹圆角与容器一致，不会溢出成圆形（IconButton 默认圆形波纹）
-          Container(
-            decoration: BoxDecoration(
-              color: palette.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(12),
-                onTap: _copyJoinAddress,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Icon(
-                    _addressCopied ? Icons.check_rounded : Icons.copy_rounded,
-                    color: palette.primary,
-                    size: 20,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: _copyJoinAddress,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Icon(
+                        _addressCopied ? Icons.check_rounded : Icons.copy_rounded,
+                        color: palette.primary,
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ),
+          if (joinCode != null) ...[
+            const SizedBox(height: 12),
+            // 二维码固定白底黑码：深色主题下相机识别同样稳定；
+            // M 级纠错提高斜扫/反光时的识别率
+            Center(
+              child: QrImageView(
+                data: joinCode,
+                version: QrVersions.auto,
+                errorCorrectionLevel: QrErrorCorrectLevel.M,
+                size: 140,
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.all(6),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '好友扫码直接加入本房间',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: palette.textSecondary,
+                fontSize: 12.5,
+              ),
+            ),
+          ],
         ],
       ),
     );
