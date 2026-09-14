@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- 联机房间支持扫码加入：房主等待页展示二维码，好友在联机页点击「扫码加入」对准二维码即可直接加入
+
 ### Changed
 
 - 更新日志版本卡片添加描边
