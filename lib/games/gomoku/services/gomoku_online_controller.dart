@@ -1,3 +1,4 @@
+import 'package:horyx/shared/network/board_game_online_controller.dart';
 import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
@@ -20,7 +21,8 @@ import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 /// 认输为单方声明：房主收到即判对方获胜并广播终局；
 /// 中途退出（任一方）对局直接结束，不判胜负（与单词PK一致）。
 class GomokuOnlineController extends OnlineGameControllerBase
-    with SubmissionReceiptMixin, UndoResignNegotiationMixin {
+    with SubmissionReceiptMixin, UndoResignNegotiationMixin
+    implements BoardGameOnlineController {
   /// 以房主身份接管房间（满员开局后由等待页调用）
   /// [boardSize] 为建房时所选棋盘规格，随 gameStart 已广播给客户端
   factory GomokuOnlineController.host(RoomHost host, {required int boardSize}) {
@@ -74,6 +76,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
   int get currentSeat => moves.length.isEven ? 1 : 2;
 
   /// 胜方文案（'黑方'/'白方'）；对局进行中为 null
+  @override
   String? get winnerText =>
       winnerSeat == null ? null : (winnerSeat == 1 ? '黑方' : '白方');
 

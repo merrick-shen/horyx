@@ -4,20 +4,19 @@ import 'package:horyx/games/gomoku/services/gomoku_online_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/network/undo_resign_negotiation.dart';
-import 'package:horyx/shared/utils/hint_bar.dart';
-import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/board_game_online_page.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
-import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/stone_board.dart';
 import 'package:horyx/shared/widgets/stone_turn_card.dart';
 
 /// 五子棋联机对局页
 /// 由房间等待页满员开局后接管房间连接（房主/客户端所有权移入本页）。
 /// 页面骨架（控制器生命周期/终局弹窗/退出确认/顶栏框架）见
-/// [OnlineGamePageShell]，本页只实现五子棋的交互与视图：
-/// 预选落子、悔棋协商弹窗、认输确认、胜负弹窗。
+/// [OnlineGamePageShell]，悔棋/认输协商与终局弹窗的三段式事件处理、
+/// 底部操作按钮见共享层 [BoardGameOnlinePageMixin]/[BoardGameActionBar]，
+/// 本页只实现五子棋的交互与视图：预选落子与胜负文案组装。
 /// 视图结构与本地对局一致（执子卡 + 棋盘 + 操作按钮），联机适配点：
 /// 仅轮到自己时可预选/确认落子，落子经房主校验后随广播全端生效。
 /// 页面销毁即退出对局并关闭连接（联机对局不落本地存档）。
@@ -46,70 +45,46 @@ class GomokuOnlinePage extends StatefulWidget {
   State<GomokuOnlinePage> createState() => _GomokuOnlinePageState();
 }
 
-class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
+class _GomokuOnlinePageState extends State<GomokuOnlinePage>
+    with BoardGameOnlinePageMixin<GomokuOnlinePage> {
   /// 预选落子位置；null 表示无预选（与本地对局一致的落子交互）
   (int, int)? _pending;
 
-  /// 悔棋应答弹窗防重入（应答后复位，允许下次请求再弹）
-  bool _undoDialogShown = false;
+  /// 对方请求悔棋的弹窗说明文案（撤销"上一手棋"）
+  @override
+  String get undoRequestMessage => '对方希望撤销上一手棋，是否同意？';
 
-  /// 胜负弹窗只弹一次（无胜负终止弹窗由骨架处理，各用各的标志）
-  bool _winDialogShown = false;
-
-  /// 游戏事件钩子：悔棋请求弹窗；胜负终局弹胜利弹窗并标记终局
-  /// （无胜负终止交回骨架通用弹窗）。
-  /// 悔棋分支不再无条件短路终局判定：弹窗期间对局结束（如对方认输）
-  /// 时关闭悔棋弹窗、复位协商状态并继续终局判定（B11）
+  /// 游戏事件钩子：委托共享层三段式处理（悔棋弹窗/终局关弹窗/胜负弹窗），
+  /// 胜负弹窗的文案按五子棋终局语义组装
   bool _onGameEvent(
     GomokuOnlineController controller,
     VoidCallback markEndShown,
   ) {
-    final ended =
-        controller.gameEndedText != null || controller.winnerText != null;
-
-    // 悔棋请求弹窗（未终局且非自己已发起状态）
-    if (!ended &&
-        controller.undoState == UndoState.peerRequesting &&
-        !_undoDialogShown) {
-      _undoDialogShown = true;
-      _showUndoRequestDialog(controller);
-      return true;
-    }
-
-    // 悔棋弹窗未应答时对局结束：关弹窗、协商作废（对局已终止，
-    // 无需应答对方），继续终局判定；pop 关闭的是栈顶的悔棋弹窗，
-    // 其 await 恢复后 respondUndo 因协商已复位而 no-op
-    if (ended && _undoDialogShown) {
-      _undoDialogShown = false;
-      controller.undoState = UndoState.idle;
-      Navigator.of(context).pop();
-    }
-
-    // 胜负终局（五连/认输）；无胜负终止（断线/解散）优先走骨架通用弹窗
-    if (_winDialogShown ||
-        controller.gameEndedText != null ||
-        controller.winnerText == null) {
-      return false;
-    }
-    _winDialogShown = true;
-    markEndShown();
-    _showWinDialog(controller);
-    return false;
+    return handleGameEvent(
+      controller,
+      markEndShown: markEndShown,
+      showWinDialog: () => _showWinDialog(controller),
+    );
   }
 
-  /// 对方悔棋请求的应答弹窗：同意/拒绝后复位弹窗标志
-  /// 同意则棋盘随广播回退，拒绝则对方收到提示
-  Future<void> _showUndoRequestDialog(GomokuOnlineController controller) async {
-    final result = await showConfirmDialog(
+  /// 胜利弹窗：区分五连获胜/认输；可留在棋盘查看棋型
+  /// 中途退出不产生胜负（走骨架终局弹窗，无胜方），不进此弹窗
+  Future<void> _showWinDialog(GomokuOnlineController controller) async {
+    final winner = controller.winnerText!;
+    final String message;
+    if (controller.wonByResign) {
+      message = controller.winnerSeat == controller.mySeat
+          ? '对方认输了，你获得胜利'
+          : '你认输了，本局告负';
+    } else {
+      message = '五子连珠，$winner赢得本局';
+    }
+    await showBoardGameWinDialog(
       context,
-      title: '对方请求悔棋',
-      message: '对方希望撤销上一手棋，是否同意？',
-      confirmLabel: '同意',
-      cancelLabel: '拒绝',
+      winner: winner,
+      message: message,
+      onExit: exitBoardGamePage,
     );
-    if (!mounted) return;
-    setState(() => _undoDialogShown = false);
-    controller.respondUndo(result == ConfirmResult.confirm);
   }
 
   /// 点击棋盘交叉点：仅轮到自己时可预选，终局或已占的点不可选
@@ -135,58 +110,6 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
     }
   }
 
-  /// 胜利弹窗：区分五连获胜/认输；可留在棋盘查看棋型
-  /// 中途退出不产生胜负（走骨架终局弹窗，无胜方），不进此弹窗
-  Future<void> _showWinDialog(GomokuOnlineController controller) async {
-    final winner = controller.winnerSeat == 1 ? '黑方' : '白方';
-    final String message;
-    if (controller.wonByResign) {
-      message = controller.winnerSeat == controller.mySeat
-          ? '对方认输了，你获得胜利'
-          : '你认输了，本局告负';
-    } else {
-      message = '五子连珠，$winner赢得本局';
-    }
-    final result = await showConfirmDialog(
-      context,
-      title: '$winner胜利！',
-      message: message,
-      confirmLabel: '退出对局',
-      cancelLabel: '查看棋盘',
-    );
-    if (!mounted) return;
-    if (result == ConfirmResult.confirm) {
-      _exitPage();
-    }
-  }
-
-  /// 发起悔棋请求（按钮回调）：交控制器进入协商状态
-  void _requestUndo(GomokuOnlineController controller) {
-    if (controller.undoState != UndoState.idle) return;
-    controller.requestUndo();
-    setState(() {}); // 刷新按钮为「等待对方应答…」禁用态
-  }
-
-  /// 认输请求（按钮回调）：确认后判对方获胜
-  Future<void> _requestResign(GomokuOnlineController controller) async {
-    final result = await showConfirmDialog(
-      context,
-      title: '认输？',
-      message: '认输后本局将判定对方获胜',
-      confirmLabel: '认输',
-    );
-    if (!mounted) return;
-    if (result == ConfirmResult.confirm) {
-      controller.resign();
-    }
-  }
-
-  /// 退出页面：先移除未关闭的错误提示再返回
-  void _exitPage() {
-    if (!mounted) return;
-    exitPageClean(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return OnlineGamePageShell<GomokuOnlineController>(
@@ -205,13 +128,14 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
         pending: _pending,
         isMyTurn: controller.isMyTurn,
         winnerSeat: controller.winnerSeat,
+        ended: controller.gameEndedText != null,
         undoState: controller.undoState,
         hasMoves: controller.moves.isNotEmpty,
         onCellTap: (col, row) => _onCellTap(controller, col, row),
         onCancelMove: _cancelMove,
         onConfirmMove: () => _confirmMove(controller),
-        onRequestUndo: () => _requestUndo(controller),
-        onResign: () => _requestResign(controller),
+        onRequestUndo: () => requestUndoFor(controller),
+        onResign: () => requestResignFor(controller),
         onExit: requestExit,
       ),
     );
@@ -220,8 +144,8 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage> {
 
 /// 联机对局视图：与本地对局同构（执子卡 + 棋盘 + 操作按钮）
 /// 差异点：执子卡副标题提示等待对象；悔棋为协商制（发起请求、
-/// 对方应答后随广播回退，等待应答期间按钮禁用防重复发起）；
-/// 终局后按钮为「退出对局」（再来一局暂未支持）
+/// 对方应答后随广播回退）；终局后按钮为「退出对局」（再来一局暂未支持），
+/// 底部操作按钮组为棋类共用组件 [BoardGameActionBar]
 class _BoardView extends StatelessWidget {
   const _BoardView({
     required this.boardSize,
@@ -229,6 +153,7 @@ class _BoardView extends StatelessWidget {
     required this.pending,
     required this.isMyTurn,
     required this.winnerSeat,
+    required this.ended,
     required this.undoState,
     required this.hasMoves,
     required this.onCellTap,
@@ -253,6 +178,9 @@ class _BoardView extends StatelessWidget {
 
   /// 胜方座位号；null 表示对局进行中
   final int? winnerSeat;
+
+  /// 对局是否无胜负终止（断线/解散/对方离开）
+  final bool ended;
 
   /// 悔棋协商状态（awaitingPeer 时悔棋按钮禁用防重复发起）
   final UndoState undoState;
@@ -325,30 +253,15 @@ class _BoardView extends StatelessWidget {
               onConfirmMove: onConfirmMove,
             ),
             const SizedBox(height: 12),
-            if (isOver)
-              // 终局：退出对局（再来一局暂未支持）
-              PrimaryButton(
-                label: '退出对局',
-                icon: Icons.logout_rounded,
-                onPressed: onExit,
-              )
-            else ...[
-              // 悔棋：仅对方回合可发起（悔自己的上一手），
-              // 等对方应答期间/无子可悔/轮到自己落子时禁用
-              PrimaryButton(
-                label: undoState == UndoState.awaitingPeer ? '等待对方应答…' : '悔棋',
-                icon: Icons.undo_rounded,
-                onPressed: undoState == UndoState.idle && hasMoves && !isMyTurn
-                    ? onRequestUndo
-                    : null,
-              ),
-              const SizedBox(height: 12),
-              PrimaryButton(
-                label: '认输',
-                icon: Icons.flag_rounded,
-                onPressed: onResign,
-              ),
-            ],
+            BoardGameActionBar(
+              showExit: isOver || ended,
+              undoState: undoState,
+              hasMoves: hasMoves,
+              isMyTurn: isMyTurn,
+              onRequestUndo: onRequestUndo,
+              onResign: onResign,
+              onExit: onExit,
+            ),
           ],
         ),
       ),

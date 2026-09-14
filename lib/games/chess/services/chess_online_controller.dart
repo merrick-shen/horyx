@@ -1,6 +1,7 @@
 import 'package:horyx/games/chess/models/chess_board.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/games/chess/services/chess_rules.dart';
+import 'package:horyx/shared/network/board_game_online_controller.dart';
 import 'package:horyx/shared/network/net_message.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
@@ -24,7 +25,8 @@ import 'package:horyx/shared/network/undo_resign_negotiation.dart';
 /// 认输为单方声明：房主收到即判对方获胜并广播终局；
 /// 中途退出（任一方）对局直接结束，不判胜负（与单词PK/五子棋一致）。
 class ChessOnlineController extends OnlineGameControllerBase
-    with SubmissionReceiptMixin, UndoResignNegotiationMixin {
+    with SubmissionReceiptMixin, UndoResignNegotiationMixin
+    implements BoardGameOnlineController {
   /// 以房主身份接管房间（满员开局后由等待页调用）
   /// 象棋无规格选项，gameStartPayload 为空对象，无需参数
   factory ChessOnlineController.host(RoomHost host) {
@@ -80,6 +82,7 @@ class ChessOnlineController extends OnlineGameControllerBase
   ChessColor get myColor => colorOfSeat(mySeat);
 
   /// 胜方文案（'红方'/'黑方'）；对局进行中为 null
+  @override
   String? get winnerText =>
       winnerSeat == null ? null : (winnerSeat == 1 ? '红方' : '黑方');
 
