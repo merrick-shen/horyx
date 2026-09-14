@@ -101,7 +101,7 @@ class NumberOptionBlock extends StatefulWidget {
     required this.max,
     required this.onValid,
     required this.onCleared,
-    this.width = 96,
+    this.width = double.infinity,
     this.height = 56,
   });
 
@@ -124,7 +124,7 @@ class NumberOptionBlock extends StatefulWidget {
   /// 输入清空回调
   final VoidCallback onCleared;
 
-  /// 块宽度（数字内容固定宽度保持排列整齐）
+  /// 块宽度（默认撑满面板宽度，保持与面板等宽的大输入区域）
   final double width;
 
   /// 块高度，与 OptionBlock 默认高度一致
