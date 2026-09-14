@@ -29,6 +29,9 @@ class ChessBoardView extends StatelessWidget {
     required this.onConfirmMove,
     required this.onUndo,
     required this.onRestart,
+    this.lastMove,
+    this.capturedPiece,
+    this.lastMoveSeq = 0,
   });
 
   final ChessBoard board;
@@ -53,6 +56,16 @@ class ChessBoardView extends StatelessWidget {
 
   /// 是否有子可悔（无走子历史时悔棋按钮禁用）
   final bool canUndo;
+
+  /// 最近一步走法（棋盘走子动画用，见 [ChessBoardCanvas.lastMove]）
+  final ChessMove? lastMove;
+
+  /// 最近一步被吃的棋子（动画期间暂留显示在终点位，见
+  /// [ChessBoardCanvas.capturedPiece]）
+  final ChessPiece? capturedPiece;
+
+  /// 最近一步的触发序号（见 [ChessBoardCanvas.lastMoveSeq]）
+  final int lastMoveSeq;
 
   /// 点击棋盘格回调（吸附到最近交点后的格坐标；棋盘外框以外点击不回调）
   final void Function(ChessPos pos) onCellTap;
@@ -96,6 +109,9 @@ class ChessBoardView extends StatelessWidget {
                     legalTargets: legalTargets,
                     pendingMove: pendingMove,
                     onCellTap: onCellTap,
+                    lastMove: lastMove,
+                    capturedPiece: capturedPiece,
+                    lastMoveSeq: lastMoveSeq,
                   ),
                 ),
                 const SizedBox(height: 16),

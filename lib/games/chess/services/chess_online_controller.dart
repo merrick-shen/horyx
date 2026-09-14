@@ -53,6 +53,10 @@ class ChessOnlineController extends OnlineGameControllerBase
   @override
   int? winnerSeat;
 
+  /// 最近一步被吃的棋子（走子动画展示用；无吃子为 null）：
+  /// 房主侧在走子生效时记录，客户端随 moveApplied 广播生效时记录
+  ChessPiece? lastCapturedPiece;
+
   /// 终局原因（将死/困毙/认输）；无胜负时为 null
   ChessEndReason? winReason;
 
@@ -197,7 +201,7 @@ class ChessOnlineController extends OnlineGameControllerBase
   /// 走子生效：搬运棋子 + 入列 + 终局判定；房主侧同步广播
   /// （将死/困毙时携带胜方座位与原因，与本地对局同一 judgeEnd 判定）
   void _applyMove(ChessMove move) {
-    board.applyMove(move);
+    lastCapturedPiece = board.applyMove(move);
     moves.add(move);
     // 走子后轮到对方：judgeEnd 判对方是否无路可走（将死/困毙判负，
     // 胜方即刚走子的一方 = 当前序列末手执子方）
@@ -255,7 +259,7 @@ class ChessOnlineController extends OnlineGameControllerBase
           notifyListeners();
           return;
         }
-        board.applyMove(move);
+        lastCapturedPiece = board.applyMove(move);
         moves.add(move);
         winnerSeat = msg.payload['winner'] as int?;
         final reasonName = msg.payload['reason'];

@@ -59,6 +59,18 @@ class _ChessOnlinePageState extends State<ChessOnlinePage> {
   /// 上一次通知时的走子数（识别新增走子，避免重复触发将军提示）
   int _lastMoveCount = 0;
 
+  /// 最近一步走法（棋盘走子滑动动画用）：检测到新增走子时取走子序列
+  /// 末步；悔棋回退时清空（回退类局面变化不播滑行动画）
+  ChessMove? _lastMove;
+
+  /// 最近一步被吃的棋子（动画期间暂留显示在终点位，随 [_lastMove] 一并清空）
+  ChessPiece? _capturedPiece;
+
+  /// 走子动画触发序号（单调递增，不复位）：与 [_lastMove] 配合供棋盘
+  /// 判定"新走法"——相同起终点的走法先后发生时走法记录相等，
+  /// 仅靠走法判等会漏触发
+  int _moveSeq = 0;
+
   /// 悔棋应答弹窗防重入（应答后复位，允许下次请求再弹）
   bool _undoDialogShown = false;
 
@@ -240,8 +252,15 @@ class _ChessOnlinePageState extends State<ChessOnlinePage> {
       _selected = null;
       _legalMoves = const [];
       _pendingMove = null;
+      _lastMove = null;
+      _capturedPiece = null;
       return;
     }
+    // 新增走子：记录末步与被吃棋子供棋盘播放滑动动画（序号递增保证
+    // 相同起终点的走法也能可靠重触发）
+    _lastMove = controller.moves.last;
+    _capturedPiece = controller.lastCapturedPiece;
+    _moveSeq++;
     if (ChessRules.isInCheck(controller.board, controller.turnColor)) {
       _checkFlashTrigger++;
     }
@@ -264,6 +283,9 @@ class _ChessOnlinePageState extends State<ChessOnlinePage> {
           legalTargets: {for (final m in _legalMoves) m.to},
           pendingMove: _pendingMove,
           checkFlashTrigger: _checkFlashTrigger,
+          lastMove: _lastMove,
+          capturedPiece: _capturedPiece,
+          lastMoveSeq: _moveSeq,
           onCellTap: (pos) => _onCellTap(controller, pos),
           onCancelMove: _cancelMove,
           onConfirmMove: () => _confirmMove(controller),
@@ -293,6 +315,9 @@ class _BoardView extends StatelessWidget {
     required this.onRequestUndo,
     required this.onResign,
     required this.onExit,
+    this.lastMove,
+    this.capturedPiece,
+    this.lastMoveSeq = 0,
   });
 
   final ChessOnlineController controller;
@@ -308,6 +333,16 @@ class _BoardView extends StatelessWidget {
 
   /// 「将军」提示触发计数
   final int checkFlashTrigger;
+
+  /// 最近一步走法（棋盘走子动画用，见 [ChessBoardCanvas.lastMove]）
+  final ChessMove? lastMove;
+
+  /// 最近一步被吃的棋子（动画期间暂留显示在终点位，见
+  /// [ChessBoardCanvas.capturedPiece]）
+  final ChessPiece? capturedPiece;
+
+  /// 最近一步的触发序号（见 [ChessBoardCanvas.lastMoveSeq]）
+  final int lastMoveSeq;
 
   /// 点击棋盘格回调
   final void Function(ChessPos pos) onCellTap;
@@ -371,6 +406,9 @@ class _BoardView extends StatelessWidget {
                     legalTargets: legalTargets,
                     pendingMove: pendingMove,
                     onCellTap: onCellTap,
+                    lastMove: lastMove,
+                    capturedPiece: capturedPiece,
+                    lastMoveSeq: lastMoveSeq,
                     // 执黑方整盘旋转 180°：自己的棋子显示在屏幕下方，
                     // 棋子相对位置与真实对面视角一致（文字朝向不变）
                     flipped: controller.myColor == ChessColor.black,

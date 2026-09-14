@@ -20,6 +20,9 @@ class ChessBoardPainter extends CustomPainter {
     this.selected,
     this.legalTargets = const {},
     this.pendingMove,
+    this.lastMove,
+    this.capturedPiece,
+    this.animProgress = 1,
   });
 
   final ChessBoard board;
@@ -40,6 +43,21 @@ class ChessBoardPainter extends CustomPainter {
   /// 待确认走法（ConfirmMoveRow 出现时高亮起点与终点）
   final ChessMove? pendingMove;
 
+  /// 最近一步走法（走子动画）：非 null 且 [animProgress] < 1 时，
+  /// 终点棋子跳过原位绘制、改画在起→终点插值位置并浮于其他棋子上层；
+  /// 动画结束（progress = 1）后按原位正常绘制
+  final ChessMove? lastMove;
+
+  /// 最近一步被吃的棋子（走子动画展示用；无吃子为 null）：动画播放中
+  /// 暂留绘制在终点位（垫在移动棋子下方），动画结束随动画层一并消失——
+  /// 消失瞬间它已被移动棋子完全覆盖，观感是"被吃掉"而非凭空消失
+  final ChessPiece? capturedPiece;
+
+  /// 最近一步的动画进度（0..1，1 表示未在动画中或已播完）；
+  /// 插值在格坐标语义下进行（经 geometry 换算到当前像素），
+  /// 画布尺寸变化时逐帧按最新几何重算，任意屏幕尺寸下观感一致
+  final double animProgress;
+
   /// 棋子内容色统一引用模型层常量（执子卡共用同一来源）
   static const Color _pieceFace = ChessPieceColors.face;
   static const Color _redPiece = ChessPieceColors.red;
@@ -55,6 +73,8 @@ class ChessBoardPainter extends CustomPainter {
     _paintPieces(canvas);
     // 高亮最后绘制，确保叠在棋子上层
     _paintHighlights(canvas);
+    // 移动中的棋子最后绘制：浮于全部棋子与高亮之上（滑行途中遮挡途经棋子）
+    _paintMovingPiece(canvas);
   }
 
   /// 底板：圆角面板 + 描边外框
@@ -186,53 +206,95 @@ class ChessBoardPainter extends CustomPainter {
     }
   }
 
-  /// 全部棋子：米色圆面 + 红黑描边、内圈细线与居中汉字
+  /// 正在播放走子动画的走法；null 表示未在动画中：
+  /// lastMove 为空、进度已到 1、或终点已无棋子（局面被再次变更——
+  /// 如悔棋回退/重开新局，此时必须按原位绘制，防止终点棋子"隐身"）
+  ChessMove? get _animatingMove {
+    final move = lastMove;
+    if (move == null || animProgress >= 1) return null;
+    if (board.pieceAt(move.to) == null) return null;
+    return move;
+  }
+
+  /// 全部棋子：米色圆面 + 红黑描边、内圈细线与居中汉字。
+  /// 走子动画播放中时终点棋子跳过（由 [_paintMovingPiece] 画在插值位置）
   void _paintPieces(Canvas canvas) {
-    final radius = geometry.cell * 0.45;
-    final facePaint = Paint()..color = _pieceFace;
+    final movingTo = _animatingMove?.to;
     for (var row = 0; row < ChessBoard.rows; row++) {
       for (var col = 0; col < ChessBoard.cols; col++) {
+        if (movingTo == (col, row)) continue;
         final piece = board.pieceAt((col, row));
         if (piece == null) continue;
-        final center = geometry.posToOffset((col, row));
-        final color = piece.color == ChessColor.red ? _redPiece : _blackPiece;
-
-        // 轻微下移的阴影提升立体感
-        canvas.drawCircle(
-          center + Offset(0, geometry.cell * 0.03),
-          radius,
-          Paint()..color = const Color(0x33000000),
-        );
-        canvas.drawCircle(center, radius, facePaint);
-        canvas.drawCircle(
-          center,
-          radius,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = geometry.cell * 0.035
-            ..color = color,
-        );
-        // 内圈细线（传统棋子样式）
-        canvas.drawCircle(
-          center,
-          radius * 0.82,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = geometry.cell * 0.018
-            ..color = color.withValues(alpha: 0.55),
-        );
-        _paintCenteredText(
-          canvas,
-          piece.label,
-          center,
-          TextStyle(
-            color: color,
-            fontSize: geometry.cell * 0.52,
-            fontWeight: FontWeight.w800,
-          ),
-        );
+        _drawPiece(canvas, piece, geometry.posToOffset((col, row)));
       }
     }
+  }
+
+  /// 移动中的棋子：起点到终点按动画进度插值（easeOut 已由动画层施加），
+  /// 阴影偏移加大模拟"提起"悬浮感；其余样式与静止棋子完全一致
+  /// （等比绘制不缩放，任何画布尺寸下棋子都清晰不变形）。
+  /// 被吃棋子在动画期间暂留绘制在终点位垫底
+  void _paintMovingPiece(Canvas canvas) {
+    final move = _animatingMove;
+    if (move == null) return;
+    final to = geometry.posToOffset(move.to);
+    final captured = capturedPiece;
+    if (captured != null) {
+      _drawPiece(canvas, captured, to);
+    }
+    _drawPiece(
+      canvas,
+      board.pieceAt(move.to)!,
+      Offset.lerp(geometry.posToOffset(move.from), to, animProgress)!,
+      lifted: true,
+    );
+  }
+
+  /// 绘制单枚棋子：阴影 + 米色圆面 + 色描边 + 内圈细线 + 居中汉字。
+  /// [lifted] 为 true 时阴影更大更淡（走子动画中的悬浮感）
+  void _drawPiece(
+    Canvas canvas,
+    ChessPiece piece,
+    Offset center, {
+    bool lifted = false,
+  }) {
+    final radius = geometry.cell * 0.45;
+    final color = piece.color == ChessColor.red ? _redPiece : _blackPiece;
+
+    // 轻微下移的阴影提升立体感（移动中的棋子阴影更大更淡）
+    canvas.drawCircle(
+      center + Offset(0, geometry.cell * (lifted ? 0.08 : 0.03)),
+      radius,
+      Paint()..color = lifted ? const Color(0x22000000) : const Color(0x33000000),
+    );
+    canvas.drawCircle(center, radius, Paint()..color = _pieceFace);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = geometry.cell * 0.035
+        ..color = color,
+    );
+    // 内圈细线（传统棋子样式）
+    canvas.drawCircle(
+      center,
+      radius * 0.82,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = geometry.cell * 0.018
+        ..color = color.withValues(alpha: 0.55),
+    );
+    _paintCenteredText(
+      canvas,
+      piece.label,
+      center,
+      TextStyle(
+        color: color,
+        fontSize: geometry.cell * 0.52,
+        fontWeight: FontWeight.w800,
+      ),
+    );
   }
 
   /// 交互高亮：选中棋子环、合法走点、待确认走法起终点
@@ -300,5 +362,7 @@ class ChessBoardPainter extends CustomPainter {
       oldDelegate.primaryColor != primaryColor ||
       oldDelegate.selected != selected ||
       oldDelegate.legalTargets != legalTargets ||
-      oldDelegate.pendingMove != pendingMove;
+      oldDelegate.pendingMove != pendingMove ||
+      oldDelegate.lastMove != lastMove ||
+      oldDelegate.animProgress != animProgress;
 }

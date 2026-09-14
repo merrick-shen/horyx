@@ -64,6 +64,18 @@ class _ChessPageState
   /// 视图层据此重放一次渐现渐隐动画
   int _checkFlashTrigger = 0;
 
+  /// 最近一步走法（棋盘走子滑动动画用）：确认走子时记录，
+  /// 悔棋/重开/回设置/恢复存档时清空（回退类局面变化不播滑行动画）
+  ChessMove? _lastMove;
+
+  /// 最近一步被吃的棋子（动画期间暂留显示在终点位，随 [_lastMove] 一并清空）
+  ChessPiece? _capturedPiece;
+
+  /// 走子动画触发序号（单调递增，不复位）：与 [_lastMove] 配合供棋盘
+  /// 判定"新走法"——相同起终点的走法先后发生时走法记录相等，
+  /// 仅靠走法判等会漏触发
+  int _moveSeq = 0;
+
   @override
   ArchiveStorage<ChessGameState> get archiveStorage =>
       ChessStorage.instance;
@@ -101,6 +113,8 @@ class _ChessPageState
           ..clear()
           ..addAll(history);
         _clearSelection();
+        _lastMove = null;
+        _capturedPiece = null;
         _gameOver = false;
         _checkFlashTrigger = 0;
         _started = true;
@@ -121,6 +135,8 @@ class _ChessPageState
       _turn = ChessColor.red;
       _history.clear();
       _clearSelection();
+      _lastMove = null;
+      _capturedPiece = null;
       _gameOver = false;
       _checkFlashTrigger = 0;
       _started = true;
@@ -181,6 +197,8 @@ class _ChessPageState
       final (move, captured) = _history.removeLast();
       board.revertMove(move, captured);
       _clearSelection();
+      _lastMove = null;
+      _capturedPiece = null;
       _turn = _turn == ChessColor.red ? ChessColor.black : ChessColor.red;
     });
   }
@@ -193,6 +211,9 @@ class _ChessPageState
     setState(() {
       final captured = board.applyMove(move);
       _history.add((move, captured));
+      _lastMove = move;
+      _capturedPiece = captured;
+      _moveSeq++;
       _clearSelection();
       _turn = _turn == ChessColor.red ? ChessColor.black : ChessColor.red;
     });
@@ -247,6 +268,8 @@ class _ChessPageState
       _turn = ChessColor.red;
       _history.clear();
       _clearSelection();
+      _lastMove = null;
+      _capturedPiece = null;
       _gameOver = false;
       _checkFlashTrigger = 0;
     });
@@ -278,6 +301,8 @@ class _ChessPageState
       _turn = ChessColor.red;
       _clearSelection();
       _history.clear();
+      _lastMove = null;
+      _capturedPiece = null;
       _gameOver = false;
       _checkFlashTrigger = 0;
     });
@@ -380,6 +405,9 @@ class _ChessPageState
       checkFlashTrigger: _checkFlashTrigger,
       gameOver: _gameOver,
       canUndo: _history.isNotEmpty,
+      lastMove: _lastMove,
+      capturedPiece: _capturedPiece,
+      lastMoveSeq: _moveSeq,
       onCellTap: _onCellTap,
       onCancelMove: _cancelMove,
       onConfirmMove: _confirmMove,

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - 联机房间支持扫码加入：房主等待页展示二维码，好友在联机页点击「扫码加入」对准二维码即可直接加入
+- 中国象棋走子新增滑动过渡动画
 
 ### Changed
 
