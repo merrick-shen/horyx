@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/dialog_action_button.dart';
 
@@ -75,6 +76,50 @@ Future<void> confirmExitWithArchive(
       // 留在当前页面
       break;
   }
+}
+
+/// 对局页退出请求模板方法（各游戏 `_requestExit` 的同构骨架，三段式）：
+/// 1. [hasProgress] 为 false：无进行中对局（未进入对局/已终局/终局查看），
+///    直接 [exitPage] 退出页面；
+/// 2. [hasMoves] 为 false：开局后尚无落子/提交——不打扰，执行
+///    [onBackToSetup] 清对局状态回设置视图，随后统一 [loadSavedState]
+///    刷新恢复入口（开局时入口已被置空，未走子即退出时磁盘上的旧存档
+///    仍在，回设置后应重新展示）；
+/// 3. 其余：弹出三选项确认（见 [confirmExitWithArchive]）——保存并退出
+///    执行 [onSave]（各游戏组装存档模型）；不保存退出统一经
+///    [GameArchiveStateBase.archiveStorage] 清档；取消留在本页。
+///
+/// 计分器/坦克的退出语义不同（回设置视图/横屏对局直退、无两段捷径），
+/// 不走本模板，仍直接使用 [confirmExitWithArchive]
+///
+/// [state] 传调用方页面 State：弹窗与存档操作均为异步，
+/// 期间页面可能已卸载，需以 State.mounted 守护后续 context 使用
+Future<void> requestExitWithArchive<W extends StatefulWidget, T>(
+  GameArchiveStateBase<W, T> state, {
+  required bool hasProgress,
+  required bool hasMoves,
+  required Future<void> Function() onSave,
+  required VoidCallback onBackToSetup,
+  required VoidCallback exitPage,
+}) async {
+  if (!hasProgress) {
+    exitPage();
+    return;
+  }
+  if (!hasMoves) {
+    onBackToSetup();
+    // 回设置后重新检测存档刷新恢复入口（见方法注释第 2 步）
+    await state.loadSavedState();
+    return;
+  }
+  await confirmExitWithArchive(
+    state,
+    onSave: onSave,
+    // 不保存退出统一清当前游戏存档：放弃当前进度，
+    // 避免下次进入误提示可继续（清档失败不阻断退出）
+    onDiscard: state.archiveStorage.clear,
+    onExit: exitPage,
+  );
 }
 
 /// 通用确认弹窗

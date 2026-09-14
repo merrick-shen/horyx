@@ -106,23 +106,10 @@ class _WordPkPageState
   /// 对局中尚无提交记录时无进行中内容，直接返回设置视图（与计分器未计分退出一致）
   /// 设置阶段直接退出页面
   Future<void> _requestExit() async {
-    if (!_started) {
-      // 设置阶段顶栏返回：清理残留提示（棋盘阶段被退回设置后可能遗留）
-      exitPageClean(context);
-      return;
-    }
-    // 开局后还没提交任何单词：不打扰，直接回设置
-    if (_entries.isEmpty) {
-      // 非法提交的提示仍挂在 messenger 上，回设置视图前清理
-      clearHint(context);
-      setState(() => _started = false);
-      // 重新加载存档刷新恢复入口——开局时入口已被置空（savedState = null），
-      // 未提交即退出时磁盘上的旧存档仍在，回设置后应重新展示
-      loadSavedState();
-      return;
-    }
-    await confirmExitWithArchive(
+    await requestExitWithArchive(
       this,
+      hasProgress: _started,
+      hasMoves: _entries.isNotEmpty,
       // 持久化完整对局状态后退出
       onSave: () => WordPkStorage.instance.save(
         WordPkGameState(
@@ -132,8 +119,13 @@ class _WordPkPageState
           savedAt: DateTime.now(),
         ),
       ),
-      onDiscard: WordPkStorage.instance.clear,
-      onExit: () => exitPageClean(context),
+      // 回设置前清理挂在 messenger 上的非法提交提示（存档检测
+      // 刷新由退出模板统一负责）
+      onBackToSetup: () {
+        clearHint(context);
+        setState(() => _started = false);
+      },
+      exitPage: () => exitPageClean(context),
     );
   }
 

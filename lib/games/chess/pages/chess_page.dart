@@ -291,10 +291,16 @@ class _ChessPageState
     );
   }
 
-  /// 回到设置视图并清空对局状态；
-  /// 同时重新检测存档刷新恢复入口——开局时入口已被置空（savedState = null），
-  /// 未走子即退回设置时磁盘上的旧存档仍在，回设置后应重新展示
+  /// 回到设置视图并清空对局状态（终局弹窗「返回设置」路径）；
+  /// 存档检测刷新由 [_resetForSetup] 后的统一 loadSavedState 负责
   void _backToSetup() {
+    _resetForSetup();
+    loadSavedState();
+  }
+
+  /// 清空对局状态回到设置视图（不含存档检测——退出模板的回设置分支
+  /// 与 [_backToSetup] 各自统一负责刷新，避免双份加载）
+  void _resetForSetup() {
     setState(() {
       _board = null;
       _started = false;
@@ -306,42 +312,32 @@ class _ChessPageState
       _gameOver = false;
       _checkFlashTrigger = 0;
     });
-    loadSavedState();
   }
 
   /// 退出请求：设置阶段与终局查看阶段直接退出页面；
   /// 对局中未走子时无进行中内容，直接回设置视图（不打扰）；
   /// 已有走子弹出三选项确认弹窗（保存并退出/直接退出/取消）
   Future<void> _requestExit() async {
-    if (!_started || _gameOver) {
-      Navigator.of(context).pop();
-      return;
-    }
-    // 开局后还没走任何一步：不打扰，直接回设置
-    if (_history.isEmpty) {
-      _backToSetup();
-      return;
-    }
-    // 捕获局部引用：弹窗为异步流程，保存时页面状态可能已变化
-    final board = _board;
-    if (board == null) {
-      // _started 时必有棋盘，异常路径直接退出页面
-      Navigator.of(context).pop();
-      return;
-    }
-    await confirmExitWithArchive(
+    await requestExitWithArchive(
       this,
-      // 持久化完整对局状态（局面/轮次/走子历史）后退出页面
-      onSave: () => ChessStorage.instance.save(
-        ChessGameState(
-          boardCode: board.encode(),
-          turn: _turn,
-          moves: [for (final (move, _) in _history) move],
-          savedAt: DateTime.now(),
-        ),
-      ),
-      onDiscard: ChessStorage.instance.clear,
-      onExit: () => Navigator.of(context).pop(),
+      hasProgress: _started && !_gameOver,
+      hasMoves: _history.isNotEmpty,
+      // 局部引用防异步期间状态变化：_started 且未终局时必有棋盘，
+      // null 为不可达的纯防御路径——无从保存，放弃保存留在本页
+      onSave: () {
+        final board = _board;
+        if (board == null) return Future<void>.value();
+        return ChessStorage.instance.save(
+          ChessGameState(
+            boardCode: board.encode(),
+            turn: _turn,
+            moves: [for (final (move, _) in _history) move],
+            savedAt: DateTime.now(),
+          ),
+        );
+      },
+      onBackToSetup: _resetForSetup,
+      exitPage: () => Navigator.of(context).pop(),
     );
   }
 

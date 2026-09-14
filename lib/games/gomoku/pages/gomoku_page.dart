@@ -140,10 +140,16 @@ class _GomokuPageState
     });
   }
 
-  /// 返回设置视图：清盘后重新选择规格；
-  /// 同时重新加载存档刷新恢复入口——开局时入口已被置空（savedState = null），
-  /// 未落子即退出时磁盘上的旧存档仍在，回设置后应重新展示
+  /// 返回设置视图：清盘后重新选择规格（终局弹窗「返回设置」路径）；
+  /// 存档检测刷新由 [_resetForSetup] 后的统一 loadSavedState 负责
   void _backToSetup() {
+    _resetForSetup();
+    loadSavedState();
+  }
+
+  /// 清空对局状态回到设置视图（不含存档检测——退出模板的回设置分支
+  /// 与 [_backToSetup] 各自统一负责刷新，避免双份加载）
+  void _resetForSetup() {
     setState(() {
       _moves.clear();
       _occupied.clear();
@@ -151,7 +157,6 @@ class _GomokuPageState
       _winner = null;
       _started = false;
     });
-    loadSavedState();
   }
 
   /// 悔棋：撤回最后一颗确认棋子，执子方回退
@@ -211,17 +216,10 @@ class _GomokuPageState
   /// 对局中尚无落子时无进行中内容，直接返回设置视图（与计分器未计分退出一致）
   /// 设置阶段与终局查看棋型阶段无进行中对局，直接退出页面
   Future<void> _requestExit() async {
-    if (!_started || _winner != null) {
-      Navigator.of(context).pop();
-      return;
-    }
-    // 开局后还没落任何一手：不打扰，直接回设置
-    if (_moves.isEmpty) {
-      _backToSetup();
-      return;
-    }
-    await confirmExitWithArchive(
+    await requestExitWithArchive(
       this,
+      hasProgress: _started && _winner == null,
+      hasMoves: _moves.isNotEmpty,
       // 持久化完整对局状态后退出
       onSave: () => GomokuStorage.instance.save(
         GomokuGameState(
@@ -230,8 +228,8 @@ class _GomokuPageState
           savedAt: DateTime.now(),
         ),
       ),
-      onDiscard: GomokuStorage.instance.clear,
-      onExit: () => Navigator.of(context).pop(),
+      onBackToSetup: _resetForSetup,
+      exitPage: () => Navigator.of(context).pop(),
     );
   }
 
