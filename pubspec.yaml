@@ -33,10 +33,10 @@ dependencies:
 
   shared_preferences: ^2.5.5
   # 读取应用版本号（关于页展示，与 pubspec version 保持同步）
-  package_info_plus: ^8.3.0
+  package_info_plus: ^10.2.1
   flutter_svg: ^2.3.0
   flame: ^1.38.2
-  flutter_soloud: ^4.1.7
+  flutter_soloud: ^5.0.2
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.2
 dev_dependencies:
@@ -52,6 +52,12 @@ dev_dependencies:
   # 应用图标生成工具（执行 dart run flutter_launcher_icons 生成各分辨率图标）
   flutter_launcher_icons: ^0.14.4
   vector_math: ^2.4.2
+
+dependency_overrides:
+  # objective_c 9.6.1 的 build hooks 引用了当前 Dart SDK 尚不存在的
+  # Architecture.arm64e 成员（需更高 SDK），导致 test/构建原生资产失败；
+  # 锁回 9.6.0，待上游发布兼容 Dart 3.13 的补丁后移除本覆盖
+  objective_c: 9.6.0
 
 flutter_launcher_icons:
   android: true
