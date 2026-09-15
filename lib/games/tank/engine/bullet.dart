@@ -39,8 +39,9 @@ class Bullet extends PositionComponent {
     );
   }
 
-  /// 参与碰撞的墙体矩形（迷宫单位，随迷宫生成一次、与画布无关）
-  final List<Rect> walls;
+  /// 参与碰撞的墙体形状（迷宫单位，随迷宫生成一次、与画布无关；
+  /// 换迷宫由战场原地重填，子弹持有同一列表引用自动生效）
+  final List<TankWall> walls;
 
   /// 玩家色（子弹染色，同归属坦克）
   final Color color;
@@ -105,10 +106,10 @@ class Bullet extends PositionComponent {
   /// 一次扫描可能撞到多面墙（墙角），音效只触发一次
   void _bounceOffWalls() {
     var bounced = false;
-    for (final wall in walls) {
+    for (final (rect, _, _) in walls) {
       final closestX =
-          logicalPos.x.clamp(wall.left, wall.right).toDouble();
-      final closestY = logicalPos.y.clamp(wall.top, wall.bottom).toDouble();
+          logicalPos.x.clamp(rect.left, rect.right).toDouble();
+      final closestY = logicalPos.y.clamp(rect.top, rect.bottom).toDouble();
       final dx = logicalPos.x - closestX;
       final dy = logicalPos.y - closestY;
       final distSq = dx * dx + dy * dy;

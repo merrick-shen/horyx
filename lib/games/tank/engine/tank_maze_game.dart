@@ -46,18 +46,35 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
   /// 本局迷宫（每局开始时重新生成，见 [_startNewRound]）
   TankMaze maze;
 
-  /// 重建墙体碰撞矩形（迷宫单位）。
+  /// 重建墙体碰撞形状（迷宫单位）。
   /// 墙段两端各延伸半个墙厚（0.05 格）覆盖转角接缝，与渲染一致。
-  /// 原地清空重填：坦克持有同一列表引用，换迷宫后自动生效
+  /// 原地清空重填：坦克/子弹持有同一列表引用，换迷宫后自动生效。
+  /// 预计算的（中心, 半尺寸）随矩形一并生成，坦克 SAT 热路径直接复用，
+  /// 免于每面墙每次碰撞测试新建 Vector2
   void _rebuildLogicalWalls() {
     _logicalWalls
       ..clear()
       ..addAll([
         for (final (x, y, vertical) in maze.walls)
           vertical
-              ? Rect.fromLTWH(x - 0.05, y - 0.05, 0.10, 1.10)
-              : Rect.fromLTWH(x - 0.05, y - 0.05, 1.10, 0.10),
+              ? _tankWall(x - 0.05, y - 0.05, 0.10, 1.10)
+              : _tankWall(x - 0.05, y - 0.05, 1.10, 0.10),
       ]);
+  }
+
+  /// 由左上角与长宽构建墙体形状（迷宫单位）
+  static TankWall _tankWall(
+    double left,
+    double top,
+    double width,
+    double height,
+  ) {
+    final rect = Rect.fromLTWH(left, top, width, height);
+    return (
+      rect,
+      Vector2(rect.center.dx, rect.center.dy),
+      Vector2(rect.width / 2, rect.height / 2),
+    );
   }
 
   /// 双方坦克（按玩家索引，供摇杆输入下发）
@@ -102,8 +119,8 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
   /// 已构建的迷宫组件（画布尺寸变化时先清空再重建）
   final List<Component> _mazeComponents = [];
 
-  /// 墙体碰撞矩形（迷宫单位，原地重填以保持坦克持有的引用有效）
-  final List<Rect> _logicalWalls = [];
+  /// 墙体碰撞形状（迷宫单位，原地重填以保持坦克/子弹持有的引用有效）
+  final List<TankWall> _logicalWalls = [];
 
   /// 画布几何：单元格边长（像素）与迷宫左上角偏移（渲染换算用）
   double _cell = 0;
@@ -391,7 +408,7 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
           hitTest: (p) {
             final lx = (p.x - _boardOffset.x) / _cell;
             final ly = (p.y - _boardOffset.y) / _cell;
-            return _logicalWalls.any((w) => w.contains(Offset(lx, ly)));
+            return _logicalWalls.any((w) => w.$1.contains(Offset(lx, ly)));
           },
         ),
       );

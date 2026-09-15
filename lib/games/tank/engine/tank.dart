@@ -1,10 +1,16 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/tint_filter.dart';
+
+/// 墙体碰撞形状（迷宫单位）：轴对齐矩形 + 预计算的（中心, 半尺寸）。
+/// 中心/半尺寸供坦克 SAT 热路径直接复用（免每面墙每次测试新建 Vector2），
+/// 矩形本体供子弹最近点反弹（clamp 左/右/上/下边）
+typedef TankWall = (Rect rect, Vector2 center, Vector2 half);
 
 /// 顶视坦克实体：车体与炮塔随朝向整体旋转，原版摇杆驾驶。
 /// 状态存于迷宫坐标系（[logicalPos] 单位=格，原点迷宫左上角），
@@ -104,8 +110,9 @@ class Tank extends PositionComponent {
     ];
   }
 
-  /// 参与碰撞的墙体矩形（迷宫单位，随迷宫生成一次、与画布无关）
-  final List<Rect> walls;
+  /// 参与碰撞的墙体形状（迷宫单位，随迷宫生成一次、与画布无关；
+  /// 换迷宫由战场原地重填，坦克持有同一列表引用自动生效）
+  final List<TankWall> walls;
 
   /// 玩家色（同时用于与对局页摇杆的归属映射）
   final Color color;
@@ -284,15 +291,15 @@ class Tank extends PositionComponent {
     for (final (offset, half) in _collisionRects) {
       final rectCenter = _localToWorld(center, angle, offset);
 
-      // 墙（轴对齐矩形 = 旋转角为 0 的矩形）
-      for (final wall in walls) {
+      // 墙（轴对齐矩形 = 旋转角为 0 的矩形；中心/半尺寸已由战场预计算）
+      for (final (_, wallCenter, wallHalf) in walls) {
         if (rectsOverlap(
           rectCenter,
           angle,
           half,
-          Vector2(wall.center.dx, wall.center.dy),
+          wallCenter,
           0,
-          Vector2(wall.width / 2, wall.height / 2),
+          wallHalf,
         )) {
           return true;
         }
@@ -326,14 +333,14 @@ class Tank extends PositionComponent {
       for (final (offset, half) in _collisionRects) {
         final rectCenter = _localToWorld(logicalPos, angle, offset);
 
-        for (final wall in walls) {
+        for (final (_, wallCenter, wallHalf) in walls) {
           final mtv = rectMtv(
             rectCenter,
             angle,
             half,
-            Vector2(wall.center.dx, wall.center.dy),
+            wallCenter,
             0,
-            Vector2(wall.width / 2, wall.height / 2),
+            wallHalf,
           );
           if (mtv != null) {
             logicalPos += mtv;
@@ -386,7 +393,11 @@ class Tank extends PositionComponent {
   ) {
     final dx = c2.x - c1.x;
     final dy = c2.y - c1.y;
-    for (final (ax, ay) in _satAxisList(a1, a2)) {
+    _fillSatAxes(a1, a2);
+    final axes = _satAxisBuffer;
+    for (var i = 0; i < 8; i += 2) {
+      final ax = axes[i];
+      final ay = axes[i + 1];
       final r1 = _projRadius(a1, half1, ax, ay);
       final r2 = _projRadius(a2, half2, ax, ay);
       if ((dx * ax + dy * ay).abs() > r1 + r2) return false;
@@ -407,10 +418,15 @@ class Tank extends PositionComponent {
     final dx = c2.x - c1.x;
     final dy = c2.y - c1.y;
 
+    _fillSatAxes(a1, a2);
+    final axes = _satAxisBuffer;
+
     var bestOverlap = double.infinity;
     var bestX = 0.0;
     var bestY = 0.0;
-    for (final (ax, ay) in _satAxisList(a1, a2)) {
+    for (var i = 0; i < 8; i += 2) {
+      final ax = axes[i];
+      final ay = axes[i + 1];
       final dot = dx * ax + dy * ay;
       final overlap = _projRadius(a1, half1, ax, ay) +
           _projRadius(a2, half2, ax, ay) -
@@ -426,14 +442,27 @@ class Tank extends PositionComponent {
     return Vector2(bestX, bestY);
   }
 
-  /// SAT 候选轴：两矩形各自的局部轴（长轴、宽轴）
-  static List<(double, double)> _satAxisList(double a1, double a2) {
-    return [
-      (math.cos(a1), math.sin(a1)),
-      (-math.sin(a1), math.cos(a1)),
-      (math.cos(a2), math.sin(a2)),
-      (-math.sin(a2), math.cos(a2)),
-    ];
+  /// SAT 候选轴缓冲：两矩形各自的局部轴（长轴、宽轴）共 4 条 × 2 分量。
+  /// 复用同一静态缓冲，避免热路径每次调用新建 List 与 4 个 record
+  /// （碰撞检测全部在主 isolate 同步执行，复用无并发问题）
+  static final Float64List _satAxisBuffer = Float64List(8);
+
+  /// 把两矩形的局部轴（长轴、宽轴）写入 [_satAxisBuffer]，
+  /// 供 [rectsOverlap] 与 [rectMtv] 随后同步读取
+  static void _fillSatAxes(double a1, double a2) {
+    final c1 = math.cos(a1);
+    final s1 = math.sin(a1);
+    final c2 = math.cos(a2);
+    final s2 = math.sin(a2);
+    _satAxisBuffer
+      ..[0] = c1
+      ..[1] = s1
+      ..[2] = -s1
+      ..[3] = c1
+      ..[4] = c2
+      ..[5] = s2
+      ..[6] = -s2
+      ..[7] = c2;
   }
 
   /// 旋转矩形（朝向 angle、半尺寸 half）在测试轴 (ax, ay) 上的投影半径：
