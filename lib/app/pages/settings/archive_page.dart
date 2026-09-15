@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/chess/models/chess_piece.dart';
-import 'package:horyx/games/chess/services/chess_storage.dart';
-import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
-import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
-import 'package:horyx/games/tank/services/tank_storage.dart';
-import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
+import 'package:horyx/app/game_registry.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
@@ -14,7 +9,9 @@ import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 存档管理页
 /// 聚合展示各游戏的未完成对局存档（列表形式），支持单个删除
-/// 删除前弹确认弹窗，确认后清除对应游戏存档并刷新列表
+/// 删除前弹确认弹窗，确认后清除对应游戏存档并刷新列表。
+/// 条目完全由 GameRegistry 驱动（名称/图标/摘要/清档经 GameArchiveInfo
+/// 适配注入），新增游戏只需在注册表登记一处，本页自动收录
 class ArchivePage extends StatefulWidget {
   const ArchivePage({super.key});
 
@@ -23,7 +20,7 @@ class ArchivePage extends StatefulWidget {
 }
 
 class _ArchivePageState extends State<ArchivePage> {
-  /// 存档条目列表（按固定游戏顺序展示）
+  /// 存档条目列表（按 GameRegistry 登记顺序展示，与首页卡片一致）
   List<_ArchiveEntry> _entries = [];
 
   /// 数据加载完成标记：区分「加载中」与「无存档」两种空列表状态
@@ -35,70 +32,24 @@ class _ArchivePageState extends State<ArchivePage> {
     _loadArchives();
   }
 
-  /// 读取各游戏的未完成存档并组装展示条目
+  /// 按 GameRegistry 登记顺序读取各游戏的未完成存档并组装展示条目；
   /// 单个游戏存档损坏不影响其余展示（各 load 内部已容错返回 null）
   Future<void> _loadArchives() async {
     // 本地存储读取极快，顺序读取即可（混合类型不宜用 Future.wait）
-    final wordPk = await WordPkStorage.instance.load();
-    final gomoku = await GomokuStorage.instance.load();
-    final scoreboard = await ScoreboardStorage.instance.load();
-    final tank = await TankStorage.instance.load();
-    final chess = await ChessStorage.instance.load();
-
-    // 摘要文案与各游戏设置页「继续上次对局」卡片保持一致；
-    // clear 绑定对应游戏的存档清除服务，删除时由页面统一调用
-    final entries = <_ArchiveEntry>[
-      if (wordPk != null)
-        _ArchiveEntry(
-          name: '单词PK',
-          icon: Icons.spellcheck_rounded,
-          summary:
-              '${wordPk.playerCount} 人对局 · '
-              '已验证 ${wordPk.entries.length} 个单词',
-          savedAt: wordPk.savedAt,
-          clear: WordPkStorage.instance.clear,
-        ),
-      if (gomoku != null)
-        _ArchiveEntry(
-          name: '五子棋',
-          icon: Icons.grid_on_rounded,
-          summary:
-              '${gomoku.boardSize}×${gomoku.boardSize} 对局 · '
-              '已落子 ${gomoku.moves.length} 手',
-          savedAt: gomoku.savedAt,
-          clear: GomokuStorage.instance.clear,
-        ),
-      if (scoreboard != null)
-        _ArchiveEntry(
-          name: '计分器',
-          icon: Icons.score_rounded,
-          summary:
-              'BO${scoreboard.bestOf} · '
-              '大比分 ${scoreboard.redGames}:${scoreboard.blueGames} · '
-              '当前局 ${scoreboard.redScore}:${scoreboard.blueScore}',
-          savedAt: scoreboard.savedAt,
-          clear: ScoreboardStorage.instance.clear,
-        ),
-      if (tank != null)
-        _ArchiveEntry(
-          name: '坦克动荡',
-          icon: Icons.gps_fixed_rounded,
-          summary: '当前比分 ${tank.redScore}:${tank.greenScore}',
-          savedAt: tank.savedAt,
-          clear: TankStorage.instance.clear,
-        ),
-      // 象棋列在末位，与首页卡片顺序一致
-      if (chess != null)
-        _ArchiveEntry(
-          name: '中国象棋',
-          icon: Icons.grid_on_rounded, // 与 ChessPage.gameIcon 一致
-          summary:
-              '${chess.turn == ChessColor.red ? '红方' : '黑方'}行棋 · '
-              '已走 ${chess.moves.length} 手',
-          savedAt: chess.savedAt,
-          clear: ChessStorage.instance.clear,
-        ),
-    ];
+    final entries = <_ArchiveEntry>[];
+    for (final game in GameRegistry.games) {
+      final archive = game.archive;
+      if (archive == null) continue;
+      final saved = await archive.load();
+      if (saved == null) continue;
+      entries.add(_ArchiveEntry(
+        name: game.name,
+        icon: game.icon,
+        summary: saved.summary,
+        savedAt: saved.savedAt,
+        clear: archive.clear,
+      ));
+    }
 
     if (mounted) {
       setState(() {

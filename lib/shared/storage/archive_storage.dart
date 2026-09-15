@@ -2,6 +2,17 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// 各游戏存档模型的基础契约：存档管理页展示（摘要/保存时间）所需的最小接口
+/// （GameInfo.archive 适配经此免转型读取展示数据）
+abstract interface class GameArchiveSummary {
+  /// 存档进度摘要：与各游戏设置页「继续上次对局」卡片文案同源，
+  /// 单点维护于各存档模型
+  String get summary;
+
+  /// 存档时间
+  DateTime get savedAt;
+}
+
 /// 对局存档服务泛型基类
 /// 基于 SharedPreferences 的本地 JSON 存储：
 /// 完整状态先序列化为一个字符串再单键写入（单键写入具备原子性），

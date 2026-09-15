@@ -106,10 +106,7 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
         if (saved != null) ...[
           ResumeCard(
             title: '继续上次计分',
-            summary:
-                'BO${saved.bestOf} · '
-                '大比分 ${saved.redGames}:${saved.blueGames}'
-                ' · 当前局 ${saved.redScore}:${saved.blueScore}',
+            summary: saved.summary,
             onTap: widget.onResume,
           ),
           const SizedBox(height: 16),

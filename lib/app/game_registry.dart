@@ -1,15 +1,18 @@
-import 'package:flutter/material.dart';
-
 import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/games/chess/pages/chess_online_page.dart';
 import 'package:horyx/games/chess/pages/chess_page.dart';
+import 'package:horyx/games/chess/services/chess_storage.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_page.dart';
+import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 import 'package:horyx/games/scoreboard/pages/scoreboard_page.dart';
+import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
 import 'package:horyx/games/tank/pages/tank_online_page.dart';
 import 'package:horyx/games/tank/pages/tank_page.dart';
+import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_page.dart';
+import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 
 /// 游戏注册中心：所有游戏的单一事实来源（组合根）。
 /// 位于 app 层：注册表需引用全部游戏页面，放 shared 会让最底层
@@ -17,8 +20,8 @@ import 'package:horyx/games/word_pk/pages/word_pk_page.dart';
 /// game_info.dart 纯数据模型保留 shared 供各层使用。
 /// 名称/图标等注册数据以各游戏页面常量为源（游戏模块与注册表、
 /// 建房入口共用同一常量），本类只做汇总登记。
-/// 新增/恢复游戏只需在此登记一处，首页入口、房间图标与
-/// 客户端联机跳转均自动生效（无需再改各 UI 层的硬编码映射）
+/// 新增/恢复游戏只需在此登记一处，首页入口、房间图标、客户端联机
+/// 跳转与存档管理页条目均自动生效（无需再改各 UI 层的硬编码映射）
 abstract final class GameRegistry {
   /// 单词PK
   static final GameInfo wordPk = GameInfo(
@@ -28,6 +31,10 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const WordPkPage(),
     onlineClientBuilder: (context, client) =>
         WordPkOnlinePage.client(client: client),
+    archive: GameArchiveInfo(
+      load: () => WordPkStorage.instance.load(),
+      clear: WordPkStorage.instance.clear,
+    ),
   );
 
   /// 五子棋
@@ -38,6 +45,10 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const GomokuPage(),
     onlineClientBuilder: (context, client) =>
         GomokuOnlinePage.client(client: client),
+    archive: GameArchiveInfo(
+      load: () => GomokuStorage.instance.load(),
+      clear: GomokuStorage.instance.clear,
+    ),
   );
 
   /// 坦克动荡
@@ -51,6 +62,10 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const TankPage(),
     onlineClientBuilder: (context, client) =>
         TankOnlinePage.client(client: client),
+    archive: GameArchiveInfo(
+      load: () => TankStorage.instance.load(),
+      clear: TankStorage.instance.clear,
+    ),
   );
 
   /// 中国象棋
@@ -63,14 +78,22 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const ChessPage(),
     onlineClientBuilder: (context, client) =>
         ChessOnlinePage.client(client: client),
+    archive: GameArchiveInfo(
+      load: () => ChessStorage.instance.load(),
+      clear: ChessStorage.instance.clear,
+    ),
   );
 
   /// 计分器（纯本地工具，无联机对局页）
   static final GameInfo scoreboard = GameInfo(
-    name: '计分器',
+    name: ScoreboardPage.gameName,
     description: '运动计分板，支持主流运动项目',
-    icon: Icons.score_rounded,
+    icon: ScoreboardPage.gameIcon,
     pageBuilder: (context) => const ScoreboardPage(),
+    archive: GameArchiveInfo(
+      load: () => ScoreboardStorage.instance.load(),
+      clear: ScoreboardStorage.instance.clear,
+    ),
   );
 
   /// 首页游戏列表（全部已上架游戏）

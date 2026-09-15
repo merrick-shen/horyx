@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/chess/models/chess_game_state.dart';
-import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/shared/widgets/lan_mode_panel.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/resume_card.dart';
@@ -45,12 +44,10 @@ class _ChessSetupViewState extends State<ChessSetupView> {
 
     return SetupScaffold(
       children: [
-        // 存在未完成对局时展示恢复入口（摘要：行棋方 + 已走手数）
+        // 存在未完成对局时展示恢复入口
         if (saved != null) ...[
           ResumeCard(
-            summary:
-                '${saved.turn == ChessColor.red ? '红方' : '黑方'}行棋 · '
-                '已走 ${saved.moves.length} 手',
+            summary: saved.summary,
             onTap: widget.onResume,
           ),
           const SizedBox(height: 16),

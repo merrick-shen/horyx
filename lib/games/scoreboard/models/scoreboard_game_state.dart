@@ -1,6 +1,8 @@
+import 'package:horyx/shared/storage/archive_storage.dart';
+
 /// 计分器对局存档模型
 /// 记录完整计分配置、当前比分与撤销快照栈，用于「保存并退出」后的恢复
-class ScoreboardGameState {
+class ScoreboardGameState implements GameArchiveSummary {
   const ScoreboardGameState({
     required this.bestOf,
     required this.winScore,
@@ -43,7 +45,13 @@ class ScoreboardGameState {
   final bool gameOver;
 
   /// 存档时间
+  @override
   final DateTime savedAt;
+
+  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
+  @override
+  String get summary =>
+      'BO$bestOf · 大比分 $redGames:$blueGames · 当前局 $redScore:$blueScore';
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   /// （与其他游戏存档模型一致；旧存档缺失此字段时视为 1）

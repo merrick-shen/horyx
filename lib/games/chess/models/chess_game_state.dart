@@ -1,9 +1,10 @@
 import 'package:horyx/games/chess/models/chess_board.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
 
 /// 象棋未完成对局的存档状态
 /// 用于「保存并退出」时持久化，下次进入应用可恢复对局
-class ChessGameState {
+class ChessGameState implements GameArchiveSummary {
   const ChessGameState({
     required this.boardCode,
     required this.turn,
@@ -21,7 +22,14 @@ class ChessGameState {
   final List<ChessMove> moves;
 
   /// 存档时间
+  @override
   final DateTime savedAt;
+
+  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
+  @override
+  String get summary =>
+      '${turn == ChessColor.red ? '红方' : '黑方'}行棋 · '
+      '已走 ${moves.length} 手';
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;

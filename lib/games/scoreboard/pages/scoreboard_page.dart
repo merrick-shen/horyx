@@ -22,6 +22,13 @@ import 'package:horyx/games/scoreboard/widgets/scoreboard_setup_view.dart';
 class ScoreboardPage extends StatefulWidget {
   const ScoreboardPage({super.key});
 
+  /// 游戏名称：GameRegistry 登记与存档管理页共用的单一事实来源
+  /// （与其他游戏页面的 gameName 常量约定一致）
+  static const String gameName = '计分器';
+
+  /// 游戏图标：与 [gameName] 同为注册数据的单一来源
+  static const IconData gameIcon = Icons.score_rounded;
+
   @override
   State<ScoreboardPage> createState() => _ScoreboardPageState();
 }

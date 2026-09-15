@@ -56,9 +56,7 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
         // 存在未完成对局时展示恢复入口
         if (saved != null) ...[
           ResumeCard(
-            summary:
-                '${saved.playerCount} 人对局 · '
-                '已验证 ${saved.entries.length} 个单词',
+            summary: saved.summary,
             onTap: widget.onResume,
           ),
           const SizedBox(height: 16),

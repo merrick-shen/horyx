@@ -1,6 +1,8 @@
+import 'package:horyx/shared/storage/archive_storage.dart';
+
 /// 五子棋未完成对局的存档状态
 /// 用于「保存并退出」时持久化，下次进入应用可恢复对局
-class GomokuGameState {
+class GomokuGameState implements GameArchiveSummary {
   const GomokuGameState({
     required this.boardSize,
     required this.moves,
@@ -14,7 +16,13 @@ class GomokuGameState {
   final List<(int, int)> moves;
 
   /// 存档时间
+  @override
   final DateTime savedAt;
+
+  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
+  @override
+  String get summary =>
+      '$boardSize×$boardSize 对局 · 已落子 ${moves.length} 手';
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;

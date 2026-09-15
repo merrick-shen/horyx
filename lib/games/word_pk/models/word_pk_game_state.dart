@@ -1,8 +1,9 @@
 import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
 
 /// 单词PK未完成对局的存档状态
 /// 用于「保存并退出」时持久化，下次进入应用可恢复对战
-class WordPkGameState {
+class WordPkGameState implements GameArchiveSummary {
   const WordPkGameState({
     required this.playerCount,
     required this.currentPlayer,
@@ -20,7 +21,13 @@ class WordPkGameState {
   final List<WordPkEntry> entries;
 
   /// 存档时间
+  @override
   final DateTime savedAt;
+
+  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
+  @override
+  String get summary =>
+      '$playerCount 人对局 · 已验证 ${entries.length} 个单词';
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;

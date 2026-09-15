@@ -1,7 +1,9 @@
+import 'package:horyx/shared/storage/archive_storage.dart';
+
 /// 坦克动荡对局存档模型
 /// 仅保存双方比分——坦克位置、迷宫地图等战场状态不存档，
 /// 恢复时重新开一局随机迷宫，从存档比分继续累计
-class TankGameState {
+class TankGameState implements GameArchiveSummary {
   const TankGameState({
     required this.redScore,
     required this.greenScore,
@@ -15,7 +17,12 @@ class TankGameState {
   final int greenScore;
 
   /// 存档时间
+  @override
   final DateTime savedAt;
+
+  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
+  @override
+  String get summary => '当前比分 $redScore:$greenScore';
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   /// （与其他游戏存档模型一致；旧存档缺失此字段时视为 1）
