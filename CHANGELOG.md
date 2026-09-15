@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 优化应用启动流畅度（词表解析移入后台线程，减少启动时掉帧）
 - 优化坦克游戏运行流畅度（减少激烈操作时的卡顿）
 - 计分器赛制改为仅支持奇数局数
+- 单词PK人数设置改为手动输入（支持 2-8 人）
 
 ### Fixed
 

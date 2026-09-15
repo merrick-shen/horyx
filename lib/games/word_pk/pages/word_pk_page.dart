@@ -188,6 +188,8 @@ class _WordPkPageState
                           key: const ValueKey('setup'),
                           onStart: _onStart,
                           onCreateRoom: _createRoom,
+                          // 从对局退回设置时保留当前生效人数（输入框预填一致）
+                          initialPlayers: _playerCount,
                           savedState: savedState,
                           onResume: _resumeSaved,
                         ),
