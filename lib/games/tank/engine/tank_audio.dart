@@ -26,7 +26,8 @@ abstract final class TankAudio {
     _explosion,
   ];
 
-  /// 已加载的音频（按文件索引）
+  /// 已加载的音频（按文件索引）；AudioSource 持有原生解码内存，
+  /// 一经加载全应用复用，绝不覆盖（覆盖而不 dispose 会泄漏）
   static final Map<String, AudioSource> _sounds = {};
 
   /// 初始化引擎并预解码全部音效进内存（战场 onLoad 中等待一次）。
@@ -40,6 +41,9 @@ abstract final class TankAudio {
         await SoLoud.instance.init();
       }
       for (final file in _files) {
+        // 已加载条目直接跳过：每次进对局页都重新解码既浪费，
+        // 覆盖旧 source 也会泄漏原生解码内存（旧 source 未 dispose）
+        if (_sounds.containsKey(file)) continue;
         _sounds[file] = await SoLoud.instance.loadAsset('$_prefix$file');
       }
     } catch (e) {
