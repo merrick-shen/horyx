@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 联机五子棋对局异常终止（断线/解散/对方离开）后，底部操作按钮统一为「退出对局」
 - 优化应用启动流畅度（词表解析移入后台线程，减少启动时掉帧）
 - 优化坦克游戏运行流畅度（减少激烈操作时的卡顿）
+- 计分器赛制改为仅支持奇数局数
 
 ### Fixed
 

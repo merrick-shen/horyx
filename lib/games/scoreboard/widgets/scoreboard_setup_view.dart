@@ -114,7 +114,7 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
         OptionPanel(
           title: '赛制',
           description:
-              '先赢得多数局数的一方获得整场胜利，输入局数（$_bestOfMin-$_bestOfMax）',
+              '先赢得多数局数的一方获得整场胜利，仅支持奇数局数（$_bestOfMin-$_bestOfMax）',
           child: NumberOptionBlock(
             key: const Key('bestOfInput'),
             controller: _bestOfController,
@@ -122,6 +122,8 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
             hintText: '输入局数',
             min: _bestOfMin,
             max: _bestOfMax,
+            // 奇数局保证必分胜负：多数局语义下偶数局可能打满后总比分相同
+            validate: (v) => v.isOdd,
             onValid: (v) => setState(() => _bestOf = v),
             onCleared: () => setState(
               () => _bestOf = ScoreboardSetupView.bestOfDefault,

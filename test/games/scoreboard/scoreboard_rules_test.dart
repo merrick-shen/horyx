@@ -5,6 +5,10 @@ import 'package:horyx/games/scoreboard/services/scoreboard_rules.dart';
 /// 覆盖 BO 多数局与 deuce（平分后领先 2 分）两类规则边界
 void main() {
   group('gamesToWin（BO 多数局）', () {
+    test('BO1 需赢 1 局', () {
+      expect(ScoreboardRules.gamesToWin(1), 1);
+    });
+
     test('BO3 需赢 2 局', () {
       expect(ScoreboardRules.gamesToWin(3), 2);
     });
@@ -13,8 +17,8 @@ void main() {
       expect(ScoreboardRules.gamesToWin(5), 3);
     });
 
-    test('偶数 BO 也取多数局（BO4 需赢 3 局，避免总比分平局）', () {
-      expect(ScoreboardRules.gamesToWin(4), 3);
+    test('BO7 需赢 4 局', () {
+      expect(ScoreboardRules.gamesToWin(7), 4);
     });
   });
 

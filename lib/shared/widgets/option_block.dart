@@ -101,6 +101,7 @@ class NumberOptionBlock extends StatefulWidget {
     required this.max,
     required this.onValid,
     required this.onCleared,
+    this.validate,
     this.width = double.infinity,
     this.height = 56,
   });
@@ -123,6 +124,10 @@ class NumberOptionBlock extends StatefulWidget {
 
   /// 输入清空回调
   final VoidCallback onCleared;
+
+  /// min/max 范围校验之后的补充校验（如「仅允许奇数」）：
+  /// 返回 false 时与超范围同等处理——红边提示且不生效；null 时只查范围
+  final bool Function(int value)? validate;
 
   /// 块宽度（默认撑满面板宽度，保持与面板等宽的大输入区域）
   final double width;
@@ -148,7 +153,10 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
       return;
     }
     final value = int.tryParse(raw);
-    final valid = value != null && value >= widget.min && value <= widget.max;
+    final valid = value != null &&
+        value >= widget.min &&
+        value <= widget.max &&
+        (widget.validate?.call(value) ?? true);
     // 非空且非法 → 红边；有效值生效，无效输入保持上次生效值
     setState(() => _invalid = !valid);
     if (valid) widget.onValid(value);
