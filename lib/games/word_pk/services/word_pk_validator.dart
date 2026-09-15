@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show compute, debugPrint;
 import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
@@ -16,24 +16,35 @@ class WordPkValidator {
   /// 词表 Set 缓存（小写存储，单次查询 O(1)）
   static Set<String>? _dictionary;
 
+  /// 进行中的加载任务：加载窗口内重复调用 [load] 直接复用，不重复解析
+  static Future<void>? _loading;
+
   /// 预加载词表（AppShell 挂载时预热一次，重复调用无副作用）
   /// 加载失败（资产缺失/损坏等打包异常）时降级为空词表：
   /// 所有单词校验将返回 false（单词PK 无法正常判定），
   /// 但应用可正常启动不白屏——校验不可用远好于整体不可用
-  static Future<void> load() async {
-    if (_dictionary != null) return;
+  static Future<void> load() => _loading ??= _load();
+
+  static Future<void> _load() async {
     try {
+      // loadString 是异步 IO 不阻塞主线程；split + 逐行归一化 + Set 构建
+      // （37 万行）是 CPU 密集操作，移入后台 isolate 执行（主 isolate
+      // 只等待结果），避免预热撞上启动首帧造成掉帧
       final text = await rootBundle.loadString(_assetPath);
-      _dictionary = {
-        // 逐行读取并统一小写，trim 兼容换行符差异
-        for (final line in text.split('\n')) line.trim().toLowerCase(),
-      };
+      _dictionary = await compute(_parseDictionary, text);
     } catch (e) {
       // 保留失败痕迹（release 下自动静音），便于排查「单词全判无效」类问题
       debugPrint('WordPkValidator: 词表加载失败，降级为空词表 —— $e');
       _dictionary = const <String>{};
     }
   }
+
+  /// 词表文本解析（在后台 isolate 中执行）：37 万行的
+  /// split/trim/toLowerCase/Set 构建同步耗时百毫秒级
+  static Set<String> _parseDictionary(String text) => {
+    // 逐行读取并统一小写，trim 兼容换行符差异
+    for (final line in text.split('\n')) line.trim().toLowerCase(),
+  };
 
   /// 判断是否为真实存在的英文单词（大小写不敏感）
   /// 需先调用 [load] 完成词表加载，未加载时一律返回 false

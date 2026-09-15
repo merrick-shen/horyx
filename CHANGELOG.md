@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 五子棋棋盘改为木色，避免棋子与棋盘同色影响辨识
 - 计分器设置输入框加宽至撑满面板
 - 联机五子棋对局异常终止（断线/解散/对方离开）后，底部操作按钮统一为「退出对局」
+- 优化应用启动流畅度（词表解析移入后台线程，减少启动时掉帧）
 
 ### Fixed
 

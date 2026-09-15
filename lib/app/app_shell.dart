@@ -28,8 +28,9 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    // 预热单词PK词表（约 37 万词，解析耗时百毫秒级）：fire-and-forget
-    // 不阻塞首帧——用户从启动到进入单词PK并提交单词远慢于加载完成，
+    // 预热单词PK词表（约 37 万词）：fire-and-forget 不阻塞首帧——
+    // 解析在后台 isolate 中执行，主线程只等待结果，不占启动帧预算；
+    // 用户从启动到进入单词PK并提交单词远慢于加载完成，
     // 未加载完成的窗口内 isValid 返回 false 在真实操作路径上不可感知。
     // 放在 app 层骨架而非 main 入口：入口不依赖具体游戏模块，
     // 挂载时机与原先几乎一致（runApp 后首帧）
