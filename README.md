@@ -65,5 +65,5 @@ flutter run                      # 运行（debug 模式，连接设备）
 flutter analyze                  # 静态分析
 flutter test                     # 运行单元测试
 dart run flutter_launcher_icons  # 重新生成应用图标（修改源图后执行）
-flutter build apk --release      # 构建 release 包
+flutter build apk --release --target-platform android-arm64    # 构建 release 包（仅 arm64 单 ABI，大幅缩小体积；不支持 2014 年前的 32 位设备与 x86 模拟器）
 ```
