@@ -1,3 +1,4 @@
+import com.android.build.api.variant.impl.VariantOutputImpl
 import java.io.FileInputStream
 import java.util.Properties
 
@@ -71,4 +72,19 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// APK 输出重命名：app-release.apk → Horyx-v{版本号}-{debug|release}.apk
+// 版本号自动取自 pubspec.yaml 的 version
+// AGP 9 移除了旧 applicationVariants API，改用 Variant API 重命名；
+// VariantOutputImpl 为内部实现类，是当前唯一可设置 outputFileName 的途径（官方 gradle-recipes 同款写法）
+val appVerName = flutter.versionName
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        variant.outputs.forEach { output ->
+            (output as VariantOutputImpl).outputFileName.set(
+                "Horyx-v$appVerName-${variant.name}.apk"
+            )
+        }
+    }
 }
