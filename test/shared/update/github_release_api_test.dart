@@ -8,9 +8,9 @@ import 'package:horyx/shared/update/github_release_api.dart';
 
 /// GitHubReleaseApi 测试：注入 mock HttpClient，不发真实网络请求
 void main() {
-  // 与 GitHubReleaseApi 内的仓库常量保持一致（当前为测试仓库）
+  // URL 由仓库常量拼出，避免与 GitHubReleaseApi 脱节
   const latestUrl =
-      'https://api.github.com/repos/merrick-shen/update-test/releases/latest';
+      'https://api.github.com/repos/${GitHubReleaseApi.repoOwner}/${GitHubReleaseApi.repoName}/releases/latest';
 
   /// 标准响应体：含一个 APK 资产
   const fullBody = '''
@@ -18,7 +18,7 @@ void main() {
     "tag_name": "v0.10.0",
     "name": "0.10.0",
     "body": "修复若干问题",
-    "html_url": "https://github.com/merrick-shen/update-test/releases/tag/v0.10.0",
+    "html_url": "https://github.com/merrick-shen/horyx/releases/tag/v0.10.0",
     "assets": [
       {"name": "README.md", "browser_download_url": "https://example.com/README.md"},
       {"name": "horyx-v0.10.0.apk", "browser_download_url": "https://example.com/app.apk"}
@@ -44,7 +44,7 @@ void main() {
       expect(release.body, '修复若干问题');
       expect(
         release.htmlUrl,
-        'https://github.com/merrick-shen/update-test/releases/tag/v0.10.0',
+        'https://github.com/merrick-shen/horyx/releases/tag/v0.10.0',
       );
       expect(release.downloadUrl, 'https://example.com/app.apk');
     });

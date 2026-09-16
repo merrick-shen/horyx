@@ -21,9 +21,9 @@ class GitHubReleaseApi {
   GitHubReleaseApi({HttpClient? client, this.timeout = defaultTimeout})
     : _client = client ?? HttpClient();
 
-  /// 当前为开发测试仓库，正式发布前切回 merrick-shen/horyx
+  /// 检查目标仓库（应用正式发布仓库）
   static const repoOwner = 'merrick-shen';
-  static const repoName = 'update-test';
+  static const repoName = 'horyx';
 
   /// 请求全程超时（国内直连 GitHub 可能长时间无响应，需兜底）
   static const defaultTimeout = Duration(seconds: 10);
