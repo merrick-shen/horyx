@@ -11,7 +11,8 @@
 - 房间扫码：qr_flutter 生成房间二维码 + mobile_scanner 扫码识别（好友扫码直接入座，需相机权限）
 - 持久化：SharedPreferences 单键 JSON 原子写入，读取容错，模型带 version 字段备迁移
 - SVG 渲染：flutter_svg（关于页 Logo 动态着色）
-- 版本信息：package_info_plus（关于页读取并展示应用版本号）
+- 版本信息：package_info_plus（关于页展示应用版本号，检查更新的版本比较源）
+- 检查更新：GitHub Releases API（dart:io HttpClient，零第三方网络依赖）查询最新版本 + url_launcher 跳转系统浏览器下载
 - 应用图标：flutter_launcher_icons（源图见 `assets/icon/`，配置位于 pubspec.yaml）
 
 ## 项目结构
@@ -39,6 +40,7 @@ lib/
 │   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页、扫码页）
 │   ├── storage/            # 存档读写泛型基类、游戏页存档状态基类、主题持久化
 │   ├── theme/              # 主题系统（调色板、控制器）
+│   ├── update/             # 应用内检查更新（GitHub Release 查询、版本比较与三态判定）
 │   ├── utils/              # 通用工具（页面提示条、资产图片解码缓存、横屏沉浸式 mixin）
 │   └── widgets/            # 通用组件（顶栏、对话框、设置项、面板、续玩卡片等）
 test/                       # 单元与集成测试（按 games/、shared/ 与 lib 同构组织）
