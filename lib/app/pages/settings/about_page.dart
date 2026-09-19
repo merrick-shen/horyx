@@ -10,6 +10,7 @@ import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/update_available_dialog.dart';
 import 'package:horyx/app/pages/settings/changelog_page.dart';
+import 'package:horyx/app/pages/settings/oss_licenses_page.dart';
 
 /// 关于页
 /// 展示应用图标、名称、简介与版本号（版本号读取自 pubspec，自动同步），
@@ -224,6 +225,52 @@ class _AboutPageState extends State<AboutPage> {
                             const SizedBox(width: 6),
                             Text(
                               '更新日志',
+                              style: TextStyle(
+                                color: palette.primary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 18,
+                              color: palette.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // 开源许可入口：展示应用所用全部开源库的许可证（合规声明）
+                    InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const OssLicensesPage(),
+                        ),
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: palette.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.balance_outlined,
+                              size: 18,
+                              color: palette.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              '开源许可',
                               style: TextStyle(
                                 color: palette.primary,
                                 fontSize: 13,

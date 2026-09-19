@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- 新增「开源许可」页面，可查看应用所用全部开源库的许可证
+
 ## [0.10.0] - 2026-09-16
 
 ### Added

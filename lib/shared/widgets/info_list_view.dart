@@ -112,12 +112,17 @@ class _InfoListCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        Text(
-          item.title,
-          style: TextStyle(
-            color: palette.primary,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
+        // 标题可收缩截断：长包名等长标题超出时省略，不挤占右侧信息与箭头
+        Flexible(
+          child: Text(
+            item.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: palette.primary,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
         if (item.trailing != null) ...[
