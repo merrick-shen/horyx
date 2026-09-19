@@ -40,6 +40,16 @@ android {
         versionName = flutter.versionName
     }
 
+    // 只保留 arm64 原生库。--target-platform android-arm64 仅裁剪 Flutter 引擎与 Dart
+    // 产物，管不住插件自带的 .so（mobile_scanner 的 ML Kit 会为三套 ABI 都打包 barhopper
+    // 模型库，多占约 9MB）。注意：AGP 9 中 defaultConfig 的 ndk.abiFilters 已无法过滤
+    // 依赖 AAR 携带的 so（实测无效），必须用打包阶段 excludes 按 ABI 目录剔除
+    packaging {
+        jniLibs {
+            excludes += setOf("lib/armeabi-v7a/**", "lib/x86_64/**")
+        }
+    }
+
     signingConfigs {
         // 正式签名：仅当 key.properties 存在时创建（内容见 android/key.properties）
         if (keystorePropertiesFile.exists()) {
