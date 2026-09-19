@@ -3,7 +3,7 @@ import 'package:flutter/services.dart' show rootBundle;
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
-import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/info_list_view.dart';
 
 /// 更新日志页（版本列表）
 /// 列表仅展示「版本号 + 发布日期 + 分类摘要」，点击进入详情页查看完整内容；
@@ -39,114 +39,28 @@ class _ChangelogPageState extends State<ChangelogPage> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
-
     return AppPageScaffold(
       title: '更新日志',
       showBack: true,
-      child: _buildBody(palette),
-    );
-  }
-
-  Widget _buildBody(AppPalette palette) {
-    if (_versions == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (_versions!.isEmpty) {
-      return Center(
-        child: Text(
-          '暂无更新内容',
-          style: TextStyle(color: palette.textSecondary, fontSize: 14),
-        ),
-      );
-    }
-    return Scrollbar(
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-        itemCount: _versions!.length,
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: _buildVersionCard(palette, _versions![index]),
-        ),
+      // 列表样式、加载/空态与点击交互统一由通用组件 InfoListView 承载
+      child: InfoListView(
+        items: _versions?.map(_toListItem).toList(),
+        emptyText: '暂无更新内容',
       ),
     );
   }
 
-  /// 版本卡片：版本号 + 发布日期 + 分类摘要，点击进入详情页
-  Widget _buildVersionCard(AppPalette palette, _VersionSection version) {
-    return PanelCard(
-      padding: EdgeInsets.zero,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => Navigator.of(context).push(_VersionDetailRoute(version)),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 版本号与日期，与详情页大标题建立 Hero 共享元素过渡
-                      Hero(
-                        tag: 'changelog-version-${version.version}',
-                        child: Material(
-                          type: MaterialType.transparency,
-                          child: _buildVersionTitle(palette, version),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _summary(version),
-                        style: TextStyle(
-                          color: palette.textSecondary,
-                          fontSize: 12.5,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  size: 20,
-                  color: palette.textSecondary,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 版本号 + 发布日期行（列表卡片与详情页共用，保证 Hero 过渡时样式连续）
-  Widget _buildVersionTitle(AppPalette palette, _VersionSection version) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
-      children: [
-        Text(
-          // 已发布版本统一 v 前缀；「未发布」为特殊标识，不加前缀
+  /// 将版本数据映射为通用列表条目；版本号 + 发布日期 + 分类摘要，点击进入详情页
+  InfoListItem _toListItem(_VersionSection version) {
+    return InfoListItem(
+      // 已发布版本统一 v 前缀；「未发布」为特殊标识，不加前缀
+      title:
           version.version == '未发布' ? version.version : 'v${version.version}',
-          style: TextStyle(
-            color: palette.primary,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        if (version.date != null) ...[
-          const SizedBox(width: 8),
-          Text(
-            version.date!,
-            style: TextStyle(color: palette.textSecondary, fontSize: 12),
-          ),
-        ],
-      ],
+      trailing: version.date,
+      subtitle: _summary(version),
+      // 与详情页大标题建立 Hero 共享元素过渡
+      heroTag: 'changelog-version-${version.version}',
+      onTap: () => Navigator.of(context).push(_VersionDetailRoute(version)),
     );
   }
 

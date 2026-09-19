@@ -11,6 +11,10 @@ class PageContent extends StatelessWidget {
     this.padding = const EdgeInsets.all(20),
   });
 
+  /// 内容最大宽度：平板/桌面端限宽居中适配的单一定义处，
+  /// 其他需要同等限宽的通用组件（如 InfoListView）复用此常量
+  static const double maxContentWidth = 520;
+
   /// 页面内容
   final Widget child;
 
@@ -30,7 +34,7 @@ class PageContent extends StatelessWidget {
     }
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
+        constraints: const BoxConstraints(maxWidth: maxContentWidth),
         child: content,
       ),
     );
