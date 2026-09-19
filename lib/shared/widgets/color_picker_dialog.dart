@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/dialog_action_button.dart';
+import 'package:horyx/shared/widgets/dialog_shell.dart';
 
 /// 自定义颜色选择器弹窗
 /// HSV 三通道（色相/饱和度/亮度）滑块调节 + 实时预览
@@ -43,113 +44,103 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
     final palette = context.palette;
     final current = _current;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-      child: Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: palette.surfaceBg,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: palette.stroke),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '自定义颜色',
-              textAlign: TextAlign.center,
+    return DialogShell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '自定义颜色',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 实时预览块：底色随滑块变化，文字按亮度自动切换黑白保证可读
+          Container(
+            height: 68,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: current,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              colorToHex(current),
               style: TextStyle(
-                color: palette.textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
+                color: current.computeLuminance() > 0.5
+                    ? Colors.black87
+                    : Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1,
               ),
             ),
-            const SizedBox(height: 16),
-            // 实时预览块：底色随滑块变化，文字按亮度自动切换黑白保证可读
-            Container(
-              height: 68,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: current,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                colorToHex(current),
-                style: TextStyle(
-                  color: current.computeLuminance() > 0.5
-                      ? Colors.black87
-                      : Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1,
+          ),
+          const SizedBox(height: 18),
+          _buildSliderRow(
+            label: '色相',
+            valueText: '${_hsv.hue.round()}°',
+            // 色相轨道：0-360° 彩虹色谱
+            trackColors: [
+              const HSVColor.fromAHSV(1, 0, 1, 1).toColor(),
+              const HSVColor.fromAHSV(1, 60, 1, 1).toColor(),
+              const HSVColor.fromAHSV(1, 120, 1, 1).toColor(),
+              const HSVColor.fromAHSV(1, 180, 1, 1).toColor(),
+              const HSVColor.fromAHSV(1, 240, 1, 1).toColor(),
+              const HSVColor.fromAHSV(1, 300, 1, 1).toColor(),
+              const HSVColor.fromAHSV(1, 360, 1, 1).toColor(),
+            ],
+            value: _hsv.hue,
+            min: 0,
+            max: 360,
+            onChanged: (v) => setState(() => _hsv = _hsv.withHue(v)),
+          ),
+          _buildSliderRow(
+            label: '饱和度',
+            valueText: '${(_hsv.saturation * 100).round()}%',
+            // 饱和度轨道：灰白 → 当前色相纯色
+            trackColors: [Colors.white, _pure],
+            value: _hsv.saturation,
+            min: 0,
+            max: 1,
+            onChanged: (v) =>
+                setState(() => _hsv = _hsv.withSaturation(v.clamp(0, 1))),
+          ),
+          _buildSliderRow(
+            label: '亮度',
+            valueText: '${(_hsv.value * 100).round()}%',
+            // 亮度轨道：黑 → 当前色相纯色
+            trackColors: [Colors.black, _pure],
+            value: _hsv.value,
+            min: 0,
+            max: 1,
+            onChanged: (v) =>
+                setState(() => _hsv = _hsv.withValue(v.clamp(0, 1))),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: DialogActionButton(
+                  label: '取消',
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
-            ),
-            const SizedBox(height: 18),
-            _buildSliderRow(
-              label: '色相',
-              valueText: '${_hsv.hue.round()}°',
-              // 色相轨道：0-360° 彩虹色谱
-              trackColors: [
-                const HSVColor.fromAHSV(1, 0, 1, 1).toColor(),
-                const HSVColor.fromAHSV(1, 60, 1, 1).toColor(),
-                const HSVColor.fromAHSV(1, 120, 1, 1).toColor(),
-                const HSVColor.fromAHSV(1, 180, 1, 1).toColor(),
-                const HSVColor.fromAHSV(1, 240, 1, 1).toColor(),
-                const HSVColor.fromAHSV(1, 300, 1, 1).toColor(),
-                const HSVColor.fromAHSV(1, 360, 1, 1).toColor(),
-              ],
-              value: _hsv.hue,
-              min: 0,
-              max: 360,
-              onChanged: (v) => setState(() => _hsv = _hsv.withHue(v)),
-            ),
-            _buildSliderRow(
-              label: '饱和度',
-              valueText: '${(_hsv.saturation * 100).round()}%',
-              // 饱和度轨道：灰白 → 当前色相纯色
-              trackColors: [Colors.white, _pure],
-              value: _hsv.saturation,
-              min: 0,
-              max: 1,
-              onChanged: (v) =>
-                  setState(() => _hsv = _hsv.withSaturation(v.clamp(0, 1))),
-            ),
-            _buildSliderRow(
-              label: '亮度',
-              valueText: '${(_hsv.value * 100).round()}%',
-              // 亮度轨道：黑 → 当前色相纯色
-              trackColors: [Colors.black, _pure],
-              value: _hsv.value,
-              min: 0,
-              max: 1,
-              onChanged: (v) =>
-                  setState(() => _hsv = _hsv.withValue(v.clamp(0, 1))),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: DialogActionButton(
-                    label: '取消',
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DialogActionButton(
+                  label: '确定',
+                  filled: true,
+                  fillColor: current,
+                  onPressed: () => Navigator.of(context).pop(current),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DialogActionButton(
-                    label: '确定',
-                    filled: true,
-                    fillColor: current,
-                    onPressed: () => Navigator.of(context).pop(current),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

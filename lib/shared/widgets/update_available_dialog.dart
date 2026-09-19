@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/update/models/release_info.dart';
 import 'package:horyx/shared/widgets/dialog_action_button.dart';
+import 'package:horyx/shared/widgets/dialog_shell.dart';
 
 /// 发现新版本弹窗（更新检测）
 /// 视觉规范复用通用确认弹窗（surfaceBg / 圆角 24 / 描边），配色随主题；
@@ -60,60 +61,45 @@ class _UpdateAvailableDialogState extends State<_UpdateAvailableDialog> {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 40),
-      // 限制最大宽度：横屏时可用宽度是整个屏幕宽，内容 stretch 会把弹窗
-      // 拉成一条长横幅，观感很差（同通用确认弹窗）
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: palette.surfaceBg,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: palette.stroke),
+    return DialogShell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '发现新版本 ${widget.release.tagName}',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          // Release 说明可能为空（发布时未填），为空时省略正文区
+          if (widget.release.body.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _buildBody(palette),
+          ],
+          const SizedBox(height: 20),
+          Row(
             children: [
-              Text(
-                '发现新版本 ${widget.release.tagName}',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: palette.textPrimary,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
+              Expanded(
+                child: DialogActionButton(
+                  label: '下次再说',
+                  onPressed: () => Navigator.of(context).pop(false),
                 ),
               ),
-              // Release 说明可能为空（发布时未填），为空时省略正文区
-              if (widget.release.body.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                _buildBody(palette),
-              ],
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: DialogActionButton(
-                      label: '下次再说',
-                      onPressed: () => Navigator.of(context).pop(false),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: DialogActionButton(
-                      label: '前往下载',
-                      filled: true,
-                      onPressed: () => Navigator.of(context).pop(true),
-                    ),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: DialogActionButton(
+                  label: '前往下载',
+                  filled: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
