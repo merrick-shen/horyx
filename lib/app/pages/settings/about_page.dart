@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/update/models/release_info.dart';
+import 'package:horyx/shared/update/download_launcher.dart';
 import 'package:horyx/shared/update/update_service.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
@@ -66,26 +65,11 @@ class _AboutPageState extends State<AboutPage> {
           release: release,
         );
         if (!mounted || !download) return;
-        await _openDownload(release);
+        await launchDownload(context, release);
       case UpdateUpToDate():
         await showAlertDialog(context, message: '当前已是最新版本');
       case UpdateCheckFailed():
         await showAlertDialog(context, message: '检查失败，请检查网络后重试（GitHub 访问可能受限）');
-    }
-  }
-
-  /// 前往下载：外部浏览器接管（APK 直链或 Release 页面）
-  Future<void> _openDownload(ReleaseInfo release) async {
-    try {
-      final launched = await launchUrl(
-        Uri.parse(release.downloadUrl),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!mounted) return;
-      // 无可处理该链接的应用等平台异常：提示用户而非静默
-      if (!launched) await showAlertDialog(context, message: '无法打开下载页面');
-    } catch (_) {
-      if (mounted) await showAlertDialog(context, message: '无法打开下载页面');
     }
   }
 

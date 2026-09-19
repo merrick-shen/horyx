@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - 新增「开源许可」页面，可查看应用所用全部开源库的许可证
+- 新增启动时自动检查更新：有新版本时弹窗提示，检查失败不打扰
 
 ## [0.10.0] - 2026-09-16
 

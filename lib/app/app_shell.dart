@@ -8,6 +8,7 @@ import 'package:horyx/app/pages/home_page.dart';
 import 'package:horyx/app/pages/more_page.dart';
 import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 import 'package:horyx/shared/pages/room_join_page.dart';
+import 'package:horyx/shared/update/auto_update_checker.dart';
 
 /// 应用根骨架：底部导航栏 + 首页/联机/更多页切换
 /// 页面切换使用 PageView 支持左右滑动手势：
@@ -35,6 +36,9 @@ class _AppShellState extends State<AppShell> {
     // 放在 app 层骨架而非 main 入口：入口不依赖具体游戏模块，
     // 挂载时机与原先几乎一致（runApp 后首帧）
     unawaited(WordPkValidator.load());
+    // 启动后自动检查更新：fire-and-forget，内部已做首帧等待、
+    // 3 秒延迟、Debug 短路与异常兜底，失败静默不影响使用
+    unawaited(AutoUpdateChecker().checkIfNeeded(context));
   }
 
   @override
