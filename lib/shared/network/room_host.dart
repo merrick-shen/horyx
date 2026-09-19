@@ -50,6 +50,11 @@ class RoomHost extends ChangeNotifier {
   /// 已入座的客户端：座位号 -> 会话（座位 1 为房主本机，不在此表）
   final Map<int, NetSession> _clients = {};
 
+  /// 已接受但尚未握手入座的会话（10 秒握手超时窗内的连接）：
+  /// 房主解散时需一并关闭——否则这些 socket 与握手 Timer 最长滞留 10 秒，
+  /// 且其中在途的 hello 会在解散后到达，若无守卫将"幽灵入座"（见 _handleHello）
+  final List<NetSession> _handshaking = [];
+
   /// 实际监听端口（start 成功后有效；basePort 为 0 时是系统分配值）
   int _port = 0;
   int get port => _port;
@@ -95,11 +100,15 @@ class RoomHost extends ChangeNotifier {
     return false;
   }
 
-  /// 解散房间：断开所有已入座玩家（各自发送 bye），停止监听
+  /// 解散房间：断开所有已入座玩家与握手中途的连接（各自发送 bye），停止监听
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
-    final sessions = List.of(_clients.values);
+    // 未握手连接不在 _clients 中，需单独关闭（bye 后其断线回调负责
+    // 从握手名单移除；名单先快照清空，避免回调期间边遍历边修改）
+    final handshaking = List.of(_handshaking);
+    _handshaking.clear();
+    final sessions = [..._clients.values, ...handshaking];
     _clients.clear();
     // 先发 bye 再关 socket；会话断开回调因 _closed 已置位而不再触发座位清理。
     // 并行关闭：半开连接（对端不回包）下单会话 flush 会挂满超时（默认 5 秒），
@@ -118,12 +127,14 @@ class RoomHost extends ChangeNotifier {
       return;
     }
     final session = NetSession(socket);
+    _handshaking.add(session);
     var seat = 0; // 0 表示尚未握手入座
     Timer? helloTimeout = Timer(const Duration(seconds: 10), () {
       if (seat == 0) session.close();
     });
 
     session.onDisconnected = () {
+      _handshaking.remove(session);
       helloTimeout?.cancel();
       helloTimeout = null;
       // 已入座则清理座位并广播；被拒的连接（seat 为 0）无需处理
@@ -137,6 +148,9 @@ class RoomHost extends ChangeNotifier {
           helloTimeout?.cancel();
           helloTimeout = null;
           seat = _handleHello(session);
+          // 入座后移交 _clients 管理；被拒（返回 0）的会话已随拒绝路径
+          // close，断线回调会将其从握手名单移除
+          if (seat != 0) _handshaking.remove(session);
         case NetMessageType.bye:
           // 客户端主动退出：bye 后 socket 关闭会触发 onDisconnected 统一清理
           break;
@@ -148,9 +162,18 @@ class RoomHost extends ChangeNotifier {
     });
   }
 
-  /// 处理握手：开局后或满员则拒绝并断开；否则分配最小空位、应答加入结果、
-  /// 广播入座消息，返回分配的座位号（拒绝时返回 0）
+  /// 处理握手：解散后迟到的 hello 直接断开（防幽灵入座）；开局后或满员
+  /// 则拒绝并断开；否则分配最小空位、应答加入结果、广播入座消息，
+  /// 返回分配的座位号（拒绝时返回 0）
   int _handleHello(NetSession session) {
+    // 房主已解散：解散瞬间仍在途的 hello 若放行入座，客户端会收到
+    // ok:true 的 joinResponse 进入等待页——此后双方心跳互保活，
+    // 房主不会再有第二次 close()（入口短路），客户端永久卡在等待页。
+    // 此处断开让客户端按掉线/解散收场（等待页转为断开提示视图）
+    if (_closed) {
+      session.close();
+      return 0;
+    }
     // 开局后不再放人：中途退出的座位虽空出，但对局进行中新加入者
     // 无法追上已同步的对局状态（重连/补位为后续增强）
     if (_gameStarted) {

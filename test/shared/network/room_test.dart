@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:horyx/shared/network/net_message.dart';
+import 'package:horyx/shared/network/net_protocol.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 
@@ -139,5 +142,54 @@ void main() {
     await client.connect();
     expect(client.phase, RoomClientPhase.failed);
     expect(client.failReason, contains('无法连接'));
+  });
+
+  test('解散后迟到的 hello 不再入座，未握手连接随解散一并关闭', () async {
+    final host = RoomHost(
+      gameName: '单词PK',
+      capacity: 2,
+      basePort: 0,
+    );
+    expect(await host.start(), isTrue);
+
+    // RoomClient.connect 会立即发 hello，无法停留在"已连接未握手"窗口，
+    // 用原始 Socket 模拟该状态（对应房主 _onAccept 已接受、hello 在途）
+    final raw = await Socket.connect('127.0.0.1', host.port);
+    final received = <NetMessage>[];
+    final decoder = NetFrameDecoder();
+    final closed = Completer<void>();
+    void markClosed() {
+      if (!closed.isCompleted) closed.complete();
+    }
+
+    raw.listen(
+      (chunk) => received.addAll(decoder.feed(chunk)),
+      onDone: markClosed,
+      // 房主销毁连接时对端可能表现为异常而非流结束，同样视为已关闭
+      onError: (Object _) => markClosed(),
+    );
+    // 留出 accept 处理时间，确保连接已进入房主的握手名单
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    await host.close();
+    // 解散应关闭未握手连接（bye 或直接销毁），对端读到流结束
+    await closed.future.timeout(const Duration(seconds: 3));
+
+    // 解散后再发 hello：修复前会收到 ok:true 的 joinResponse（幽灵入座，
+    // 客户端永久卡等待页）；修复后不得入座、不得有任何加入应答
+    try {
+      raw.add(NetProtocol.encode(const NetMessage(type: NetMessageType.hello)));
+    } catch (_) {
+      // 连接已被房主关闭导致写入失败：同样证明未入座
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(
+      received.where((m) => m.type == NetMessageType.joinResponse),
+      isEmpty,
+    );
+    expect(host.seats, [1]);
+    expect(host.closed, isTrue);
+
+    raw.destroy();
   });
 }
