@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - 修复联机房间解散瞬间仍在连接中的玩家，可能加入已解散房间并永久卡在等待页的问题
+- 修复联机页输入框聚焦后焦点残留，切换底部导航或进入其他页面再返回时，键盘会自动弹出的问题
 
 ## [0.10.0] - 2026-09-16
 

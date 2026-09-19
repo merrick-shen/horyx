@@ -53,7 +53,13 @@ class _AppShellState extends State<AppShell> {
       // _PageKeeper 保活：对齐原 IndexedStack 行为，切换/滑动不丢页面状态
       body: PageView(
         controller: _pageController,
-        onPageChanged: (index) => setState(() => _currentIndex = index),
+        onPageChanged: (index) {
+          // 切页时释放焦点收起键盘：联机页输入框聚焦后焦点永久保留，
+          // 滑到其他 tab 键盘会悬浮在对方页面上（路由推入的失焦由
+          // main.dart 的全局导航观察器处理，此处覆盖 tab 切换路径）
+          FocusManager.instance.primaryFocus?.unfocus();
+          setState(() => _currentIndex = index);
+        },
         children: [
           _PageKeeper(child: HomePage()),
           // 注册表查询由 app 层注入：等待页据此解析图标与联机对局页构建器
