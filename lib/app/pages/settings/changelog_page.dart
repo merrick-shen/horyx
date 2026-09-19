@@ -248,10 +248,8 @@ class _ChangelogDetailPage extends StatelessWidget {
 const _typeNames = {
   'Added': '新增',
   'Changed': '变更',
-  'Deprecated': '废弃',
-  'Removed': '移除',
   'Fixed': '修复',
-  'Security': '安全',
+  'Removed': '移除',
 };
 
 /// 解析 CHANGELOG.md 文本为版本列表
