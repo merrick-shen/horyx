@@ -62,7 +62,7 @@ class MorePage extends StatelessWidget {
                   SettingTile(
                     icon: Icons.info_outline_rounded,
                     title: '关于',
-                    subtitle: '应用信息与版本号',
+                    subtitle: '应用信息、更新与开源许可',
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
