@@ -92,17 +92,26 @@ class _TankBattlePageState extends State<TankBattlePage>
   /// 开火：下发战场游戏（炮口沿车身朝向射出子弹，同屏上限 5 发）
   void _onFire(TankPlayer player) => _game.fire(player);
 
-  /// 退出到设置页：先发起竖屏与 UI 模式恢复、再 pop——
+  /// 退出到设置页（TankPage）：先发起竖屏与 UI 模式恢复、再 pop——
   /// 系统旋转与转场动画并行执行；若等转场结束（dispose）才开始旋转，
   /// 两个耗时串行叠加，退出后要明显多等约半秒才回到竖屏。
-  /// （dispose 的还原由 mixin 兜底，覆盖未经本方法的 pop 路径）
+  /// （dispose 的还原由 mixin 兜底，覆盖未经本方法的 pop 路径）。
+  /// 仅用于 0:0 无进行中内容的直接退出（与其他游戏开局无操作回设置视图一致）
   void _exitToSetup() {
     restorePortrait();
     Navigator.of(context).pop();
   }
 
+  /// 退出到主页：保存/不保存退出的目的地与其他游戏一致——
+  /// 连设置页一并关闭，直接返回主页（popUntil 到根路由）
+  void _exitToHome() {
+    restorePortrait();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   /// 退出对局请求：比分 0:0 时无进行中内容，直接返回设置页；
-  /// 否则弹三选项确认（保存并退出 / 不保存并退出 / 取消）。
+  /// 否则弹三选项确认（保存并退出 / 不保存并退出 / 取消），
+  /// 确认后的保存/不保存均退出整页回主页（与其他游戏统一）。
   /// 仅保存比分——坦克位置、地图等战场状态本就不跨局保留，无需存档
   Future<void> _requestExit() async {
     if (_redScore == 0 && _greenScore == 0) {
@@ -120,7 +129,7 @@ class _TankBattlePageState extends State<TankBattlePage>
         ),
       ),
       onDiscard: TankStorage.instance.clear,
-      onExit: _exitToSetup,
+      onExit: _exitToHome,
     );
   }
 

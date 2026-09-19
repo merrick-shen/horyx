@@ -252,19 +252,17 @@ class _ScoreboardPageState
     });
   }
 
-  /// 退出计分请求：有计分动作且未终局时弹三选项确认（保存退出/不保存退出/取消）
-  /// 未计分或已终局时无进行中内容，直接回设置
+  /// 退出计分请求：与其他游戏对齐通用退出模板（requestExitWithArchive）——
+  /// 已终局（无进行中内容）直接退出整页回主页；有计分动作未终局弹三选项
+  /// 确认（保存退出/不保存退出均退出整页回主页）；开局未计分回设置视图
   Future<void> _requestExit() async {
-    if (_history.isEmpty || _winner != null) {
-      _exitPlaying();
-      return;
-    }
-
-    await confirmExitWithArchive(
+    await requestExitWithArchive(
       this,
+      hasProgress: _winner == null,
+      hasMoves: _history.isNotEmpty,
       title: '退出计分？',
       message: '保存并退出后，下次进入可从当前比分继续',
-      // 持久化完整状态（含撤销栈）后回设置
+      // 持久化完整状态（含撤销栈）
       onSave: () => ScoreboardStorage.instance.save(
         ScoreboardGameState(
           bestOf: _bestOf,
@@ -280,8 +278,8 @@ class _ScoreboardPageState
           savedAt: DateTime.now(),
         ),
       ),
-      onDiscard: ScoreboardStorage.instance.clear,
-      onExit: _exitPlaying,
+      onBackToSetup: _exitPlaying,
+      exitPage: _exitToHome,
     );
   }
 
@@ -290,6 +288,12 @@ class _ScoreboardPageState
     restorePortrait();
     setState(() => _playing = false);
     loadSavedState();
+  }
+
+  /// 退出整页回主页：还原竖屏后关闭页面（与其他游戏保存/不保存退出一致）
+  void _exitToHome() {
+    restorePortrait();
+    Navigator.of(context).pop();
   }
 
   /// 恢复未完成计分：还原配置、比分与撤销栈

@@ -89,8 +89,11 @@ Future<void> confirmExitWithArchive(
 ///    执行 [onSave]（各游戏组装存档模型）；不保存退出统一经
 ///    [GameArchiveStateBase.archiveStorage] 清档；取消留在本页。
 ///
-/// 计分器/坦克的退出语义不同（回设置视图/横屏对局直退、无两段捷径），
-/// 不走本模板，仍直接使用 [confirmExitWithArchive]
+/// [title]/[message] 透传给确认弹窗：默认文案面向棋局对弈措辞，
+/// 计分器等场景可覆盖（如「退出计分？」）
+///
+/// 坦克动荡不走本模板：其存档状态在父级页面（TankPage），对局页并非
+/// [GameArchiveStateBase]，仍直接使用 [confirmExitWithArchive]
 ///
 /// [state] 传调用方页面 State：弹窗与存档操作均为异步，
 /// 期间页面可能已卸载，需以 State.mounted 守护后续 context 使用
@@ -98,6 +101,8 @@ Future<void> requestExitWithArchive<W extends StatefulWidget, T>(
   GameArchiveStateBase<W, T> state, {
   required bool hasProgress,
   required bool hasMoves,
+  String title = '退出对局？',
+  String message = '保存并退出后，下次进入可从当前进度继续',
   required Future<void> Function() onSave,
   required VoidCallback onBackToSetup,
   required VoidCallback exitPage,
@@ -114,6 +119,8 @@ Future<void> requestExitWithArchive<W extends StatefulWidget, T>(
   }
   await confirmExitWithArchive(
     state,
+    title: title,
+    message: message,
     onSave: onSave,
     // 不保存退出统一清当前游戏存档：放弃当前进度，
     // 避免下次进入误提示可继续（清档失败不阻断退出）
