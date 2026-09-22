@@ -39,10 +39,29 @@ class _UpdateAvailableDialog extends StatefulWidget {
 class _UpdateAvailableDialogState extends State<_UpdateAvailableDialog> {
   final ScrollController _scrollController = ScrollController();
 
+  /// 是否显示底部渐隐（滑到底部后隐藏，避免遮挡末尾文字）
+  bool _showBottomFade = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 距底部还有未读内容时显示渐隐，到底后隐藏
+  void _onScroll() {
+    final show =
+        _scrollController.hasClients &&
+        _scrollController.position.extentAfter > 0;
+    if (show != _showBottomFade) {
+      setState(() => _showBottomFade = show);
+    }
   }
 
   /// 判断说明文本在给定宽度下是否超出限高（决定是否启用滚动形态）
@@ -133,22 +152,27 @@ class _UpdateAvailableDialogState extends State<_UpdateAvailableDialog> {
                   child: Text(widget.release.body, style: style),
                 ),
               ),
-              // 底部渐隐：与背景同色过渡，暗示下方还有内容
+              // 底部渐隐：与背景同色过渡，暗示下方还有内容；滑到底后淡出
+              // 不再遮挡末尾文字，回滚时恢复
               Positioned(
                 left: 0,
                 right: _scrollbarGap,
                 bottom: 0,
                 child: IgnorePointer(
-                  child: Container(
-                    height: 28,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          palette.surfaceBg.withValues(alpha: 0),
-                          palette.surfaceBg,
-                        ],
+                  child: AnimatedOpacity(
+                    opacity: _showBottomFade ? 1 : 0,
+                    duration: const Duration(milliseconds: 150),
+                    child: Container(
+                      height: 28,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            palette.surfaceBg.withValues(alpha: 0),
+                            palette.surfaceBg,
+                          ],
+                        ),
                       ),
                     ),
                   ),
