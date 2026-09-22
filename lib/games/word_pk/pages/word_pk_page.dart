@@ -119,10 +119,8 @@ class _WordPkPageState
           savedAt: DateTime.now(),
         ),
       ),
-      // 回设置前清理挂在 messenger 上的非法提交提示（存档检测
-      // 刷新由退出模板统一负责）
+      // 存档检测刷新由退出模板统一负责
       onBackToSetup: () {
-        clearHint(context);
         setState(() => _started = false);
       },
       exitPage: () => exitPageClean(context),
@@ -144,8 +142,6 @@ class _WordPkPageState
       _entries.insert(0, WordPkEntry(word: word, playerIndex: _currentPlayer));
       _currentPlayer = _currentPlayer % _playerCount + 1;
     });
-    // 新输入成功时清除遗留的错误提示，避免信息干扰
-    hideHint(context);
     return true;
   }
 
@@ -156,8 +152,7 @@ class _WordPkPageState
       canPop: !_started,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
-          // 系统返回直接弹出（设置阶段 canPop）：绕过 _requestExit，需在此清理
-          clearHint(context);
+          // 设置阶段 canPop：系统返回已直接弹出，无需再走退出确认
           return;
         }
         _requestExit();

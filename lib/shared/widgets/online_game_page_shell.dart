@@ -178,8 +178,7 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
       canPop: _endDialogShown,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
-          // 系统返回直接弹出（终局后 canPop）：绕过 _requestExit，需在此清理
-          clearHint(context);
+          // 终局后 canPop：系统返回已直接弹出，无需再走退出确认
           return;
         }
         _requestExit();

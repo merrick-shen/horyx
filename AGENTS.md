@@ -111,6 +111,4 @@ CHANGELOG.md 面向**用户**，不是开发日志，写作时始终以"用户�
 
 ## 经验教训（勿重蹈覆辙）
 
-- app 级 ScaffoldMessenger 挂的 SnackBar 跨页面持久存在，需手动移除。
-- SnackBar action 回调中使用 context 时页面可能已 dispose，会导致失败。
 - changelog / commit 中不得把防御性逻辑描述为用户可达场景（先确认真实 UI 中是否可达）。
