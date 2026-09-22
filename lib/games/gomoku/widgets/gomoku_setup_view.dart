@@ -49,8 +49,9 @@ class _GomokuSetupViewState extends State<GomokuSetupView> {
   /// 是否选择局域网模式；默认本地对战（双人对弈本就同屏即可）
   bool _isLan = false;
 
-  /// 可选规格：15 路标准盘 / 19 路大盘
+  /// 可选规格：9 路小盘 / 15 路标准盘 / 19 路大盘
   static const List<(int, String)> _options = [
+    (9, '9×9'),
     (15, '15×15'),
     (19, '19×19'),
   ];
@@ -80,7 +81,7 @@ class _GomokuSetupViewState extends State<GomokuSetupView> {
         // 棋盘规格面板（本地与联机共用，联机建房沿用所选规格）
         OptionPanel(
           title: '棋盘规格',
-          description: '标准 15 路棋盘节奏明快，19 路大盘空间更大、博弈更充分',
+          description: '9 路小盘节奏极快适合入门，15 路标准盘节奏明快，19 路大盘空间更大、博弈更充分',
           child: Wrap(
             spacing: 12,
             runSpacing: 12,

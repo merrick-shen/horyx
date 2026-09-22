@@ -39,7 +39,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
   /// 正常同版本协议下不会发生，此处防御协议演进/载荷异常
   factory GomokuOnlineController.client(RoomClient client) {
     final raw = client.startPayload['boardSize'];
-    final valid = raw is int && (raw == 15 || raw == 19);
+    final valid = raw is int && (raw == 9 || raw == 15 || raw == 19);
     final controller = GomokuOnlineController._(
       client: client,
       // 非法时兜底 15 仅用于终局弹窗前的空棋盘渲染
@@ -59,7 +59,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
     required super.mySeat,
   });
 
-  /// 棋盘路数（15/19，由房主建房时选定）
+  /// 棋盘路数（9/15/19，由房主建房时选定）
   final int boardSize;
 
   /// 已生效落子序列（索引奇偶决定黑白：偶=黑=座位1，奇=白=座位2）

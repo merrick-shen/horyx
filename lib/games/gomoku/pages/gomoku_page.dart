@@ -37,7 +37,7 @@ class _GomokuPageState
   /// 是否已开始对局（false = 规格设置阶段）
   bool _started = false;
 
-  /// 棋盘路数（15 标准盘 / 19 大盘）
+  /// 棋盘路数（9 小盘 / 15 标准盘 / 19 大盘）
   int _boardSize = 15;
 
   /// 已确认落子序列（索引奇偶决定黑白：0=黑 1=白）

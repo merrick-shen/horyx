@@ -9,7 +9,7 @@ class GomokuGameState implements GameArchiveSummary {
     required this.savedAt,
   });
 
-  /// 棋盘路数（15 标准盘 / 19 大盘）
+  /// 棋盘路数（9 小盘 / 15 标准盘 / 19 大盘）
   final int boardSize;
 
   /// 已确认落子序列（索引奇偶决定黑白：0=黑 1=白）

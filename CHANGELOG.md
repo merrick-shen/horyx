@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 新增「开源许可」页面，可查看应用所用全部开源库的许可证
 - 新增启动时自动检查更新：有新版本时弹窗提示，检查失败不打扰
 - 更新弹窗的更新说明新增与更新日志一致的格式化排版
+- 五子棋新增 9×9 小盘规格：节奏更快，适合快速对局与入门练习
 
 ### Changed
 

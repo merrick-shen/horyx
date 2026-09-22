@@ -442,8 +442,8 @@ void main() {
 
   // B12：开局载荷规格校验（离线构造，无需真实连接）
   group('客户端开局规格校验（B12）', () {
-    test('合法规格（15/19）正常开局', () {
-      for (final size in const [15, 19]) {
+    test('合法规格（9/15/19）正常开局', () {
+      for (final size in const [9, 15, 19]) {
         final client = RoomClient(host: '127.0.0.1', port: 1);
         client.startPayload = {'boardSize': size};
         final ctrl = GomokuOnlineController.client(client);
