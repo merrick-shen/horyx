@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 关于入口的描述更新为“应用信息、更新与开源许可”
 - 深色模式背景调整为纯黑
 - 深色模式表面色调整为中性灰
+- 优化联机房间加入地址卡片布局
 
 ### Fixed
 

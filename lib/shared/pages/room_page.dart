@@ -504,7 +504,8 @@ class _RoomPageState extends State<RoomPage> {
   }
 
   /// 加入地址卡（房主模式）：好友输入该地址即可加入本房间
-  /// 地址用强调色大字突出，配复制按钮；复制成功后图标短暂切换为对勾
+  /// 居中分享式布局：地址强调色居中突出，复制按钮紧贴地址右侧；
+  /// 复制成功后图标原地切换为对勾（尺寸不变，不引起布局跳动）
   /// [joinCode] 非空时在地址下方展示房间二维码，好友在加入页扫码直接入座
   Widget _buildJoinAddressCard(String address, {String? joinCode}) {
     final palette = context.palette;
@@ -513,72 +514,74 @@ class _RoomPageState extends State<RoomPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '加入地址',
-                      style: TextStyle(
-                        color: palette.textSecondary,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      address,
-                      style: TextStyle(
-                        color: palette.primary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+          Text(
+            '加入地址',
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 12.5,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // 地址 + 复制按钮整组水平居中：按钮随地址长度跟随，不再孤悬卡片角落
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  address,
+                  style: TextStyle(
+                    color: palette.primary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              // 复制按钮：反馈仅切换图标（尺寸不变），不引起布局跳动；
-              // InkWell 波纹圆角与容器一致，不会溢出成圆形（IconButton 默认圆形波纹）
-              Container(
-                decoration: BoxDecoration(
-                  color: palette.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(12),
-                    onTap: _copyJoinAddress,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Icon(
-                        _addressCopied ? Icons.check_rounded : Icons.copy_rounded,
-                        color: palette.primary,
-                        size: 20,
+                const SizedBox(width: 8),
+                // 复制按钮：InkWell 波纹圆角与容器一致，不会溢出成圆形
+                // （IconButton 默认圆形波纹）
+                Container(
+                  decoration: BoxDecoration(
+                    color: palette.primary.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(9),
+                      onTap: _copyJoinAddress,
+                      child: Padding(
+                        padding: const EdgeInsets.all(7),
+                        child: Icon(
+                          _addressCopied
+                              ? Icons.check_rounded
+                              : Icons.copy_rounded,
+                          color: palette.primary,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           if (joinCode != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             // 二维码固定白底黑码：深色主题下相机识别同样稳定；
-            // M 级纠错提高斜扫/反光时的识别率
+            // M 级纠错提高斜扫/反光时的识别率；外层裁圆角消除白块直角生硬感
             Center(
-              child: QrImageView(
-                data: joinCode,
-                version: QrVersions.auto,
-                errorCorrectionLevel: QrErrorCorrectLevel.M,
-                size: 140,
-                backgroundColor: Colors.white,
-                padding: const EdgeInsets.all(6),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: QrImageView(
+                  data: joinCode,
+                  version: QrVersions.auto,
+                  errorCorrectionLevel: QrErrorCorrectLevel.M,
+                  size: 140,
+                  backgroundColor: Colors.white,
+                  padding: const EdgeInsets.all(6),
+                ),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               '好友扫码直接加入本房间',
               textAlign: TextAlign.center,
