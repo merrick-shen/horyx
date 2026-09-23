@@ -7,9 +7,8 @@ import 'package:horyx/games/tank/tint_filter.dart';
 
 /// 瞬发粒子发射器（Cocos2d 重力模式粒子语义，参数以视觉效果调优为准）。
 /// 挂载即一次性爆出 [count] 个粒子：各粒子按发射角±随机幅定向、速度/尺寸/寿命随机，
-/// 每帧积分速度+重力（cocos y 向上，已换算为 Flutter y 向下），
-/// 尺寸与透明度按寿命线性插值，全部粒子过期后自移除。
-/// 长度类参数（速度/重力/尺寸/散布）统一乘 [sizeScale]：素材坐标空间约 320pt 宽，
+/// 每帧积分速度，尺寸与透明度按寿命线性插值，全部粒子过期后自移除。
+/// 长度类参数（速度/尺寸/散布）统一乘 [sizeScale]：素材坐标空间约 320pt 宽，
 /// 本战场像素尺度不同，须按坦克体长比例换算才能保持观感一致。
 /// 染色走 [tintFilter]（白模纹理按通道缩放）：Paint.color 的 RGB 对贴图无染色作用，
 /// 仅 Alpha 用于透明度渐变。纯渲染叠加：不参与碰撞、不读写游戏逻辑状态。
@@ -29,7 +28,6 @@ class ParticleEmitter extends PositionComponent {
     required this.startAlpha,
     this.startAlphaVariance = 0,
     this.finishAlpha = 0,
-    this.gravity = 0,
     this.radialAccel = 0,
     this.spinDeg = 0,
     this.angleDeg = 0,
@@ -78,9 +76,6 @@ class ParticleEmitter extends PositionComponent {
   final double startAlpha;
   final double startAlphaVariance;
   final double finishAlpha;
-
-  /// 纵向重力（pt/秒²，cocos y 向上；渲染时反向并乘 sizeScale）
-  final double gravity;
 
   /// 径向加速度（pt/秒²，沿爆点向外的方向加速；负值=向外飞出后减速，
   final double radialAccel;
@@ -166,8 +161,6 @@ class ParticleEmitter extends PositionComponent {
       p.life -= dt;
       if (p.life <= 0) return true;
       if (!p.stopped) {
-        // cocos 重力 y 向上 → Flutter 向下取反
-        p.vy -= gravity * sizeScale * dt;
         // 径向加速度沿爆点向外方向（负值=向外减速）。
         // 只在仍向外运动时施加；减速到零即原地停驻——
         // 若继续施加，速度反向会让碎片在空中"反弹回爆心"

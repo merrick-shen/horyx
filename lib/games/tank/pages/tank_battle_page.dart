@@ -47,12 +47,6 @@ class _TankBattlePageState extends State<TankBattlePage>
   int _redSmokeTick = 0;
   int _greenSmokeTick = 0;
 
-  /// 双方当前摇杆驾驶输入；null 表示摇杆回中（停车）
-  final Map<TankPlayer, TankDriveInput?> _driveInputs = {
-    TankPlayer.red: null,
-    TankPlayer.green: null,
-  };
-
   /// 战场游戏（Flame）：每进入对局页生成一局随机迷宫并渲染
   late final TankMazeGame _game = TankMazeGame(maze: TankMaze.generate());
 
@@ -84,7 +78,6 @@ class _TankBattlePageState extends State<TankBattlePage>
   }
 
   void _onDrive(TankPlayer player, TankDriveInput? input) {
-    _driveInputs[player] = input;
     // 驾驶输入实时下发战场游戏，驱动对应坦克转向/前进
     _game.setDrive(player, input);
   }

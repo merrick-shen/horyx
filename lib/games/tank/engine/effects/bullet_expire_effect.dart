@@ -11,7 +11,7 @@ class BulletExpireEffect extends Component {
   BulletExpireEffect({
     required Sprite smokeSprite,
     required Vector2 position,
-    required this.sizeScale,
+    required double sizeScale,
   }) {
     add(
       ParticleEmitter(
@@ -36,9 +36,6 @@ class BulletExpireEffect extends Component {
       ),
     );
   }
-
-  /// pt → 战场像素换算比例
-  final double sizeScale;
 
   /// 烟雾全部消散后自移除，避免组件残留
   @override

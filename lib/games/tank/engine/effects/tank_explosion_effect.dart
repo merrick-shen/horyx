@@ -23,8 +23,8 @@ class TankExplosionEffect extends Component {
     required Sprite flashSprite,
     required Vector2 position,
     required Color color,
-    required this.sizeScale,
-    this.hitTest,
+    required double sizeScale,
+    bool Function(Vector2 screenPos)? hitTest,
   }) {
     // 三角碎片层：全向炸开、大小/速度高方差、自旋、负径向加速度减速，
     // 撞墙停住后原地缓慢淡出，沿途留小烟尾迹
@@ -100,12 +100,6 @@ class TankExplosionEffect extends Component {
       ),
     );
   }
-
-  /// pt → 本战场像素换算比例（战场按坦克体长传入）
-  final double sizeScale;
-
-  /// 墙体碰撞查询（屏幕坐标 → 是否撞墙），可为空（空则碎片不撞墙）
-  final bool Function(Vector2 screenPos)? hitTest;
 
   /// 三层粒子（含拖尾）全部消散后自移除，避免组件残留
   @override
