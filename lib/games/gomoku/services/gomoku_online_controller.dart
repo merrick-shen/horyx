@@ -204,7 +204,6 @@ class GomokuOnlineController extends OnlineGameControllerBase
         payload: {
           'col': col,
           'row': row,
-          'player': moves.length.isOdd ? 1 : 2,
           if (winnerSeat != null) 'winner': winnerSeat,
         },
       ),
