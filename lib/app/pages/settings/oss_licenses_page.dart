@@ -13,8 +13,8 @@ import 'package:horyx/shared/widgets/info_list_view.dart';
 // ---------------------------------------------------------------------------
 
 /// 单个开源包的许可信息（按包名聚合其名下所有许可证条目）
-class OssLicense {
-  OssLicense({required this.package, required this.entries});
+class _OssLicense {
+  _OssLicense({required this.package, required this.entries});
 
   /// 包名（如 flame）
   final String package;
@@ -32,7 +32,7 @@ class OssLicense {
 /// 收集运行时注册的全部开源许可，按包名聚合后升序返回（不区分大小写）
 /// 异常时返回空列表，页面据此走空态兜底（与更新日志页约定一致）；
 /// paragraphs 解析有一定开销（数十个包），如实测卡顿可改用 compute 移入 isolate
-Future<List<OssLicense>> collectOssLicenses() async {
+Future<List<_OssLicense>> _collectOssLicenses() async {
   try {
     final byPackage = <String, List<LicenseEntry>>{};
     await for (final entry in LicenseRegistry.licenses) {
@@ -43,7 +43,7 @@ Future<List<OssLicense>> collectOssLicenses() async {
     final names = byPackage.keys.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
     return [
-      for (final name in names) OssLicense(package: name, entries: byPackage[name]!),
+      for (final name in names) _OssLicense(package: name, entries: byPackage[name]!),
     ];
   } catch (_) {
     return const [];
@@ -55,6 +55,8 @@ Future<List<OssLicense>> collectOssLicenses() async {
 /// 引擎原生三方库（zlib/OpenSSL/IJG 等）与字体许可（SIL OFL）不在宽松许可
 /// 常见模式内，需单独覆盖；特定许可的判定须排在 BSD 通用条款之前，
 /// 避免它们文中的相似条款被误判为 BSD（如 OpenSSL 的类 BSD 排版）
+/// （本函数为该文件唯一导出的纯函数，规则分支多，单测见
+/// test/app/pages/settings/oss_licenses_page_test.dart）
 String? detectLicenseType(String text) {
   final t = text.toLowerCase();
   if (t.contains('mit license') ||
@@ -90,7 +92,7 @@ String? detectLicenseType(String text) {
 /// 提取版权行作为列表摘要：优先取含 Copyright / © 的行（不分大小写）；
 /// 全文无版权声明时兜底取首个非空行（zlib/OpenSSL 等引擎原生库许可
 /// 的版权行常嵌在段落中，此时以许可开头的第一行作摘要仍优于留空）
-String? extractCopyrightLine(String fullText) {
+String? _extractCopyrightLine(String fullText) {
   String? firstNonEmpty;
   for (final line in fullText.split('\n')) {
     final trimmed = line.trim();
@@ -118,7 +120,7 @@ class OssLicensesPage extends StatefulWidget {
 
 class _OssLicensesPageState extends State<OssLicensesPage> {
   /// 许可列表；null 表示加载中，空列表表示无内容
-  List<OssLicense>? _licenses;
+  List<_OssLicense>? _licenses;
 
   @override
   void initState() {
@@ -128,7 +130,7 @@ class _OssLicensesPageState extends State<OssLicensesPage> {
 
   /// 收集运行时注册的全部开源许可
   Future<void> _loadLicenses() async {
-    final licenses = await collectOssLicenses();
+    final licenses = await _collectOssLicenses();
     if (mounted) setState(() => _licenses = licenses);
   }
 
@@ -146,12 +148,12 @@ class _OssLicensesPageState extends State<OssLicensesPage> {
   }
 
   /// 将许可数据映射为通用列表条目；fullText 仅计算一次供类型识别与摘要复用
-  InfoListItem _toListItem(OssLicense license) {
+  InfoListItem _toListItem(_OssLicense license) {
     final fullText = license.fullText;
     return InfoListItem(
       title: license.package,
       trailing: detectLicenseType(fullText),
-      subtitle: extractCopyrightLine(fullText),
+      subtitle: _extractCopyrightLine(fullText),
       // 与详情页大标题建立 Hero 共享元素过渡
       heroTag: 'oss-license-${license.package}',
       onTap: () => Navigator.of(context).push(_OssLicenseDetailRoute(license)),
@@ -162,7 +164,7 @@ class _OssLicensesPageState extends State<OssLicensesPage> {
 /// 许可详情页路由：淡入 + 轻微上滑的平滑过渡
 /// 时长与曲线与更新日志详情页一致（300ms easeOutCubic），保持全局动效统一
 class _OssLicenseDetailRoute extends PageRouteBuilder<void> {
-  _OssLicenseDetailRoute(OssLicense license)
+  _OssLicenseDetailRoute(_OssLicense license)
       : super(
           transitionDuration: const Duration(milliseconds: 300),
           reverseTransitionDuration: const Duration(milliseconds: 250),
@@ -192,7 +194,7 @@ class _OssLicenseDetailRoute extends PageRouteBuilder<void> {
 class _OssLicenseDetailPage extends StatelessWidget {
   const _OssLicenseDetailPage({required this.license});
 
-  final OssLicense license;
+  final _OssLicense license;
 
   @override
   Widget build(BuildContext context) {
