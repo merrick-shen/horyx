@@ -14,6 +14,7 @@
 - 版本信息：package_info_plus（关于页展示应用版本号，检查更新的版本比较源）
 - 检查更新：GitHub Releases API（dart:io HttpClient，零第三方网络依赖）查询最新版本 + url_launcher 跳转系统浏览器下载
 - 应用图标：flutter_launcher_icons（源图见 `assets/icon/`，配置位于 pubspec.yaml）
+- 应用 Logo 来源：`https://www.logosymbol.com/` 免费下载素材（网站标注 Royalty-Free，但截至 2026-09 未提供书面授权条款，本项目基于其免费商用声明善意使用并在此标注来源；如权利方提出异议，将更换图标并配合处理）
 
 ## 项目结构
 
@@ -26,7 +27,7 @@ lib/
 │   ├── app_shell.dart      # 底部导航壳（首页/联机/更多，PageView 保活；挂载时预热单词PK词表）
 │   ├── game_registry.dart  # 游戏注册中心（游戏元数据、路由与存档登记的组合根）
 │   ├── pages/              # 应用级页面（主页、更多）
-│   │   └── settings/       # 设置页（主题/存档管理/关于/更新日志）
+│   │   └── settings/       # 设置页（主题/存档管理/关于/开源许可/更新日志）
 │   └── widgets/            # 主页组件（游戏卡片、游戏网格）
 ├── games/                  # 游戏层（一游戏一目录，内分 pages/services/models/widgets）
 │   ├── word_pk/            # 单词PK（页面、联机对局控制器、词表校验、存档）
@@ -39,9 +40,9 @@ lib/
 │   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、对局控制器基类、棋类通用悔棋/认输协商状态机、房间码编解码）
 │   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页、扫码页）
 │   ├── storage/            # 存档读写泛型基类、游戏页存档状态基类、主题持久化
-│   ├── theme/              # 主题系统（调色板、控制器）
+│   ├── theme/              # 主题系统（调色板、圆角 token、控制器）
 │   ├── update/             # 应用内检查更新（GitHub Release 查询、版本比较与三态判定）
-│   ├── utils/              # 通用工具（页面提示条、资产图片解码缓存、横屏沉浸式 mixin）
+│   ├── utils/              # 通用工具（页面退出清理、资产图片解码缓存、横屏沉浸式 mixin）
 │   └── widgets/            # 通用组件（顶栏、对话框、设置项、面板、续玩卡片等）
 test/                       # 单元与集成测试（按 games/、shared/ 与 lib 同构组织）
 assets/
