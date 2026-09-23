@@ -111,6 +111,7 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
             hintText: '${WordPkSetupView.minPlayers}-${WordPkSetupView.maxPlayers}',
             min: WordPkSetupView.minPlayers,
             max: WordPkSetupView.maxPlayers,
+            defaultValue: WordPkSetupView.minPlayers,
             onValid: (v) => _selected = v,
             // 清空输入回退默认人数（与计分器清空语义一致）
             onCleared: () => _selected = WordPkSetupView.minPlayers,

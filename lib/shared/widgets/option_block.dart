@@ -89,8 +89,12 @@ class OptionBlock extends StatelessWidget {
 }
 
 /// 数字输入选项块：与 OptionBlock 同规格，但值由数字输入决定（如计分器比分设置）
-/// 输入合法范围内的数字立即生效（呈选中态）；非空但超范围时红边提示且不生效；
-/// 清空后由使用方通过 onCleared 回退默认值
+/// 手动输入合法范围内的数字立即生效（呈选中态）；非空但超范围时红边提示且不生效；
+/// 清空后由使用方通过 onCleared 回退默认值。
+/// 两侧内置 −/+ 步进按钮：以当前生效值（空输入时以 defaultValue）为基准，
+/// 沿方向寻找第一个通过 min/max 与 validate 校验的值——校验有约束时自动
+/// 跳过不合法值（如「仅允许奇数」的赛制局数按步进会跳到相邻奇数）；
+/// 到达边界或无可达合法值时对应按钮禁用
 class NumberOptionBlock extends StatefulWidget {
   const NumberOptionBlock({
     super.key,
@@ -102,6 +106,7 @@ class NumberOptionBlock extends StatefulWidget {
     required this.onValid,
     required this.onCleared,
     this.validate,
+    this.defaultValue,
     this.width = double.infinity,
     this.height = 56,
   });
@@ -129,6 +134,10 @@ class NumberOptionBlock extends StatefulWidget {
   /// 返回 false 时与超范围同等处理——红边提示且不生效；null 时只查范围
   final bool Function(int value)? validate;
 
+  /// 步进按钮在空输入时的基准值（即使用方清空回退的默认值）；
+  /// null 时空输入下步进按钮禁用（无可靠基准）
+  final int? defaultValue;
+
   /// 块宽度（默认撑满面板宽度，保持与面板等宽的大输入区域）
   final double width;
 
@@ -153,13 +162,53 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
       return;
     }
     final value = int.tryParse(raw);
-    final valid = value != null &&
-        value >= widget.min &&
-        value <= widget.max &&
-        (widget.validate?.call(value) ?? true);
+    final valid = _isValid(value);
     // 非空且非法 → 红边；有效值生效，无效输入保持上次生效值
     setState(() => _invalid = !valid);
-    if (valid) widget.onValid(value);
+    if (valid) widget.onValid(value!);
+  }
+
+  /// 值是否通过 min/max 范围与补充校验
+  bool _isValid(int? value) =>
+      value != null &&
+      value >= widget.min &&
+      value <= widget.max &&
+      (widget.validate?.call(value) ?? true);
+
+  /// 步进基准：当前输入合法取输入值；空输入取 defaultValue；
+  /// 非法输入（红边态）无可靠基准，返回 null
+  int? get _stepBase {
+    final text = widget.controller.text;
+    if (text.isEmpty) return widget.defaultValue;
+    final value = int.tryParse(text);
+    return _isValid(value) ? value : null;
+  }
+
+  /// 基准值沿方向是否存在可达的合法值（跳过 validate 拒绝的值）
+  bool _canStep(int? base, int direction) {
+    if (base == null) return false;
+    var v = base + direction;
+    while (v >= widget.min && v <= widget.max) {
+      if (_isValid(v)) return true;
+      v += direction;
+    }
+    return false;
+  }
+
+  /// 步进：以基准值沿方向找到第一个合法值写入输入框，
+  /// 复用手动输入路径（清红边、上报 onValid），保持页面侧语义一致
+  void _step(int direction) {
+    final base = _stepBase;
+    if (base == null) return;
+    var v = base + direction;
+    while (v >= widget.min && v <= widget.max) {
+      if (_isValid(v)) {
+        widget.controller.text = '$v';
+        _onChanged('$v');
+        return;
+      }
+      v += direction;
+    }
   }
 
   @override
@@ -173,6 +222,10 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
         final focused = widget.focusNode.hasFocus;
         // 有合法内容即生效选中态；超范围时不呈选中（避免误导已生效）
         final selected = widget.controller.text.isNotEmpty && !_invalid;
+        // 步进按钮可用性随输入内容即时变化（红边态/无基准时禁用）
+        final base = _stepBase;
+        final canMinus = _canStep(base, -1);
+        final canPlus = _canStep(base, 1);
 
         return AnimatedContainer(
           duration: const Duration(milliseconds: 180),
@@ -201,53 +254,120 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
                   ]
                 : null,
           ),
-          // Material+InkWell 标准写法（同 PrimaryButton）：点击块内空白
-          // 区域也可聚焦（原 GestureDetector 语义），水波纹覆盖整块；
-          // 原容器 padding/alignment 内移到内容层
+          // Material+InkWell 标准写法（同 PrimaryButton）；
+          // ClipRRect 把步进按钮的水波纹裁剪进块的圆角内
           child: Material(
             color: Colors.transparent,
-            child: InkWell(
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              onTap: () => widget.focusNode.requestFocus(),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: TextField(
-                    controller: widget.controller,
-                    focusNode: widget.focusNode,
-                    keyboardType: TextInputType.number,
-                    // 仅数字且最多 2 位（调用方范围上限均为两位数以内，超长输入无意义）
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(2),
-                    ],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: selected ? Colors.white : palette.textPrimary,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    cursorColor: selected ? Colors.white : palette.primary,
-                    decoration: InputDecoration(
-                      isCollapsed: true,
-                      border: InputBorder.none,
-                      hintText: widget.hintText,
-                      hintStyle: TextStyle(
-                        color: selected
-                            ? Colors.white.withValues(alpha: 0.75)
-                            : palette.textSecondary,
-                        fontSize: 13,
-                      ),
-                      counterText: '',
-                    ),
-                    onChanged: _onChanged,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _StepButton(
+                    icon: Icons.remove_rounded,
+                    selected: selected,
+                    palette: palette,
+                    onTap: canMinus ? () => _step(-1) : null,
                   ),
-                ),
+                  _blockDivider(selected, palette),
+                  // 中段输入区：点击空白区域也可聚焦（原 GestureDetector 语义）
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => widget.focusNode.requestFocus(),
+                      child: Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: TextField(
+                            controller: widget.controller,
+                            focusNode: widget.focusNode,
+                            keyboardType: TextInputType.number,
+                            // 仅数字且最多 2 位（调用方范围上限均为两位数以内，超长输入无意义）
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                              LengthLimitingTextInputFormatter(2),
+                            ],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: selected
+                                  ? Colors.white
+                                  : palette.textPrimary,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            cursorColor: selected
+                                ? Colors.white
+                                : palette.primary,
+                            decoration: InputDecoration(
+                              isCollapsed: true,
+                              border: InputBorder.none,
+                              hintText: widget.hintText,
+                              hintStyle: TextStyle(
+                                color: selected
+                                    ? Colors.white.withValues(alpha: 0.75)
+                                    : palette.textSecondary,
+                                fontSize: 13,
+                              ),
+                              counterText: '',
+                            ),
+                            onChanged: _onChanged,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  _blockDivider(selected, palette),
+                  _StepButton(
+                    icon: Icons.add_rounded,
+                    selected: selected,
+                    palette: palette,
+                    onTap: canPlus ? () => _step(1) : null,
+                  ),
+                ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  /// 段间竖分隔线（生效态下随整块反白弱化）
+  Widget _blockDivider(bool selected, AppPalette palette) => Container(
+    width: 1,
+    color: selected ? Colors.white.withValues(alpha: 0.35) : palette.stroke,
+  );
+}
+
+/// 步进按钮：块内左右两端；生效态（整块主题色填充）时图标反白，
+/// 禁用时图标降透明度
+class _StepButton extends StatelessWidget {
+  const _StepButton({
+    required this.icon,
+    required this.selected,
+    required this.palette,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final bool selected;
+  final AppPalette palette;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? Colors.white : palette.textPrimary;
+    return SizedBox(
+      width: 56,
+      child: InkWell(
+        onTap: onTap,
+        child: Center(
+          child: Icon(
+            icon,
+            size: 22,
+            color: onTap == null ? color.withValues(alpha: 0.35) : color,
+          ),
+        ),
+      ),
     );
   }
 }

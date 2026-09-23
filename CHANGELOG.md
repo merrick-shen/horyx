@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 新增启动时自动检查更新：有新版本时弹窗提示，检查失败不打扰
 - 更新弹窗的更新说明新增与更新日志一致的格式化排版
 - 五子棋新增 9×9 小盘规格：节奏更快，适合快速对局与入门练习
+- 数字设置输入框两侧新增加减按钮
 
 ### Changed
 

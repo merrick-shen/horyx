@@ -124,6 +124,7 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
             max: _bestOfMax,
             // 奇数局保证必分胜负：多数局语义下偶数局可能打满后总比分相同
             validate: (v) => v.isOdd,
+            defaultValue: ScoreboardSetupView.bestOfDefault,
             onValid: (v) => setState(() => _bestOf = v),
             onCleared: () => setState(
               () => _bestOf = ScoreboardSetupView.bestOfDefault,
@@ -142,6 +143,7 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
             hintText: '输入分值',
             min: _winScoreMin,
             max: _winScoreMax,
+            defaultValue: ScoreboardSetupView.winScoreDefault,
             onValid: (v) => setState(() => _winScore = v),
             onCleared: () => setState(
               () => _winScore = ScoreboardSetupView.winScoreDefault,
@@ -160,6 +162,7 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
             hintText: '输入分差',
             min: _leadMin,
             max: _leadMax,
+            defaultValue: ScoreboardSetupView.leadByDefault,
             onValid: (v) => setState(() => _leadBy = v),
             onCleared: () => setState(
               () => _leadBy = ScoreboardSetupView.leadByDefault,
