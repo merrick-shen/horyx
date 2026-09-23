@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 统一各游戏退出行为：计分器与坦克动荡保存退出、直接退出及已结束后退出时与其他游戏一样直接返回主页
 - 关于入口的描述更新为“应用信息、更新与开源许可”
 - 深色模式背景调整为纯黑
+- 深色模式表面色调整为中性灰
 
 ### Fixed
 

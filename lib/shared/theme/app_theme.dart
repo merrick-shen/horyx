@@ -38,12 +38,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// 默认品牌紫：未自定义主题色彩时的强调色
   static const Color brandPrimary = Color(0xFF7C5CFF);
 
-  /// 深色调色板：纯黑背景
+  /// 深色调色板：纯黑背景 + 中性灰表面色
   static const AppPalette dark = AppPalette(
     scaffoldBg: Color(0xFF000000),
-    surfaceBg: Color(0xFF141C33),
-    surfaceHover: Color(0xFF1A2442),
-    stroke: Color(0xFF263253),
+    surfaceBg: Color(0xFF1A1A1E),
+    surfaceHover: Color(0xFF232328),
+    stroke: Color(0xFF2E2E33),
     textPrimary: Color(0xFFF3F6FF),
     textSecondary: Color(0xFF94A0C4),
     primary: brandPrimary,
