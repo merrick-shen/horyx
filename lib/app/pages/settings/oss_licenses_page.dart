@@ -22,8 +22,10 @@ class _OssLicense {
   /// 该包名下注册的所有许可证条目（一个包可能对应多条）
   final List<LicenseEntry> entries;
 
-  /// 许可证全文（多条拼接，用于类型识别与版权行提取）
-  String get fullText => entries
+  /// 许可证全文（多条拼接，用于类型识别与版权行提取）。
+  /// 拼接需遍历全部段落、开销可观，且列表页与详情页都要用——
+  /// 首次访问计算一次后缓存（late final），避免重复拼接
+  late final String fullText = entries
       .expand((e) => e.paragraphs)
       .map((p) => p.text)
       .join('\n');
