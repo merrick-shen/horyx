@@ -113,7 +113,9 @@ class TankMaze {
   Iterable<MazeWall> get walls => UnmodifiableSetView(_walls);
 
   /// 单元格 (col, row) 沿 (dx, dy) 方向的相邻格之间是否有墙
-  /// （后续坦克/子弹的通行与反弹判定共用此入口）
+  ///
+  /// 仅供测试做迷宫连通性/边界墙校验使用；运行时坦克/子弹的通行与
+  /// 反弹判定走几何碰撞（SAT），并不经过此入口
   bool hasWallBetween(int col, int row, int dx, int dy) =>
       _walls.contains(_wallBetween(col, row, dx, dy));
 
