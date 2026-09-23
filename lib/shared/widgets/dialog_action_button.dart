@@ -35,7 +35,7 @@ class DialogActionButton extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: filled ? background : palette.scaffoldBg,
-        borderRadius: BorderRadius.circular(13),
+        borderRadius: BorderRadius.circular(Radii.control),
         border: filled ? null : Border.all(color: palette.stroke),
         // 主题色实底带光晕强调主操作；自定义颜色（如当前所选色）不加，
         // 浅色/高亮度的光晕视觉效果差
@@ -53,7 +53,7 @@ class DialogActionButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(13),
+          borderRadius: BorderRadius.circular(Radii.control),
           onTap: onPressed,
           child: Container(
             height: 44,

@@ -46,7 +46,7 @@ class OptionBlock extends StatelessWidget {
       decoration: BoxDecoration(
         // 选中态使用品牌纯色，未选中与页面底色区分
         color: selected ? palette.primary : palette.scaffoldBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.control),
         border: Border.all(
           color: selected ? Colors.transparent : palette.stroke,
         ),
@@ -65,7 +65,7 @@ class OptionBlock extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(Radii.control),
           onTap: onTap,
           child: Center(
             child: Padding(
@@ -233,7 +233,7 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
           height: widget.height,
           decoration: BoxDecoration(
             color: selected ? palette.primary : palette.scaffoldBg,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(Radii.control),
             border: Border.all(
               color: _invalid
                   ? NumberOptionBlock._invalidColor
@@ -259,7 +259,7 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
           child: Material(
             color: Colors.transparent,
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(Radii.control),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [

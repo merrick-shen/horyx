@@ -19,7 +19,7 @@ class PanelCard extends StatelessWidget {
       padding: padding ?? const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: context.palette.surfaceBg,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(Radii.card),
         border: Border.all(color: context.palette.stroke),
       ),
       child: child,

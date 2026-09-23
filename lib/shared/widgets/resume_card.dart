@@ -33,7 +33,7 @@ class ResumeCard extends StatelessWidget {
         decoration: BoxDecoration(
           // 主题色淡底 + 描边，与普通卡片区分，突出「可继续」
           color: palette.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(Radii.card),
           border: Border.all(
             color: palette.primary.withValues(alpha: 0.5),
           ),

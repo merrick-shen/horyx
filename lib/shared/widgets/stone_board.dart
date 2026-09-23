@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:horyx/shared/theme/app_theme.dart';
+
 /// 棋盘上的一颗棋子：位置 + 颜色
 /// 颜色需显式存储而非按落子顺序推导：
 /// 为提子等无法从奇偶推断黑白的规则场景预留
@@ -77,7 +79,7 @@ class StoneBoard extends StatelessWidget {
         padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: boardColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(Radii.card),
           border: Border.all(color: frameColor),
         ),
         // LayoutBuilder 提供绘制区域尺寸，用于点击坐标换算
@@ -96,7 +98,7 @@ class StoneBoard extends StatelessWidget {
                   _handleTap(details.localPosition, cell),
               // 裁剪保证绘制内容不溢出圆角
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(Radii.control),
                 child: CustomPaint(
                   size: Size.infinite,
                   painter: _BoardPainter(

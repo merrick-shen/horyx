@@ -169,7 +169,7 @@ class _VerifiedWordsCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: palette.scaffoldBg,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(Radii.pill),
                   border: Border.all(color: palette.stroke),
                 ),
                 child: Text(
@@ -226,7 +226,7 @@ class _PlayerSequence extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               // 当前输入者以描边 + 主题色文字点亮
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(Radii.pill),
               color: i == currentIndex
                   ? palette.primary.withValues(alpha: 0.15)
                   : palette.surfaceBg,
@@ -297,7 +297,7 @@ class _WordChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: palette.scaffoldBg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(Radii.control),
         border: Border.all(color: palette.stroke),
       ),
       child: Row(

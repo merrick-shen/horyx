@@ -192,7 +192,7 @@ class _ModeOption extends StatelessWidget {
         color: selected
             ? palette.primary.withValues(alpha: 0.12)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(Radii.control),
         border: Border.all(
           color: selected
               ? palette.primary.withValues(alpha: 0.5)
@@ -204,7 +204,7 @@ class _ModeOption extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(Radii.control),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -218,7 +218,7 @@ class _ModeOption extends StatelessWidget {
                     color: selected
                         ? palette.primary
                         : palette.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(Radii.chip),
                   ),
                   child: Icon(
                     data.icon,
@@ -344,7 +344,7 @@ class _CustomColorTile extends StatelessWidget {
         color: selected
             ? palette.primary.withValues(alpha: 0.12)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(Radii.control),
         border: Border.all(
           color: selected
               ? palette.primary.withValues(alpha: 0.5)
@@ -356,7 +356,7 @@ class _CustomColorTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(Radii.control),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(12),
@@ -368,7 +368,7 @@ class _CustomColorTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     // 调色板图标容器：淡品牌底承载当前颜色块，示意「可调色」
                     color: palette.primary.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(Radii.chip),
                   ),
                   child: Icon(
                     Icons.tune_rounded,

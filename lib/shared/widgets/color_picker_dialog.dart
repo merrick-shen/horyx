@@ -60,12 +60,13 @@ class _ColorPickerDialogState extends State<_ColorPickerDialog> {
           ),
           const SizedBox(height: 16),
           // 实时预览块：底色随滑块变化，文字按亮度自动切换黑白保证可读
+          // 弹窗(16)内嵌内容块，按同心原则取 control 档
           Container(
             height: 68,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: current,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(Radii.control),
             ),
             child: Text(
               colorToHex(current),

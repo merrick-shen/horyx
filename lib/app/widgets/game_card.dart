@@ -36,15 +36,15 @@ class _GameCardState extends State<GameCard> {
         curve: Curves.easeOutCubic,
         child: Material(
           color: _hovered ? palette.surfaceHover : palette.surfaceBg,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(Radii.card),
           child: InkWell(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(Radii.card),
             onTap: widget.onTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(Radii.card),
                 border: Border.all(
                   width: 1.2,
                   // 悬停时描边切换为品牌主色，形成「点亮」效果
@@ -69,7 +69,7 @@ class _GameCardState extends State<GameCard> {
                     width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(Radii.control),
                       color: palette.primary,
                     ),
                     child: Icon(game.icon, color: Colors.white, size: 30),

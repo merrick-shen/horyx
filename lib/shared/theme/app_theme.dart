@@ -108,6 +108,25 @@ extension AppPaletteContext on BuildContext {
   AppPalette get palette => Theme.of(this).extension<AppPalette>()!;
 }
 
+/// 全局圆角梯度：组件统一引用 token，禁止随手写散值
+/// 嵌套遵循"内圆角 = 外圆角 − 内边距"的同心原则（如 卡14 → 行10 → 图标框8）
+abstract final class Radii {
+  /// 弹窗外壳
+  static const double dialog = 16;
+
+  /// 卡片 / 面板
+  static const double card = 14;
+
+  /// 控件（按钮 / 输入框 / 选项块 / 设置行）
+  static const double control = 10;
+
+  /// 小件（徽标 / 图标框 / 复制按钮等）
+  static const double chip = 8;
+
+  /// 胶囊（全圆角）
+  static const double pill = 999;
+}
+
 /// 颜色转 #RRGGBB 大写文本（主题色彩的展示格式）
 String colorToHex(Color color) =>
     '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).toUpperCase().padLeft(6, '0')}';

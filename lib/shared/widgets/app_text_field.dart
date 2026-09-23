@@ -20,11 +20,11 @@ InputDecoration buildAppTextFieldDecoration(
       vertical: 14,
     ),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(Radii.control),
       borderSide: BorderSide(color: palette.stroke),
     ),
     focusedBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(Radii.control),
       borderSide: BorderSide(color: palette.primary, width: 1.4),
     ),
   );

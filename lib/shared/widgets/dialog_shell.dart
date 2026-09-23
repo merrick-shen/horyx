@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 
-/// 通用弹窗容器：透明 Dialog + 统一卡片样式（surfaceBg 底 + 圆角 24 + 描边）
+/// 通用弹窗容器：透明 Dialog + 统一卡片样式（surfaceBg 底 + 弹窗圆角 + 描边）
 /// 确认弹窗/终局弹窗/更新弹窗/颜色选择器共用，容器样式只在此一处维护。
 /// 内置横屏限宽（maxWidth 400）：横屏时可用宽度是整个屏幕宽，内容 stretch
 /// 会把弹窗拉成一条长横幅，观感很差（曾因复制遗漏导致颜色选择器横屏拉长）
@@ -26,7 +26,7 @@ class DialogShell extends StatelessWidget {
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: palette.surfaceBg,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(Radii.dialog),
             border: Border.all(color: palette.stroke),
           ),
           child: child,

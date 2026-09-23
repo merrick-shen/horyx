@@ -39,7 +39,7 @@ class TurnCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: palette.primary,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(Radii.card),
         // 主题色光晕强调「当前回合」
         boxShadow: [
           BoxShadow(
@@ -56,7 +56,7 @@ class TurnCard extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(Radii.control),
             ),
             child: Icon(icon, color: iconColor ?? Colors.white, size: 22),
           ),

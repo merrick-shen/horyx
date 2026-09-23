@@ -237,7 +237,7 @@ class _OssLicenseDetailPage extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: palette.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(Radii.chip),
                   ),
                   child: Text(
                     type,

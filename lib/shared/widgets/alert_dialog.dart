@@ -49,7 +49,7 @@ class _AlertDialogBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
       decoration: BoxDecoration(
         color: palette.surfaceBg,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.dialog),
         border: Border.all(color: palette.stroke),
         boxShadow: [
           // 底部浮层需要投影与页面内容区分层（中性黑投影，避免主题色光晕喧宾夺主）
@@ -80,12 +80,12 @@ class _AlertDialogBar extends StatelessWidget {
           DecoratedBox(
             decoration: BoxDecoration(
               color: palette.primary,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(Radii.control),
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(Radii.control),
                 onTap: () => Navigator.of(context).pop(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(

@@ -470,7 +470,7 @@ class _RoomPageState extends State<RoomPage> {
             height: 44,
             decoration: BoxDecoration(
               color: palette.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(Radii.control),
             ),
             child: Icon(icon, color: palette.primary, size: 24),
           ),
@@ -541,12 +541,12 @@ class _RoomPageState extends State<RoomPage> {
                 Container(
                   decoration: BoxDecoration(
                     color: palette.primary.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(9),
+                    borderRadius: BorderRadius.circular(Radii.chip),
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      borderRadius: BorderRadius.circular(9),
+                      borderRadius: BorderRadius.circular(Radii.chip),
                       onTap: _copyJoinAddress,
                       child: Padding(
                         padding: const EdgeInsets.all(7),
@@ -570,7 +570,7 @@ class _RoomPageState extends State<RoomPage> {
             // M 级纠错提高斜扫/反光时的识别率；外层裁圆角消除白块直角生硬感
             Center(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(Radii.chip),
                 child: QrImageView(
                   data: joinCode,
                   version: QrVersions.auto,
@@ -627,7 +627,7 @@ class _RoomPageState extends State<RoomPage> {
                 ),
                 decoration: BoxDecoration(
                   color: palette.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(Radii.chip),
                 ),
                 child: Text(
                   '${seats.length}/$capacity',
@@ -681,7 +681,7 @@ class _SeatTile extends StatelessWidget {
         color: taken
             ? palette.primary.withValues(alpha: 0.08)
             : palette.scaffoldBg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(Radii.control),
         border: Border.all(color: palette.stroke),
       ),
       child: Row(
@@ -722,7 +722,7 @@ class _SeatTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
               decoration: BoxDecoration(
                 color: palette.primary,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(Radii.chip),
               ),
               child: const Text(
                 '你',

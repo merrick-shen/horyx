@@ -135,7 +135,7 @@ class _AboutPageState extends State<AboutPage> {
                   children: [
                     // 检查更新入口：检查中转圈并禁点
                     InkWell(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(Radii.chip),
                       onTap: _checking ? null : _checkUpdate,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -144,7 +144,7 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                         decoration: BoxDecoration(
                           color: palette.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(Radii.chip),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -182,7 +182,7 @@ class _AboutPageState extends State<AboutPage> {
                     // 更新日志入口：内容较长，跳转独立页滚动浏览
                     // （内容读取自打包的 CHANGELOG.md，与仓库文件一致）
                     InkWell(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(Radii.chip),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const ChangelogPage(),
@@ -195,7 +195,7 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                         decoration: BoxDecoration(
                           color: palette.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(Radii.chip),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -228,7 +228,7 @@ class _AboutPageState extends State<AboutPage> {
                     const SizedBox(height: 12),
                     // 开源许可入口：展示应用所用全部开源库的许可证（合规声明）
                     InkWell(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(Radii.chip),
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const OssLicensesPage(),
@@ -241,7 +241,7 @@ class _AboutPageState extends State<AboutPage> {
                         ),
                         decoration: BoxDecoration(
                           color: palette.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(Radii.chip),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

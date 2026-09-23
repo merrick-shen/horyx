@@ -133,7 +133,7 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
               height: 64,
               decoration: BoxDecoration(
                 color: palette.primary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(Radii.card),
               ),
               child: Icon(
                 Icons.lan_rounded,

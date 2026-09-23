@@ -32,7 +32,7 @@ class SettingTile extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.control),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -44,7 +44,7 @@ class SettingTile extends StatelessWidget {
                 height: 36,
                 decoration: BoxDecoration(
                   color: palette.primary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(Radii.chip),
                 ),
                 child: Icon(icon, color: palette.primary, size: 20),
               ),

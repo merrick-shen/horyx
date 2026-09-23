@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/chess/models/chess_piece.dart';
+import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 「将军」渐现渐隐提示：[trigger] 每递增一次播放一遍动画
 /// （快速放大淡入 -> 短暂停留 -> 淡出），黑底胶囊 + 白色大字保证醒目
@@ -61,7 +62,7 @@ class _CheckFlashTextState extends State<CheckFlashText>
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.55),
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(Radii.card),
         ),
         child: Text(
           '将军',

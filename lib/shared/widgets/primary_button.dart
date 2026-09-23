@@ -44,7 +44,7 @@ class PrimaryButton extends StatelessWidget {
             : outlined
                 ? palette.scaffoldBg
                 : palette.primary,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(Radii.control),
         border: outlined ? Border.all(color: palette.stroke) : null,
         boxShadow: enabled && !outlined
             ? [
@@ -60,7 +60,7 @@ class PrimaryButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(Radii.control),
           onTap: onPressed,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 18),

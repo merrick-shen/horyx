@@ -166,7 +166,7 @@ class _ArchiveTile extends StatelessWidget {
             height: 42,
             decoration: BoxDecoration(
               color: palette.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(Radii.control),
             ),
             child: Icon(entry.icon, color: palette.primary, size: 22),
           ),
