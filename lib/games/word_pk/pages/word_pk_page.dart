@@ -159,6 +159,8 @@ class _WordPkPageState
       },
       child: Scaffold(
         body: SafeArea(
+          // 顶部由 AppTopBar 自行吸收状态栏（表面色整体延伸），此处不再避让
+          top: false,
           bottom: false,
           child: Column(
             children: [

@@ -151,9 +151,9 @@ abstract final class AppTheme {
         // 注入调色板，组件侧经 context.palette 读取
         extensions: [palette],
         // 底部导航栏配色与主页统一：
-        // M3 默认背景取 colorScheme.surfaceContainer（偏灰），需覆盖为页面背景色
+        // M3 默认背景取 colorScheme.surfaceContainer（偏灰），需覆盖为表面色
         navigationBarTheme: NavigationBarThemeData(
-          backgroundColor: palette.scaffoldBg,
+          backgroundColor: palette.surfaceBg,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           indicatorColor: palette.primary.withValues(alpha: 0.25),

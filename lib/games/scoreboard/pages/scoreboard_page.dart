@@ -352,6 +352,8 @@ class _ScoreboardPageState
     // 恢复存档或退出计分回到设置时以当前生效配置重建，输入框展示一致
     return Scaffold(
       body: SafeArea(
+        // 顶部由 AppTopBar 自行吸收状态栏（表面色整体延伸），此处不再避让
+        top: false,
         child: Column(
           children: [
             AppTopBar(title: '计分器', showBack: true),

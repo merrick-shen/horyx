@@ -80,14 +80,26 @@ class _MyAppState extends State<MyApp> {
           darkTheme: AppTheme.darkOf(_controller.seedColor),
           // 自动模式由系统深浅色决定实际生效主题
           themeMode: _controller.mode,
-          // 所有路由（含 push 页面）统一在此处理状态栏样式：
-          // 图标颜色需与实际生效主题的背景亮度匹配，否则时间/电量不可读
-          builder: (context, child) => AnnotatedRegion<SystemUiOverlayStyle>(
-            value: Theme.of(context).brightness == Brightness.dark
-                ? SystemUiOverlayStyle.light
-                : SystemUiOverlayStyle.dark,
-            child: child!,
-          ),
+          // 所有路由（含 push 页面）统一在此处理状态栏/导航栏样式：
+          // 图标颜色需与实际生效主题的背景亮度匹配，否则时间/电量不可读；
+          // 不用 SystemUiOverlayStyle.light/dark 预设——预设把系统导航栏
+          // 硬编码为纯黑/纯白，需自定义使导航栏与底部导航的表面色一致
+          builder: (context, child) {
+            final palette = context.palette;
+            final dark = Theme.of(context).brightness == Brightness.dark;
+            return AnnotatedRegion<SystemUiOverlayStyle>(
+              value: SystemUiOverlayStyle(
+                statusBarColor: Colors.transparent,
+                statusBarIconBrightness:
+                    dark ? Brightness.light : Brightness.dark,
+                statusBarBrightness: dark ? Brightness.dark : Brightness.light,
+                systemNavigationBarColor: palette.surfaceBg,
+                systemNavigationBarIconBrightness:
+                    dark ? Brightness.light : Brightness.dark,
+              ),
+              child: child!,
+            );
+          },
           home: const AppShell(),
         ),
       ),

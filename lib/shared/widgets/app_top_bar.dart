@@ -26,42 +26,52 @@ class AppTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 顶栏自行吸收状态栏高度并涂表面色（页面侧 SafeArea 不再避让顶部），
+    // 使状态栏区域与顶栏连成整体，与底部导航的表面色分层一致
+    final statusBarHeight = MediaQuery.of(context).padding.top;
     return Container(
       decoration: BoxDecoration(
-        color: context.palette.scaffoldBg,
+        // 顶栏用表面色与内容区（页面背景）分层
+        color: context.palette.surfaceBg,
         // 底部描边让顶栏与内容区分层
         border: Border(bottom: BorderSide(color: context.palette.stroke)),
       ),
-      child: SizedBox(
-        height: _height,
-        child: Stack(
-          children: [
-            Center(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: context.palette.primary,
-                ),
-              ),
-            ),
-            // 使用 Stack 绝对居中，标题不因返回按钮而偏移
-            if (showBack)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  icon: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: context.palette.textPrimary,
-                    size: 20,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(height: statusBarHeight),
+          SizedBox(
+            height: _height,
+            child: Stack(
+              children: [
+                Center(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: context.palette.primary,
+                    ),
                   ),
-                  onPressed:
-                      onBack ?? () => Navigator.of(context).maybePop(),
                 ),
-              ),
-          ],
-        ),
+                // 使用 Stack 绝对居中，标题不因返回按钮而偏移
+                if (showBack)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        color: context.palette.textPrimary,
+                        size: 20,
+                      ),
+                      onPressed:
+                          onBack ?? () => Navigator.of(context).maybePop(),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

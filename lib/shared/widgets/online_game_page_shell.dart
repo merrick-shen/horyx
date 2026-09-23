@@ -189,6 +189,8 @@ class _OnlineGamePageShellState<TController extends OnlineGameControllerBase>
         // 造成操作区到屏幕边缘距离不对称、布局与本地不一致
         body: widget.showTopBar
             ? SafeArea(
+                // 顶部由 AppTopBar 自行吸收状态栏（表面色整体延伸），此处不再避让
+                top: false,
                 bottom: false,
                 child: Column(
                   children: [

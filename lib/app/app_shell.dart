@@ -50,6 +50,9 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // 背景用表面色：edge-to-edge 下系统导航栏（手势条）区域透出 Scaffold 背景，
+      // 需与底部导航栏同色连成整体；body 区域被各 tab 页自身 Scaffold 完全覆盖，不受影响
+      backgroundColor: context.palette.surfaceBg,
       // _PageKeeper 保活：对齐原 IndexedStack 行为，切换/滑动不丢页面状态
       body: PageView(
         controller: _pageController,
