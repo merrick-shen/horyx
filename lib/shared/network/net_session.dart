@@ -157,6 +157,3 @@ class NetSession {
   }
 }
 
-/// 无参回调的简洁别名（与 Flutter VoidCallback 语义一致，
-/// 保留自声明以减少引用方改动）
-typedef VoidCallback = void Function();
