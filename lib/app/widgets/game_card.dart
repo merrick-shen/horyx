@@ -5,14 +5,14 @@ import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 游戏卡片组件
 /// 桌面端悬停：卡片微放大 + 描边点亮 + 主题色光晕投影
-/// 所有端：点击有水波纹反馈；接入游戏的卡片通过 onTap 跳转
+/// 所有端：点击有水波纹反馈，通过 onTap 跳转对应游戏页
 class GameCard extends StatefulWidget {
-  const GameCard({super.key, required this.game, this.onTap});
+  const GameCard({super.key, required this.game, required this.onTap});
 
   final GameInfo game;
 
-  /// 点击回调；null 时仅保留水波纹反馈（未接入游戏的占位卡片）
-  final VoidCallback? onTap;
+  /// 点击回调（跳转对应游戏页）
+  final VoidCallback onTap;
 
   @override
   State<GameCard> createState() => _GameCardState();
@@ -39,8 +39,7 @@ class _GameCardState extends State<GameCard> {
           borderRadius: BorderRadius.circular(20),
           child: InkWell(
             borderRadius: BorderRadius.circular(20),
-            // 未接入游戏的占位卡片保持水波纹反馈
-            onTap: widget.onTap ?? () {},
+            onTap: widget.onTap,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.all(14),

@@ -26,7 +26,7 @@ class GameInfo {
     required this.name,
     required this.description,
     required this.icon,
-    this.pageBuilder,
+    required this.pageBuilder,
     this.onlineClientBuilder,
     this.archive,
   });
@@ -40,8 +40,9 @@ class GameInfo {
   /// 展示图标
   final IconData icon;
 
-  /// 游戏页构建器（首页卡片入口跳转用）；null 表示入口未开放
-  final WidgetBuilder? pageBuilder;
+  /// 游戏页构建器（首页卡片入口跳转用）；
+  /// 登记进注册表的游戏必须提供入口，不支持「入口未开放」的占位登记
+  final WidgetBuilder pageBuilder;
 
   /// 客户端侧联机对局页构建器（加入房间满员开局后跳转用）
   /// null 表示该游戏联机对局未接入（等待页满员后停留「即将开始」）

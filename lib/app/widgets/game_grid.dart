@@ -38,15 +38,10 @@ class GameGrid extends StatelessWidget {
             final game = GameRegistry.games[index];
             return GameCard(
               game: game,
-              // 跳转目标来自注册表（GameRegistry），本组件不感知具体游戏页；
-              // 未登记跳转的游戏卡片禁用点击（当前不存在此情况）
-              onTap: game.pageBuilder == null
-                  ? null
-                  : () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: game.pageBuilder!,
-                        ),
-                      ),
+              // 跳转目标来自注册表（GameRegistry），本组件不感知具体游戏页
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: game.pageBuilder),
+              ),
             );
           },
         );
