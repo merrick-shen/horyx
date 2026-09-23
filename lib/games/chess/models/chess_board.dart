@@ -86,7 +86,11 @@ class ChessBoard {
   /// 该格式为存档序列化的底层约定（阶段 4 的存档模型直接复用），定稿后不再变动
   String encode() => _squares.map((p) => p?.code ?? _emptyChar).join();
 
-  /// 从紧凑编码还原棋盘；编码不合法时抛 [FormatException]（对齐存档读取容错约定）
+  /// 从紧凑编码还原棋盘；编码不合法时抛 [FormatException]
+  ///
+  /// 注意：lib/ 生产路径当前不经过此入口——存档校验走「重放走子 +
+  /// encode 对比」（见 ChessStorage/页面恢复逻辑），本方法作为编码的
+  /// 逆向工具保留，供测试做结构校验与编解码往返验证
   static ChessBoard decode(String code) {
     if (code.length != cols * rows) {
       throw const FormatException('棋盘编码长度无效');
