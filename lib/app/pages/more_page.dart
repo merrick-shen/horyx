@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
@@ -7,6 +8,7 @@ import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/setting_tile.dart';
 import 'package:horyx/app/pages/settings/about_page.dart';
 import 'package:horyx/app/pages/settings/archive_page.dart';
+import 'package:horyx/app/pages/settings/profile_settings_page.dart';
 import 'package:horyx/app/pages/settings/theme_settings_page.dart';
 
 /// 更多页
@@ -16,6 +18,9 @@ class MorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ProfileScope 依赖：名字变化时本页重建，副标题实时刷新
+    final profileName = ProfileScope.of(context).name;
+
     return AppPageScaffold(
       title: '更多',
       child: SingleChildScrollView(
@@ -27,6 +32,18 @@ class MorePage extends StatelessWidget {
               _SectionCard(
                 header: '设置',
                 children: [
+                  SettingTile(
+                    icon: Icons.person_rounded,
+                    title: '个人资料',
+                    subtitle: profileName ?? '未设置',
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ProfileSettingsPage(),
+                        ),
+                      );
+                    },
+                  ),
                   SettingTile(
                     icon: Icons.palette_rounded,
                     title: '主题',
