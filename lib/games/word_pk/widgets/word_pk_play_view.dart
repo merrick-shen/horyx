@@ -21,6 +21,7 @@ class WordPkPlayView extends StatefulWidget {
     required this.onSubmit,
     this.inputEnabled = true,
     this.selfSeat,
+    this.seatNames,
   });
 
   /// 参与人数
@@ -40,6 +41,24 @@ class WordPkPlayView extends StatefulWidget {
 
   /// 自己的座位号（联机对局传入；当前输入者是自己时回合卡展示「你」）
   final int? selfSeat;
+
+  /// 座位 -> 名字快照（联机对局传入；null 即本地对局，全部回退「玩家 N」）
+  final Map<int, String>? seatNames;
+
+  /// 座位的展示名：快照缺失或名字为空时回退「玩家 N」
+  String _seatLabel(int seat) {
+    final name = seatNames?[seat];
+    return (name == null || name.isEmpty) ? '玩家 $seat' : name;
+  }
+
+  /// 禁输态输入框占位：联机且知道输入者名字时以「」突出；
+  /// 本地对局（无快照）或名字缺失保持原占位文案
+  String get _waitingHint {
+    final name = seatNames?[currentPlayer];
+    return (name != null && name.isNotEmpty)
+        ? '等待「$name」输入…'
+        : '等待玩家 $currentPlayer 输入…';
+  }
 
   @override
   State<WordPkPlayView> createState() => _WordPkPlayViewState();
@@ -81,13 +100,14 @@ class _WordPkPlayViewState extends State<WordPkPlayView> {
               subtitle: '当前输入者',
               title: widget.currentPlayer == widget.selfSeat
                   ? '你'
-                  : '玩家 ${widget.currentPlayer}',
+                  : widget._seatLabel(widget.currentPlayer),
               titleKey: ValueKey(widget.currentPlayer),
             ),
             const SizedBox(height: 16),
             _PlayerSequence(
               playerCount: widget.playerCount,
               currentIndex: widget.currentPlayer,
+              seatNames: widget.seatNames,
             ),
             const SizedBox(height: 16),
             // 单词输入行：输入框 + 提交按钮
@@ -109,7 +129,7 @@ class _WordPkPlayViewState extends State<WordPkPlayView> {
                       palette,
                       hintText: widget.inputEnabled
                           ? '输入英文单词'
-                          : '等待玩家 ${widget.currentPlayer} 输入…',
+                          : widget._waitingHint,
                       fillColor: palette.surfaceBg,
                     ),
                   ),
@@ -126,7 +146,10 @@ class _WordPkPlayViewState extends State<WordPkPlayView> {
             const SizedBox(height: 16),
             // 已验证单词列表：占据剩余空间，超出滚动
             Expanded(
-              child: _VerifiedWordsCard(entries: widget.entries),
+              child: _VerifiedWordsCard(
+                entries: widget.entries,
+                seatNames: widget.seatNames,
+              ),
             ),
           ],
         ),
@@ -137,9 +160,12 @@ class _WordPkPlayViewState extends State<WordPkPlayView> {
 
 /// 已验证单词卡片：标题 + 数量徽标 + 单词列表（空态/滚动列表）
 class _VerifiedWordsCard extends StatelessWidget {
-  const _VerifiedWordsCard({required this.entries});
+  const _VerifiedWordsCard({required this.entries, this.seatNames});
 
   final List<WordPkEntry> entries;
+
+  /// 座位 -> 名字快照（null 即本地对局，归属回退「玩家 N」）
+  final Map<int, String>? seatNames;
 
   @override
   Widget build(BuildContext context) {
@@ -193,6 +219,7 @@ class _VerifiedWordsCard extends StatelessWidget {
                     itemBuilder: (context, index) => _WordChip(
                       word: entries[index].word,
                       playerIndex: entries[index].playerIndex,
+                      ownerName: seatNames?[entries[index].playerIndex],
                     ),
                   ),
           ),
@@ -207,10 +234,20 @@ class _PlayerSequence extends StatelessWidget {
   const _PlayerSequence({
     required this.playerCount,
     required this.currentIndex,
+    this.seatNames,
   });
 
   final int playerCount;
   final int currentIndex;
+
+  /// 座位 -> 名字快照（null 即本地对局，chip 回退「玩家 N」）
+  final Map<int, String>? seatNames;
+
+  /// 座位的展示名：快照缺失或名字为空时回退「玩家 N」
+  String _label(int seat) {
+    final name = seatNames?[seat];
+    return (name == null || name.isEmpty) ? '玩家 $seat' : name;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +272,7 @@ class _PlayerSequence extends StatelessWidget {
               ),
             ),
             child: Text(
-              '玩家 $i',
+              _label(i),
               style: TextStyle(
                 color: i == currentIndex
                     ? palette.primary
@@ -284,14 +321,24 @@ class _EmptyState extends StatelessWidget {
 
 /// 已验证单词标签
 class _WordChip extends StatelessWidget {
-  const _WordChip({required this.word, required this.playerIndex});
+  const _WordChip({
+    required this.word,
+    required this.playerIndex,
+    this.ownerName,
+  });
 
   final String word;
   final int playerIndex;
 
+  /// 归属玩家名字（快照缺失或空串时回退「玩家 N」展示）
+  final String? ownerName;
+
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final owner = (ownerName == null || ownerName!.isEmpty)
+        ? '玩家 $playerIndex'
+        : ownerName!;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -323,7 +370,7 @@ class _WordChip extends StatelessWidget {
             ),
           ),
           Text(
-            '玩家 $playerIndex',
+            owner,
             style: TextStyle(color: palette.textSecondary, fontSize: 11.5),
           ),
         ],

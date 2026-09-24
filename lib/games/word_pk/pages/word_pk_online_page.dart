@@ -41,6 +41,7 @@ class WordPkOnlinePage extends StatelessWidget {
         // isMyTurn 已含终局判断：终局后禁输（连接已断，提交无处可去）
         inputEnabled: controller.isMyTurn,
         selfSeat: controller.mySeat,
+        seatNames: controller.seatNames,
       ),
     );
   }

@@ -88,6 +88,36 @@ void main() {
     ctrlB.dispose();
   });
 
+  test('seatNames 快照：host/client 两端与房间一致（含房主 1 号）', () async {
+    final host = RoomHost(gameName: '单词PK', hostName: '房主甲', capacity: 3, basePort: 0);
+    expect(await host.start(), isTrue);
+
+    // 顺序加入固定座位：A=2、B=3（B 入座即满员开局）
+    final clientA = RoomClient(host: '127.0.0.1', port: host.port, myName: '小明');
+    unawaited(clientA.connect());
+    await until(() => clientA.phase == RoomClientPhase.joined);
+
+    final clientB = RoomClient(host: '127.0.0.1', port: host.port, myName: '小红');
+    unawaited(clientB.connect());
+    await until(() => clientB.phase == RoomClientPhase.gameStarting);
+
+    final hostCtrl = WordPkOnlineController.host(host);
+    final ctrlA = WordPkOnlineController.client(clientA);
+    final ctrlB = WordPkOnlineController.client(clientB);
+
+    // 两端快照一致且含房主名字（playerJoined 与 gameStart 同流保序）
+    expect(hostCtrl.seatNames, {1: '房主甲', 2: '小明', 3: '小红'});
+    expect(ctrlA.seatNames, hostCtrl.seatNames);
+    expect(ctrlB.seatNames, hostCtrl.seatNames);
+
+    hostCtrl.dispose();
+    ctrlA.dispose();
+    ctrlB.dispose();
+    await host.close();
+    await clientA.close();
+    await clientB.close();
+  });
+
   test('校验拒绝：客户端本地预检即时拒绝，不发网络、输入保留', () async {
     final host = RoomHost(gameName: '单词PK', hostName: null, capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);

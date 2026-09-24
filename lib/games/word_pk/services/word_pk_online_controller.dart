@@ -22,6 +22,8 @@ class WordPkOnlineController extends OnlineGameControllerBase
       mySeat: 1,
       playerCount: host.capacity,
       activeSeats: {...host.seats},
+      // 入房时的名字快照（nameOf 含兜底，座位均有非空名字）
+      seatNames: {for (final seat in host.seats) seat: host.nameOf(seat)},
     )..initialize();
   }
 
@@ -32,6 +34,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
       mySeat: client.mySeat ?? 1,
       playerCount: client.capacity,
       activeSeats: {...client.seats},
+      seatNames: Map<int, String>.of(client.seatNames),
     )..initialize();
   }
 
@@ -44,10 +47,15 @@ class WordPkOnlineController extends OnlineGameControllerBase
     required super.mySeat,
     required this.playerCount,
     required Set<int> activeSeats,
+    this.seatNames = const {},
   }) : _activeSeats = activeSeats; // ignore: prefer_initializing_formals
 
   /// 本局总人数（构造参数注入：与挂接时机解耦，无 late 初始化时序约束）
   final int playerCount;
+
+  /// 座位 -> 名字快照（构造注入的不可变映射，开局时定格，对局中改名不影响）；
+  /// 空映射即本地对局语义，视图层全部回退「玩家 N」展示
+  final Map<int, String> seatNames;
 
   /// 仍在对局中的座位集合（中途退出即移除，回合轮换跳过空位；
   /// 集合内容在 onSeatLeft 中修改，引用本身不可变）

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - 自动检测到新版本时可选择「忽略此版本」，之后不再自动提示该版本（手动检查不受影响）
+- 新增用户名系统：可在「更多 → 个人资料」设置自己的名字，联机房间与对局中显示玩家名字
 
 ## [0.11.0] - 2026-09-23
 
