@@ -12,6 +12,7 @@ import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/gomoku/widgets/gomoku_board_view.dart';
 import 'package:horyx/games/gomoku/widgets/gomoku_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
+import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 
 /// 五子棋游戏页
@@ -180,7 +181,9 @@ class _GomokuPageState
   /// 局域网模式：创建房间并进入等待页（固定 2 人，自己执黑先行）
   /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）；
   /// 所选规格随开局载荷广播，客户端据此构建同规格棋盘
-  void _createRoom(int boardSize) {
+  Future<void> _createRoom(int boardSize) async {
+    if (!await ensureProfileForOnline(context)) return;
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(

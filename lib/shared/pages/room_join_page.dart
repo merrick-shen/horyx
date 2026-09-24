@@ -4,6 +4,7 @@ import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/shared/network/net_utils.dart';
 import 'package:horyx/shared/pages/qr_scan_page.dart';
 import 'package:horyx/shared/pages/room_page.dart';
+import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
@@ -40,7 +41,7 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
   /// 加入房间：校验通过后进入等待页并连接房主，格式有误弹窗提示
   /// 加入前无法得知房主开设的游戏，满员后由等待页按握手应答中的
   /// 游戏名解析联机对局页构建器跳转
-  void _join() {
+  Future<void> _join() async {
     // 收起键盘：无论加入还是弹窗提示，返回/关闭后键盘都不应残留
     FocusScope.of(context).unfocus();
     final address = _parseAddress(_addressController.text);
@@ -48,6 +49,8 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
       showAlertDialog(context, message: '请输入正确的 IP:端口');
       return;
     }
+    if (!await ensureProfileForOnline(context)) return;
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.client(
@@ -75,6 +78,8 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
       showAlertDialog(context, message: '这不是本游戏的房间码');
       return;
     }
+    if (!await ensureProfileForOnline(context)) return;
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.client(

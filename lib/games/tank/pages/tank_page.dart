@@ -6,6 +6,7 @@ import 'package:horyx/games/tank/pages/tank_online_page.dart';
 import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/tank/widgets/tank_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
+import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
@@ -72,7 +73,9 @@ class _TankPageState
 
   /// 局域网模式：创建房间并进入等待页（固定 2 人，自己为玩家 1）；
   /// 满员开局后跳转联机对局页接管房间（本页 = 房主 = 红方）
-  void _createRoom() {
+  Future<void> _createRoom() async {
+    if (!await ensureProfileForOnline(context)) return;
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(

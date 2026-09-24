@@ -13,6 +13,7 @@ import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/word_pk/widgets/word_pk_play_view.dart';
 import 'package:horyx/games/word_pk/widgets/word_pk_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
+import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 
 /// 单词PK游戏页
@@ -73,7 +74,9 @@ class _WordPkPageState
 
   /// 局域网模式：创建房间并进入等待页（自己为玩家 1，房主）
   /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）
-  void _createRoom(int count) {
+  Future<void> _createRoom(int count) async {
+    if (!await ensureProfileForOnline(context)) return;
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => RoomPage.host(

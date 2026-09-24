@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/app/pages/settings/profile_settings_page.dart';
 import 'package:horyx/shared/storage/profile_storage.dart';
+import 'package:horyx/shared/widgets/confirm_dialog.dart';
 
 /// 用户资料控制器
 /// 持有当前用户名（null = 未设置），setName 时：
@@ -43,4 +45,23 @@ class ProfileScope extends InheritedNotifier<ProfileController> {
   /// 获取最近祖先作用域中的用户资料控制器
   static ProfileController of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ProfileScope>()!.notifier!;
+}
+
+/// 联机前名字引导
+/// 名字已设置直接返回 true；未设置时先弹确认弹窗，确认后跳转个人资料
+/// 设置页，保存成功（pop(true)）返回 true；取消弹窗或在设置页未保存
+/// 返回均返回 false，调用方据此中断本次联机操作（可随时重新发起）
+Future<bool> ensureProfileForOnline(BuildContext context) async {
+  if (ProfileScope.of(context).name != null) return true;
+  final result = await showConfirmDialog(
+    context,
+    title: '设置你的名字',
+    message: '联机时好友将看到这个名字',
+    confirmLabel: '去设置',
+  );
+  if (result != ConfirmResult.confirm || !context.mounted) return false;
+  final saved = await Navigator.of(context).push<bool>(
+    MaterialPageRoute(builder: (_) => const ProfileSettingsPage()),
+  );
+  return saved == true;
 }
