@@ -9,20 +9,29 @@ import 'package:horyx/shared/widgets/changelog_content_view.dart';
 import 'package:horyx/shared/widgets/dialog_action_button.dart';
 import 'package:horyx/shared/widgets/dialog_shell.dart';
 
+/// 用户在更新弹窗中的选择
+enum UpdateDialogChoice { later, ignore, download }
+
 /// 发现新版本弹窗（更新检测）
 /// 视觉规范复用通用确认弹窗（surfaceBg / 圆角 24 / 描边），配色随主题；
 /// Release 说明完整显示不截断，超长时滚动并提供可见的滚动指示
 ///
-/// 返回 true 表示用户选择「前往下载」，下载跳转由调用方执行
-Future<bool> showUpdateAvailableDialog(
+/// [showIgnoreVersion] 为 true 时额外提供「忽略此版本」按钮
+/// （仅自动检查更新弹窗使用，手动检查弹窗不展示）
+/// 返回用户选择，关闭弹窗（点遮罩/返回键）视为「下次再说」
+Future<UpdateDialogChoice> showUpdateAvailableDialog(
   BuildContext context, {
   required ReleaseInfo release,
+  bool showIgnoreVersion = false,
 }) async {
-  final download = await showDialog<bool>(
+  final choice = await showDialog<UpdateDialogChoice>(
     context: context,
-    builder: (_) => _UpdateAvailableDialog(release: release),
+    builder: (_) => _UpdateAvailableDialog(
+      release: release,
+      showIgnoreVersion: showIgnoreVersion,
+    ),
   );
-  return download ?? false;
+  return choice ?? UpdateDialogChoice.later;
 }
 
 /// 正文区限高（超出即滚动，弹窗不撑出屏幕；小屏/横屏时随可用空间收缩）
@@ -32,9 +41,15 @@ const _bodyMaxHeight = 300.0;
 const _scrollbarGap = 8.0;
 
 class _UpdateAvailableDialog extends StatefulWidget {
-  const _UpdateAvailableDialog({required this.release});
+  const _UpdateAvailableDialog({
+    required this.release,
+    required this.showIgnoreVersion,
+  });
 
   final ReleaseInfo release;
+
+  /// 是否展示「忽略此版本」按钮（仅自动检查更新弹窗传入）
+  final bool showIgnoreVersion;
 
   @override
   State<_UpdateAvailableDialog> createState() => _UpdateAvailableDialogState();
@@ -99,7 +114,9 @@ class _UpdateAvailableDialogState extends State<_UpdateAvailableDialog> {
               Expanded(
                 child: DialogActionButton(
                   label: '下次再说',
-                  onPressed: () => Navigator.of(context).pop(false),
+                  onPressed: () => Navigator.of(context).pop(
+                    UpdateDialogChoice.later,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -107,11 +124,23 @@ class _UpdateAvailableDialogState extends State<_UpdateAvailableDialog> {
                 child: DialogActionButton(
                   label: '前往下载',
                   filled: true,
-                  onPressed: () => Navigator.of(context).pop(true),
+                  onPressed: () => Navigator.of(context).pop(
+                    UpdateDialogChoice.download,
+                  ),
                 ),
               ),
             ],
           ),
+          // 忽略入口弱化次级操作：置于主操作下方独占整行（仅自动检查弹窗）
+          if (widget.showIgnoreVersion) ...[
+            const SizedBox(height: 10),
+            DialogActionButton(
+              label: '忽略此版本',
+              onPressed: () => Navigator.of(context).pop(
+                UpdateDialogChoice.ignore,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- 自动检测到新版本时可选择「忽略此版本」，之后不再自动提示该版本（手动检查不受影响）
+
 ## [0.11.0] - 2026-09-23
 
 ### Added

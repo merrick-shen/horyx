@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:horyx/shared/storage/ignored_version_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/update/auto_update_checker.dart';
 import 'package:horyx/shared/update/models/release_info.dart';
@@ -24,6 +26,8 @@ void main() {
   late _StubUpdateService service;
 
   setUp(() {
+    // 忽略版本记录走 SharedPreferences：注入空 mock 隔离真实平台通道
+    SharedPreferences.setMockInitialValues({});
     service = _StubUpdateService(result: const UpdateUpToDate());
   });
 
@@ -67,13 +71,36 @@ void main() {
     group('三态分发（debugSkip 覆写为 false）', () {
       setUp(() => AutoUpdateChecker.debugSkip = false);
 
-      testWidgets('有新版本 → 弹出「发现新版本」弹窗', (tester) async {
+      testWidgets('有新版本 → 弹出「发现新版本」弹窗（含忽略此版本）', (
+        tester,
+      ) async {
         service.result = UpdateAvailable(release);
         await runChecker(tester);
 
         expect(service.callCount, 1);
         expect(find.text('发现新版本 v9.9.9'), findsOneWidget);
         expect(find.text('前往下载'), findsOneWidget);
+        expect(find.text('忽略此版本'), findsOneWidget);
+      });
+
+      testWidgets('版本已被忽略 → 静默返回，无弹窗', (tester) async {
+        await IgnoredVersionStorage.save(release.tagName);
+        service.result = UpdateAvailable(release);
+        await runChecker(tester);
+
+        expect(service.callCount, 1);
+        expect(find.textContaining('发现新版本'), findsNothing);
+      });
+
+      testWidgets('点击「忽略此版本」→ 记录忽略版本，关闭弹窗', (tester) async {
+        service.result = UpdateAvailable(release);
+        await runChecker(tester);
+
+        await tester.tap(find.text('忽略此版本'));
+        await tester.pumpAndSettle();
+
+        expect(find.textContaining('发现新版本'), findsNothing);
+        expect(await IgnoredVersionStorage.isIgnored(release.tagName), isTrue);
       });
 
       testWidgets('已是最新 → 静默返回，无弹窗', (tester) async {

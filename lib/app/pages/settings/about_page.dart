@@ -60,11 +60,12 @@ class _AboutPageState extends State<AboutPage> {
 
     switch (result) {
       case UpdateAvailable(:final release):
-        final download = await showUpdateAvailableDialog(
+        // 手动检查不展示「忽略此版本」，始终弹窗供用户决策
+        final choice = await showUpdateAvailableDialog(
           context,
           release: release,
         );
-        if (!mounted || !download) return;
+        if (!mounted || choice != UpdateDialogChoice.download) return;
         await launchDownload(context, release);
       case UpdateUpToDate():
         await showAlertDialog(context, message: '当前已是最新版本');
