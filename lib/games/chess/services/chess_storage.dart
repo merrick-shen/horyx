@@ -12,6 +12,9 @@ class ChessStorage extends ArchiveStorage<ChessGameState> {
   String get storageKey => 'chess_unfinished_state';
 
   @override
+  String get gameId => '中国象棋';
+
+  @override
   ChessGameState fromJson(Map<String, dynamic> json) =>
       ChessGameState.fromJson(json);
 

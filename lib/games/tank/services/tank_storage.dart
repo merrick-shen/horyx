@@ -12,6 +12,9 @@ class TankStorage extends ArchiveStorage<TankGameState> {
   String get storageKey => 'tank_unfinished_state';
 
   @override
+  String get gameId => '坦克动荡';
+
+  @override
   TankGameState fromJson(Map<String, dynamic> json) =>
       TankGameState.fromJson(json);
 

@@ -12,6 +12,9 @@ class GomokuStorage extends ArchiveStorage<GomokuGameState> {
   String get storageKey => 'gomoku_unfinished_state';
 
   @override
+  String get gameId => '五子棋';
+
+  @override
   GomokuGameState fromJson(Map<String, dynamic> json) =>
       GomokuGameState.fromJson(json);
 

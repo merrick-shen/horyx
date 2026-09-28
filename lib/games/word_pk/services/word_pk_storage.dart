@@ -12,6 +12,9 @@ class WordPkStorage extends ArchiveStorage<WordPkGameState> {
   String get storageKey => 'word_pk_unfinished_state';
 
   @override
+  String get gameId => '单词PK';
+
+  @override
   WordPkGameState fromJson(Map<String, dynamic> json) =>
       WordPkGameState.fromJson(json);
 

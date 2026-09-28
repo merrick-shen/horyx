@@ -12,6 +12,9 @@ class ScoreboardStorage extends ArchiveStorage<ScoreboardGameState> {
   String get storageKey => 'scoreboard_unfinished_state';
 
   @override
+  String get gameId => '计分器';
+
+  @override
   ScoreboardGameState fromJson(Map<String, dynamic> json) =>
       ScoreboardGameState.fromJson(json);
 

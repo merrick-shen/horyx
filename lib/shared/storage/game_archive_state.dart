@@ -9,8 +9,8 @@ import 'package:horyx/shared/storage/archive_storage.dart';
 /// 页面在 setState 内直接置 savedState = null 关闭恢复入口。
 /// 用基类而非 mixin：Dart 的 mixin on `State<T>` 约束会与具体页面的
 /// `State<页面类型>` 产生泛型接口冲突，基类双泛型则无此问题
-abstract class GameArchiveStateBase<W extends StatefulWidget, T>
-    extends State<W> {
+abstract class GameArchiveStateBase<W extends StatefulWidget,
+    T extends GameArchiveSummary> extends State<W> {
   /// 各游戏的存档服务（如 WordPkStorage.instance）
   ArchiveStorage<T> get archiveStorage;
 

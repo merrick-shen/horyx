@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/dialog_action_button.dart';
@@ -94,7 +95,8 @@ Future<void> confirmExitWithArchive(
 ///
 /// [state] 传调用方页面 State：弹窗与存档操作均为异步，
 /// 期间页面可能已卸载，需以 State.mounted 守护后续 context 使用
-Future<void> requestExitWithArchive<W extends StatefulWidget, T>(
+Future<void> requestExitWithArchive<W extends StatefulWidget,
+    T extends GameArchiveSummary>(
   GameArchiveStateBase<W, T> state, {
   required bool hasProgress,
   required bool hasMoves,
