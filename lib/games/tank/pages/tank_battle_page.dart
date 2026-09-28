@@ -89,7 +89,8 @@ class _TankBattlePageState extends State<TankBattlePage>
   /// 系统旋转与转场动画并行执行；若等转场结束（dispose）才开始旋转，
   /// 两个耗时串行叠加，退出后要明显多等约半秒才回到竖屏。
   /// （dispose 的还原由 mixin 兜底，覆盖未经本方法的 pop 路径）。
-  /// 仅用于 0:0 无进行中内容的直接退出（与其他游戏开局无操作回设置视图一致）
+  /// 仅用于比分与进入时相同（无进行中内容）的直接退出
+  /// （与其他游戏开局无操作回设置视图一致）
   void _exitToSetup() {
     restorePortrait();
     Navigator.of(context).pop();
@@ -102,12 +103,14 @@ class _TankBattlePageState extends State<TankBattlePage>
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
-  /// 退出对局请求：比分 0:0 时无进行中内容，直接返回设置页；
+  /// 退出对局请求：比分与进入时相同（未得分，含恢复存档后未推动进度）
+  /// 时无进行中内容，直接返回设置页且不动存档（原样保留，下次仍可恢复）；
   /// 否则弹三选项确认（保存并退出 / 不保存并退出 / 取消），
   /// 确认后的保存/不保存均退出整页回主页（与其他游戏统一）。
   /// 仅保存比分——坦克位置、地图等战场状态本就不跨局保留，无需存档
   Future<void> _requestExit() async {
-    if (_redScore == 0 && _greenScore == 0) {
+    if (_redScore == widget.initialRedScore &&
+        _greenScore == widget.initialGreenScore) {
       _exitToSetup();
       return;
     }

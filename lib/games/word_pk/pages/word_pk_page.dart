@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
@@ -48,6 +49,11 @@ class _WordPkPageState
   /// 已验证通过的单词列表（最新置顶）
   final List<WordPkEntry> _entries = [];
 
+  /// 恢复存档时的单词基线：退出时与当前 [_entries] 比对，
+  /// 一致则视为未产生新进度，直接退出且存档保持原样；
+  /// 非恢复进入（新开局）为 null
+  List<WordPkEntry>? _restoredEntries;
+
   @override
   ArchiveStorage<WordPkGameState> get archiveStorage =>
       WordPkStorage.instance;
@@ -67,6 +73,7 @@ class _WordPkPageState
       _currentPlayer = 1;
       _entries.clear();
       _started = true;
+      _restoredEntries = null;
       // 开启新对局后不再展示旧存档入口
       savedState = null;
     });
@@ -102,6 +109,7 @@ class _WordPkPageState
         ..clear()
         ..addAll(saved.entries);
       _started = true;
+      _restoredEntries = List.of(saved.entries);
       savedState = null;
     });
   }
@@ -114,6 +122,8 @@ class _WordPkPageState
       this,
       hasProgress: _started,
       hasMoves: _entries.isNotEmpty,
+      unchangedSinceRestore: _restoredEntries != null &&
+          listEquals(_entries, _restoredEntries),
       // 持久化完整对局状态后退出
       onSave: () => WordPkStorage.instance.save(
         WordPkGameState(
@@ -125,7 +135,10 @@ class _WordPkPageState
       ),
       // 存档检测刷新由退出模板统一负责
       onBackToSetup: () {
-        setState(() => _started = false);
+        setState(() {
+          _started = false;
+          _restoredEntries = null;
+        });
       },
       exitPage: () => exitPageClean(context),
     );

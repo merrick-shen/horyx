@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -74,6 +75,11 @@ class _ScoreboardPageState
 
   /// 整场胜方（'红方'/'蓝方'）；null 表示比赛进行中
   String? _winner;
+
+  /// 恢复存档时的状态基线：退出时与当前比分/撤销栈比对，
+  /// 一致（含加分又撤销的净零变化）则视为未产生新进度，
+  /// 直接退出且存档保持原样；非恢复进入为新一场时为 null
+  ScoreboardGameState? _restoredState;
 
   /// 赢下整场所需局数（BO 多数局：BO3 需 2 胜，BO5 需 3 胜）
   int get _gamesToWin => ScoreboardRules.gamesToWin(_bestOf);
@@ -226,6 +232,7 @@ class _ScoreboardPageState
       _gameOver = false;
       _winner = null;
       _history.clear();
+      _restoredState = null;
     });
   }
 
@@ -247,6 +254,7 @@ class _ScoreboardPageState
       _winner = null;
       _history.clear();
       _playing = true;
+      _restoredState = null;
       // 开启新一场后不再展示旧存档恢复入口
       savedState = null;
     });
@@ -256,10 +264,19 @@ class _ScoreboardPageState
   /// 已终局（无进行中内容）直接退出整页回主页；有计分动作未终局弹三选项
   /// 确认（保存退出/不保存退出均退出整页回主页）；开局未计分回设置视图
   Future<void> _requestExit() async {
+    final restored = _restoredState;
     await requestExitWithArchive(
       this,
       hasProgress: _winner == null,
       hasMoves: _history.isNotEmpty,
+      // 恢复后未产生任何计分动作（含加分又撤销）视为无新进度
+      unchangedSinceRestore: restored != null &&
+          _redGames == restored.redGames &&
+          _blueGames == restored.blueGames &&
+          _redScore == restored.redScore &&
+          _blueScore == restored.blueScore &&
+          _gameOver == restored.gameOver &&
+          listEquals(_history, restored.history),
       title: '退出计分？',
       message: '保存并退出后，下次进入可从当前比分继续',
       // 持久化完整状态（含撤销栈）
@@ -286,7 +303,10 @@ class _ScoreboardPageState
   /// 退出计分：还原竖屏并回到设置视图，刷新恢复入口（保存退出后需展示）
   void _exitPlaying() {
     restorePortrait();
-    setState(() => _playing = false);
+    setState(() {
+      _playing = false;
+      _restoredState = null;
+    });
     loadSavedState();
   }
 
@@ -316,6 +336,7 @@ class _ScoreboardPageState
         ..addAll(saved.history);
       _gameOver = saved.gameOver;
       _winner = null;
+      _restoredState = saved;
       savedState = null;
       _playing = true;
     });

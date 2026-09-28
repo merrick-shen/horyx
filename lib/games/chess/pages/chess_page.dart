@@ -77,6 +77,12 @@ class _ChessPageState
   /// 仅靠走法判等会漏触发
   int _moveSeq = 0;
 
+  /// 恢复存档时的局面基线（棋盘编码 + 轮次）：退出时与当前局面比对，
+  /// 一致（含悔棋净零变化）则视为未产生新进度，直接退出且存档保持原样；
+  /// 非恢复进入（新开局/重开）为 null
+  String? _restoredBoardCode;
+  ChessColor? _restoredTurn;
+
   @override
   ArchiveStorage<ChessGameState> get archiveStorage =>
       ChessStorage.instance;
@@ -119,6 +125,8 @@ class _ChessPageState
         _gameOver = false;
         _checkFlashTrigger = 0;
         _started = true;
+        _restoredBoardCode = saved.boardCode;
+        _restoredTurn = saved.turn;
         savedState = null;
       });
     } catch (_) {
@@ -141,6 +149,8 @@ class _ChessPageState
       _gameOver = false;
       _checkFlashTrigger = 0;
       _started = true;
+      _restoredBoardCode = null;
+      _restoredTurn = null;
       // 开启新对局后不再展示旧存档入口
       savedState = null;
     });
@@ -280,6 +290,8 @@ class _ChessPageState
       _capturedPiece = null;
       _gameOver = false;
       _checkFlashTrigger = 0;
+      _restoredBoardCode = null;
+      _restoredTurn = null;
     });
   }
 
@@ -322,6 +334,8 @@ class _ChessPageState
       _capturedPiece = null;
       _gameOver = false;
       _checkFlashTrigger = 0;
+      _restoredBoardCode = null;
+      _restoredTurn = null;
     });
   }
 
@@ -333,6 +347,9 @@ class _ChessPageState
       this,
       hasProgress: _started && !_gameOver,
       hasMoves: _history.isNotEmpty,
+      unchangedSinceRestore: _board != null &&
+          _board!.encode() == _restoredBoardCode &&
+          _turn == _restoredTurn,
       // 局部引用防异步期间状态变化：_started 且未终局时必有棋盘，
       // null 为不可达的纯防御路径——无从保存，放弃保存留在本页
       onSave: () {

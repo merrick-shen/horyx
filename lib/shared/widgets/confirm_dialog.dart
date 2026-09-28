@@ -86,7 +86,9 @@ Future<void> confirmExitWithArchive(
 ///    [onBackToSetup] 清对局状态回设置视图，随后统一 [loadSavedState]
 ///    刷新恢复入口（开局时入口已被置空，未走子即退出时磁盘上的旧存档
 ///    仍在，回设置后应重新展示）；
-/// 3. 其余：弹出三选项确认（见 [confirmExitWithArchive]）——保存并退出
+/// 3. [unchangedSinceRestore] 为 true：恢复存档后未产生新进度（状态与
+///    恢复基线一致），直接 [exitPage] 退出且不写不清档，存档保持原样；
+/// 4. 其余：弹出三选项确认（见 [confirmExitWithArchive]）——保存并退出
 ///    执行 [onSave]（各游戏组装存档模型）；不保存退出统一经
 ///    [GameArchiveStateBase.archiveStorage] 清档；取消留在本页。
 ///
@@ -102,6 +104,7 @@ Future<void> requestExitWithArchive<W extends StatefulWidget, T>(
   GameArchiveStateBase<W, T> state, {
   required bool hasProgress,
   required bool hasMoves,
+  required bool unchangedSinceRestore,
   String title = '退出对局？',
   String message = '保存并退出后，下次进入可从当前进度继续',
   required Future<void> Function() onSave,
@@ -116,6 +119,12 @@ Future<void> requestExitWithArchive<W extends StatefulWidget, T>(
     onBackToSetup();
     // 回设置后重新检测存档刷新恢复入口（见方法注释第 2 步）
     await state.loadSavedState();
+    return;
+  }
+  // 恢复存档后未产生新进度（状态与恢复基线一致，含悔棋净零变化）：
+  // 直接退出且不写不清档，磁盘存档保持原样，下次仍可恢复同一进度
+  if (unchangedSinceRestore) {
+    exitPage();
     return;
   }
   await confirmExitWithArchive(

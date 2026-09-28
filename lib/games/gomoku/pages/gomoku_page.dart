@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/gomoku/models/gomoku_game_state.dart';
@@ -53,6 +54,11 @@ class _GomokuPageState
 
   /// 胜方（'黑方'/'白方'）；null 表示对局进行中
   String? _winner;
+
+  /// 恢复存档时的落子基线：退出时与当前 [_moves] 比对，
+  /// 一致（含悔棋净零变化）则视为未产生新进度，直接退出且存档保持原样；
+  /// 非恢复进入（新开局/重开）为 null
+  List<(int, int)>? _restoredMoves;
 
   @override
   ArchiveStorage<GomokuGameState> get archiveStorage =>
@@ -138,6 +144,7 @@ class _GomokuPageState
       _occupied.clear();
       _pending = null;
       _winner = null;
+      _restoredMoves = null;
     });
   }
 
@@ -157,6 +164,7 @@ class _GomokuPageState
       _pending = null;
       _winner = null;
       _started = false;
+      _restoredMoves = null;
     });
   }
 
@@ -219,6 +227,7 @@ class _GomokuPageState
         ..clear()
         ..addAll(saved.moves);
       _started = true;
+      _restoredMoves = List.of(saved.moves);
       savedState = null;
     });
   }
@@ -231,6 +240,8 @@ class _GomokuPageState
       this,
       hasProgress: _started && _winner == null,
       hasMoves: _moves.isNotEmpty,
+      unchangedSinceRestore:
+          _restoredMoves != null && listEquals(_moves, _restoredMoves),
       // 持久化完整对局状态后退出
       onSave: () => GomokuStorage.instance.save(
         GomokuGameState(
