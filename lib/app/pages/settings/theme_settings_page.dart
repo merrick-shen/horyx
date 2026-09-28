@@ -43,10 +43,10 @@ class ThemeSettingsPage extends StatelessWidget {
     ),
   ];
 
-  /// 预设主题色彩列表；首位为默认品牌紫
+  /// 预设主题色彩列表；首位为默认蓝
   static const List<Color> _presetColors = [
     AppPalette.brandPrimary,
-    Color(0xFF3D8BFF),
+    Color(0xFF7C5CFF),
     Color(0xFF1FB6C9),
     Color(0xFF2FBF71),
     Color(0xFFF5A623),

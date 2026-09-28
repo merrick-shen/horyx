@@ -35,8 +35,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// 品牌强调色（UI 统一使用纯色，不使用渐变；深浅主题共用同一强调色）
   final Color primary;
 
-  /// 默认品牌紫：未自定义主题色彩时的强调色
-  static const Color brandPrimary = Color(0xFF7C5CFF);
+  /// 默认蓝：未自定义主题色彩时的强调色
+  static const Color brandPrimary = Color(0xFF3D8BFF);
 
   /// 深色调色板：纯黑背景 + 中性灰表面色
   static const AppPalette dark = AppPalette(
@@ -49,7 +49,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     primary: brandPrimary,
   );
 
-  /// 浅色调色板：冷白底 + 淡紫灰层次，保持品牌紫强调色
+  /// 浅色调色板：冷白底 + 淡灰层次，保持蓝强调色
   static const AppPalette light = AppPalette(
     scaffoldBg: Color(0xFFF4F5FA),
     surfaceBg: Color(0xFFFFFFFF),

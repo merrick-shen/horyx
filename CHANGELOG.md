@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 应用图标主色由紫色调整为黑色
+- 应用默认主题色由紫色调整为蓝色
 
 ## [0.11.0] - 2026-09-23
 
