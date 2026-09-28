@@ -9,7 +9,7 @@
 - 音效：flutter_soloud（Soloud 引擎，预解码进内存的低延迟游戏音效）
 - 局域网联机：dart:io TCP（NDJSON 分帧协议、房主权威模型，零第三方网络依赖）
 - 房间扫码：qr_flutter 生成房间二维码 + mobile_scanner 扫码识别（好友扫码直接入座，需相机权限）
-- 持久化：SharedPreferences 单键 JSON 原子写入，读取容错，模型带 version 字段备迁移
+- 持久化：SharedPreferences 多存档仓库（索引键 + 按档数据键的 JSON 原子写入，条目无上限，读取容错，模型带 version 字段备迁移）
 - SVG 渲染：flutter_svg（关于页 Logo 动态着色）
 - 版本信息：package_info_plus（关于页展示应用版本号，检查更新的版本比较源）
 - 检查更新：GitHub Releases API（dart:io HttpClient，零第三方网络依赖）查询最新版本 + url_launcher 跳转系统浏览器下载
@@ -40,7 +40,7 @@ lib/
 │   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、对局控制器基类、棋类通用悔棋/认输协商状态机、房间码编解码）
 │   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页、扫码页）
 │   ├── profile/            # 用户资料（用户名控制器与全局作用域、联机前名字引导）
-│   ├── storage/            # 存档读写泛型基类、游戏页存档状态基类、主题与用户名持久化
+│   ├── storage/            # 多存档仓库泛型基类（索引 + 按条存取/覆盖/删除）、游戏页存档状态基类（恢复入口仅最新档、恢复后覆盖保存）、主题与用户名持久化
 │   ├── theme/              # 主题系统（调色板、圆角 token、控制器）
 │   ├── update/             # 应用内检查更新（GitHub Release 查询、版本比较与三态判定）
 │   ├── utils/              # 通用工具（页面退出清理、资产图片解码缓存、横屏沉浸式 mixin）
