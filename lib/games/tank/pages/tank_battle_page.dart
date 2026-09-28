@@ -7,7 +7,6 @@ import 'package:horyx/games/tank/engine/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_game_state.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
-import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/tank/widgets/tank_control_column.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
@@ -27,11 +26,16 @@ class TankBattlePage extends StatefulWidget {
     super.key,
     this.initialRedScore = 0,
     this.initialGreenScore = 0,
+    required this.onSave,
   });
 
   /// 初始比分（从存档恢复对战时传入，新对局默认 0:0）
   final int initialRedScore;
   final int initialGreenScore;
+
+  /// 保存当前比分：由父级设置页（TankPage）注入——存档绑定与覆盖语义
+  /// 统一由其基类管理，本页只组装状态模型；返回 Future 以等待写盘完成
+  final Future<void> Function(TankGameState) onSave;
 
   @override
   State<TankBattlePage> createState() => _TankBattlePageState();
@@ -117,7 +121,7 @@ class _TankBattlePageState extends State<TankBattlePage>
 
     await confirmExitWithArchive(
       this,
-      onSave: () => TankStorage.instance.save(
+      onSave: () => widget.onSave(
         TankGameState(
           redScore: _redScore,
           greenScore: _greenScore,

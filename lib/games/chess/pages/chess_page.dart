@@ -99,7 +99,7 @@ class _ChessPageState
 
   /// 恢复未完成对局：从存档还原局面、轮次与走子历史
   void _resumeSaved() {
-    final saved = savedState;
+    final saved = takeResumeEntry();
     if (saved == null) return;
     try {
       // 从初始局面正向重放走子序列还原棋盘，并顺带收集每步被吃子
@@ -127,13 +127,11 @@ class _ChessPageState
         _started = true;
         _restoredBoardCode = saved.boardCode;
         _restoredTurn = saved.turn;
-        savedState = null;
       });
     } catch (_) {
-      // 存档损坏（局面编码非法/历史矛盾）：清档并关闭恢复入口，
+      // 存档损坏（局面编码非法/历史矛盾）：删除该档（恢复入口已关闭），
       // 与 ArchiveStorage 读侧「损坏数据视为无存档」的容错风格一致
-      ChessStorage.instance.clear();
-      setState(() => savedState = null);
+      clearCurrentArchive();
     }
   }
 
@@ -151,8 +149,8 @@ class _ChessPageState
       _started = true;
       _restoredBoardCode = null;
       _restoredTurn = null;
-      // 开启新对局后不再展示旧存档入口
-      savedState = null;
+      // 开启新对局：关闭恢复入口并解绑覆盖目标，此后保存新建存档
+      discardResumeEntry();
     });
   }
 
@@ -240,7 +238,7 @@ class _ChessPageState
     if (endReason != null) {
       // 终局：对局已分胜负，立即清除存档（避免重进恢复出已结束的局面），
       // 随后锁定棋盘并弹出胜负弹窗（将死/困毙）
-      ChessStorage.instance.clear();
+      clearCurrentArchive();
       setState(() => _gameOver = true);
       _showEndDialog(endReason);
       return;
@@ -352,10 +350,11 @@ class _ChessPageState
           _turn == _restoredTurn,
       // 局部引用防异步期间状态变化：_started 且未终局时必有棋盘，
       // null 为不可达的纯防御路径——无从保存，放弃保存留在本页
+      // （恢复链路覆盖原档，新对局新建存档）
       onSave: () {
         final board = _board;
         if (board == null) return Future<void>.value();
-        return ChessStorage.instance.save(
+        return saveCurrent(
           ChessGameState(
             boardCode: board.encode(),
             turn: _turn,

@@ -74,8 +74,8 @@ class _WordPkPageState
       _entries.clear();
       _started = true;
       _restoredEntries = null;
-      // 开启新对局后不再展示旧存档入口
-      savedState = null;
+      // 开启新对局：关闭恢复入口并解绑覆盖目标，此后保存新建存档
+      discardResumeEntry();
     });
   }
 
@@ -100,7 +100,7 @@ class _WordPkPageState
 
   /// 恢复未完成对局：从存档还原人数、回合进度与单词列表
   void _resumeSaved() {
-    final saved = savedState;
+    final saved = takeResumeEntry();
     if (saved == null) return;
     setState(() {
       _playerCount = saved.playerCount;
@@ -110,7 +110,6 @@ class _WordPkPageState
         ..addAll(saved.entries);
       _started = true;
       _restoredEntries = List.of(saved.entries);
-      savedState = null;
     });
   }
 
@@ -124,8 +123,8 @@ class _WordPkPageState
       hasMoves: _entries.isNotEmpty,
       unchangedSinceRestore: _restoredEntries != null &&
           listEquals(_entries, _restoredEntries),
-      // 持久化完整对局状态后退出
-      onSave: () => WordPkStorage.instance.save(
+      // 持久化完整对局状态后退出（恢复链路覆盖原档，新对局新建存档）
+      onSave: () => saveCurrent(
         WordPkGameState(
           playerCount: _playerCount,
           currentPlayer: _currentPlayer,

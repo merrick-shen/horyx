@@ -48,13 +48,15 @@ class _TankPageState
   }
 
   /// 进入对局页（开始新对战或恢复存档），返回后刷新恢复入口：
-  /// 保存退出后需展示新存档；不保存退出后存档已清，入口应消失
+  /// 保存退出后需展示新存档
   Future<void> _openBattle({TankGameState? saved}) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => TankBattlePage(
           initialRedScore: saved?.redScore ?? 0,
           initialGreenScore: saved?.greenScore ?? 0,
+          // 经父级基类保存：恢复链路覆盖原档，新对局新建存档
+          onSave: saveCurrent,
         ),
       ),
     );
@@ -62,11 +64,14 @@ class _TankPageState
   }
 
   /// 开始本地对战：进入横屏对局页（新对局 0:0 起步）
-  void _onStart() => _openBattle();
+  void _onStart() {
+    discardResumeEntry();
+    _openBattle();
+  }
 
   /// 恢复未完成对战：从存档比分继续累计
   void _resumeSaved() {
-    final saved = savedState;
+    final saved = takeResumeEntry();
     if (saved == null) return;
     _openBattle(saved: saved);
   }

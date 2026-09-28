@@ -104,7 +104,7 @@ class _GomokuPageState
       // 清档 fire-and-forget：无需等待写入；失败仅留调试线索（残留存档
       // 无害——下次进入提示恢复已终局对局，开新局即覆盖）
       unawaited(
-        GomokuStorage.instance.clear().onError((e, stackTrace) {
+        clearCurrentArchive().onError((e, stackTrace) {
           debugPrint('终局清档失败: $e');
         }),
       );
@@ -188,8 +188,8 @@ class _GomokuPageState
   void _onStart() {
     setState(() {
       _started = true;
-      // 开启新对局后不再展示旧存档入口
-      savedState = null;
+      // 开启新对局：关闭恢复入口并解绑覆盖目标，此后保存新建存档
+      discardResumeEntry();
     });
   }
 
@@ -216,7 +216,7 @@ class _GomokuPageState
 
   /// 恢复未完成对局：从存档还原棋盘规格与落子序列
   void _resumeSaved() {
-    final saved = savedState;
+    final saved = takeResumeEntry();
     if (saved == null) return;
     setState(() {
       _boardSize = saved.boardSize;
@@ -228,7 +228,6 @@ class _GomokuPageState
         ..addAll(saved.moves);
       _started = true;
       _restoredMoves = List.of(saved.moves);
-      savedState = null;
     });
   }
 
@@ -242,8 +241,8 @@ class _GomokuPageState
       hasMoves: _moves.isNotEmpty,
       unchangedSinceRestore:
           _restoredMoves != null && listEquals(_moves, _restoredMoves),
-      // 持久化完整对局状态后退出
-      onSave: () => GomokuStorage.instance.save(
+      // 持久化完整对局状态后退出（恢复链路覆盖原档，新对局新建存档）
+      onSave: () => saveCurrent(
         GomokuGameState(
           boardSize: _boardSize,
           moves: List.of(_moves),

@@ -145,7 +145,7 @@ class _ScoreboardPageState
       // 清档 fire-and-forget：无需等待写入；失败仅留调试线索（残留存档
       // 无害——下次进入提示恢复已终局比赛，开新局即覆盖）
       unawaited(
-        ScoreboardStorage.instance.clear().onError((e, stackTrace) {
+        clearCurrentArchive().onError((e, stackTrace) {
           debugPrint('终局清档失败: $e');
         }),
       );
@@ -214,7 +214,7 @@ class _ScoreboardPageState
         _restartMatch();
       case ConfirmResult.neutral:
         // 整场已结束，返回设置并清除存档（无可恢复内容）
-        await ScoreboardStorage.instance.clear();
+        await clearCurrentArchive();
         if (mounted) _exitPlaying();
       case ConfirmResult.cancel:
         // 留在终局画面查看比分，撤销可回退终局
@@ -255,8 +255,8 @@ class _ScoreboardPageState
       _history.clear();
       _playing = true;
       _restoredState = null;
-      // 开启新一场后不再展示旧存档恢复入口
-      savedState = null;
+      // 开启新一场：关闭恢复入口并解绑覆盖目标，此后保存新建存档
+      discardResumeEntry();
     });
   }
 
@@ -279,8 +279,8 @@ class _ScoreboardPageState
           listEquals(_history, restored.history),
       title: '退出计分？',
       message: '保存并退出后，下次进入可从当前比分继续',
-      // 持久化完整状态（含撤销栈）
-      onSave: () => ScoreboardStorage.instance.save(
+      // 持久化完整状态（含撤销栈）；恢复链路覆盖原档，新一场新建存档
+      onSave: () => saveCurrent(
         ScoreboardGameState(
           bestOf: _bestOf,
           winScore: _winScore,
@@ -319,7 +319,7 @@ class _ScoreboardPageState
   /// 恢复未完成计分：还原配置、比分与撤销栈
   /// 输入框无需手动同步：回到设置阶段时视图以当前配置重建，自动展示一致
   void _resumeSaved() {
-    final saved = savedState;
+    final saved = takeResumeEntry();
     if (saved == null) return;
 
     enterLandscapeImmersive();
@@ -337,7 +337,6 @@ class _ScoreboardPageState
       _gameOver = saved.gameOver;
       _winner = null;
       _restoredState = saved;
-      savedState = null;
       _playing = true;
     });
   }
