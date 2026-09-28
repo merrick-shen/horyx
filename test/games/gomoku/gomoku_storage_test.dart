@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:horyx/games/gomoku/models/gomoku_game_state.dart';
+import 'package:horyx/games/gomoku/pages/gomoku_page.dart';
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 
 void main() {
@@ -119,6 +120,51 @@ void main() {
       await GomokuStorage.instance.save(sampleState());
       await GomokuStorage.instance.clear();
       expect(await GomokuStorage.instance.load(), isNull);
+    });
+  });
+
+  group('GomokuStorage 多存档 API', () {
+    test('gameId 与注册表登记名一致', () {
+      expect(GomokuStorage.instance.gameId, GomokuPage.gameName);
+    });
+
+    test('saveArchive 新建后 loadLatest/loadById 可完整还原', () async {
+      final state = sampleState();
+      final id = await GomokuStorage.instance.saveArchive(state);
+
+      final latest = await GomokuStorage.instance.loadLatest();
+      expect(latest, isNotNull);
+      expect(latest!.id, id);
+      expect(latest.state.boardSize, state.boardSize);
+      expect(latest.state.moves, state.moves);
+
+      final byId = await GomokuStorage.instance.loadById(id);
+      expect(byId!.state.savedAt, state.savedAt);
+      expect(byId.state.summary, state.summary);
+    });
+
+    test('传入已有 id 覆盖：条目数不变、进度刷新', () async {
+      final id = await GomokuStorage.instance.saveArchive(sampleState());
+      final updated = GomokuGameState(
+        boardSize: 9,
+        moves: const [(3, 3)],
+        savedAt: DateTime(2026, 9, 28, 20),
+      );
+      await GomokuStorage.instance.saveArchive(updated, id: id);
+
+      final summaries = await GomokuStorage.instance.loadSummaries();
+      expect(summaries, hasLength(1));
+      expect(summaries.single.id, id);
+      final record = await GomokuStorage.instance.loadById(id);
+      expect(record!.state.boardSize, 9);
+      expect(record.state.moves, const [(3, 3)]);
+    });
+
+    test('remove 后恢复入口数据清空', () async {
+      final id = await GomokuStorage.instance.saveArchive(sampleState());
+      await GomokuStorage.instance.remove(id);
+      expect(await GomokuStorage.instance.loadLatest(), isNull);
+      expect(await GomokuStorage.instance.loadSummaries(), isEmpty);
     });
   });
 }

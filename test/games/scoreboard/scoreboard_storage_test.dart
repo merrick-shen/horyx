@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:horyx/games/scoreboard/models/scoreboard_game_state.dart';
+import 'package:horyx/games/scoreboard/pages/scoreboard_page.dart';
 import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
 
 void main() {
@@ -134,6 +135,60 @@ void main() {
       await ScoreboardStorage.instance.save(sampleState());
       await ScoreboardStorage.instance.clear();
       expect(await ScoreboardStorage.instance.load(), isNull);
+    });
+  });
+
+  group('ScoreboardStorage 多存档 API', () {
+    test('gameId 与注册表登记名一致', () {
+      expect(ScoreboardStorage.instance.gameId, ScoreboardPage.gameName);
+    });
+
+    test('saveArchive 新建后 loadLatest/loadById 可完整还原', () async {
+      final state = sampleState();
+      final id = await ScoreboardStorage.instance.saveArchive(state);
+
+      final latest = await ScoreboardStorage.instance.loadLatest();
+      expect(latest, isNotNull);
+      expect(latest!.id, id);
+      expect(latest.state.redScore, 8);
+      expect(latest.state.history, state.history);
+
+      final byId = await ScoreboardStorage.instance.loadById(id);
+      expect(byId!.state.savedAt, state.savedAt);
+      expect(byId.state.summary, state.summary);
+    });
+
+    test('传入已有 id 覆盖：条目数不变、进度刷新', () async {
+      final id = await ScoreboardStorage.instance.saveArchive(sampleState());
+      final updated = ScoreboardGameState(
+        bestOf: 3,
+        winScore: 11,
+        leadBy: 2,
+        redGames: 1,
+        blueGames: 1,
+        redScore: 10,
+        blueScore: 9,
+        history: const [
+          [0, 0, 0, 0],
+        ],
+        gameOver: false,
+        savedAt: DateTime(2026, 9, 28, 20),
+      );
+      await ScoreboardStorage.instance.saveArchive(updated, id: id);
+
+      final summaries = await ScoreboardStorage.instance.loadSummaries();
+      expect(summaries, hasLength(1));
+      expect(summaries.single.id, id);
+      final record = await ScoreboardStorage.instance.loadById(id);
+      expect(record!.state.redScore, 10);
+      expect(record.state.blueGames, 1);
+    });
+
+    test('remove 后恢复入口数据清空', () async {
+      final id = await ScoreboardStorage.instance.saveArchive(sampleState());
+      await ScoreboardStorage.instance.remove(id);
+      expect(await ScoreboardStorage.instance.loadLatest(), isNull);
+      expect(await ScoreboardStorage.instance.loadSummaries(), isEmpty);
     });
   });
 }

@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:horyx/games/chess/models/chess_board.dart';
 import 'package:horyx/games/chess/models/chess_game_state.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
+import 'package:horyx/games/chess/pages/chess_page.dart';
 import 'package:horyx/games/chess/services/chess_storage.dart';
 
 void main() {
@@ -137,6 +138,52 @@ void main() {
       await ChessStorage.instance.save(sampleState());
       await ChessStorage.instance.clear();
       expect(await ChessStorage.instance.load(), isNull);
+    });
+  });
+
+  group('ChessStorage 多存档 API', () {
+    test('gameId 与注册表登记名一致', () {
+      expect(ChessStorage.instance.gameId, ChessPage.gameName);
+    });
+
+    test('saveArchive 新建后 loadLatest/loadById 可完整还原', () async {
+      final state = sampleState();
+      final id = await ChessStorage.instance.saveArchive(state);
+
+      final latest = await ChessStorage.instance.loadLatest();
+      expect(latest, isNotNull);
+      expect(latest!.id, id);
+      expect(latest.state.boardCode, state.boardCode);
+      expect(latest.state.moves.single, state.moves.single);
+
+      final byId = await ChessStorage.instance.loadById(id);
+      expect(byId!.state.savedAt, state.savedAt);
+      expect(byId.state.summary, state.summary);
+    });
+
+    test('传入已有 id 覆盖：条目数不变、进度刷新', () async {
+      final id = await ChessStorage.instance.saveArchive(sampleState());
+      final updated = ChessGameState(
+        boardCode: ChessBoard.initial().encode(),
+        turn: ChessColor.red,
+        moves: const [],
+        savedAt: DateTime(2026, 9, 28, 20),
+      );
+      await ChessStorage.instance.saveArchive(updated, id: id);
+
+      final summaries = await ChessStorage.instance.loadSummaries();
+      expect(summaries, hasLength(1));
+      expect(summaries.single.id, id);
+      final record = await ChessStorage.instance.loadById(id);
+      expect(record!.state.moves, isEmpty);
+      expect(record.state.turn, ChessColor.red);
+    });
+
+    test('remove 后恢复入口数据清空', () async {
+      final id = await ChessStorage.instance.saveArchive(sampleState());
+      await ChessStorage.instance.remove(id);
+      expect(await ChessStorage.instance.loadLatest(), isNull);
+      expect(await ChessStorage.instance.loadSummaries(), isEmpty);
     });
   });
 }
