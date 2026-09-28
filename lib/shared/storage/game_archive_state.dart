@@ -63,6 +63,20 @@ abstract class GameArchiveStateBase<W extends StatefulWidget,
     return saved;
   }
 
+  /// 定点恢复指定存档（存档管理页条目「开始」按钮跳转用）：
+  /// 加载该档并绑定覆盖目标（此后保存覆盖该档），成功后回调
+  /// [onResumed]（各页面据此切入对局视图）；
+  /// 存档不存在或已损坏时无动作，页面停留设置视图走常规恢复入口
+  Future<void> resumeArchiveById(
+    String id,
+    void Function(T state) onResumed,
+  ) async {
+    final record = await archiveStorage.loadById(id);
+    if (record == null || !mounted) return;
+    resumedArchiveId = record.id;
+    onResumed(record.state);
+  }
+
   /// 终局清档：删除当前对局绑定的存档并解绑；
   /// 未绑定（新对局且未保存过）时无档可删，无操作
   Future<void> clearCurrentArchive() async {

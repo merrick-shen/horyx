@@ -21,7 +21,10 @@ import 'package:horyx/games/gomoku/pages/gomoku_online_page.dart';
 /// 落子确认、五连判定、胜利弹窗、退出确认与对局存档恢复
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class GomokuPage extends StatefulWidget {
-  const GomokuPage({super.key});
+  const GomokuPage({super.key, this.resumeArchiveId});
+
+  /// 存档管理页「开始」按钮定点恢复的存档 id；null 表示常规进入
+  final String? resumeArchiveId;
 
   /// 联机房间标识名：GameRegistry 登记、建房入口与房间标识卡共用的
   /// 单一事实来源（注册数据归游戏模块自身，注册中心只做汇总）
@@ -71,6 +74,10 @@ class _GomokuPageState
   void initState() {
     super.initState();
     loadSavedState();
+    final resumeId = widget.resumeArchiveId;
+    if (resumeId != null) {
+      resumeArchiveById(resumeId, _applySavedState);
+    }
   }
 
   /// 点击棋盘交叉点：终局或已有棋子的点不可选，其余更新预选
@@ -218,6 +225,11 @@ class _GomokuPageState
   void _resumeSaved() {
     final saved = takeResumeEntry();
     if (saved == null) return;
+    _applySavedState(saved);
+  }
+
+  /// 将存档状态还原进对局视图（恢复入口与存档管理页「开始」共用）
+  void _applySavedState(GomokuGameState saved) {
     setState(() {
       _boardSize = saved.boardSize;
       _moves

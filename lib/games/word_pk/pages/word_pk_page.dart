@@ -22,7 +22,10 @@ import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 /// 提交校验、退出确认弹窗、对局存档与恢复
 /// 状态栏样式由 MaterialApp 的 builder 统一处理（随主题亮度变化）
 class WordPkPage extends StatefulWidget {
-  const WordPkPage({super.key});
+  const WordPkPage({super.key, this.resumeArchiveId});
+
+  /// 存档管理页「开始」按钮定点恢复的存档 id；null 表示常规进入
+  final String? resumeArchiveId;
 
   /// 联机房间标识名：GameRegistry 登记、建房入口与房间标识卡共用的
   /// 单一事实来源（注册数据归游戏模块自身，注册中心只做汇总）
@@ -65,6 +68,10 @@ class _WordPkPageState
   void initState() {
     super.initState();
     loadSavedState();
+    final resumeId = widget.resumeArchiveId;
+    if (resumeId != null) {
+      resumeArchiveById(resumeId, _applySavedState);
+    }
   }
 
   void _onStart(int count) {
@@ -102,6 +109,11 @@ class _WordPkPageState
   void _resumeSaved() {
     final saved = takeResumeEntry();
     if (saved == null) return;
+    _applySavedState(saved);
+  }
+
+  /// 将存档状态还原进对局视图（恢复入口与存档管理页「开始」共用）
+  void _applySavedState(WordPkGameState saved) {
     setState(() {
       _playerCount = saved.playerCount;
       _currentPlayer = saved.currentPlayer;

@@ -27,6 +27,7 @@ class TankBattlePage extends StatefulWidget {
     this.initialRedScore = 0,
     this.initialGreenScore = 0,
     required this.onSave,
+    this.exitToHome = true,
   });
 
   /// 初始比分（从存档恢复对战时传入，新对局默认 0:0）
@@ -36,6 +37,12 @@ class TankBattlePage extends StatefulWidget {
   /// 保存当前比分：由父级设置页（TankPage）注入——存档绑定与覆盖语义
   /// 统一由其基类管理，本页只组装状态模型；返回 Future 以等待写盘完成
   final Future<void> Function(TankGameState) onSave;
+
+  /// 确认退出（保存/不保存）后的目的地：常规入口 true，popUntil 直达主页
+  /// （连设置页一并关闭）；存档管理页「开始」定点恢复进入时为 false，
+  /// 仅弹回设置页，由其连本页一并关闭直达存档页（popUntil 会越过存档页
+  /// 直达主页，与其他游戏定点恢复后退出直达存档页不一致）
+  final bool exitToHome;
 
   @override
   State<TankBattlePage> createState() => _TankBattlePageState();
@@ -100,11 +107,14 @@ class _TankBattlePageState extends State<TankBattlePage>
     Navigator.of(context).pop();
   }
 
-  /// 退出到主页：保存/不保存退出的目的地与其他游戏一致——
-  /// 连设置页一并关闭，直接返回主页（popUntil 到根路由）
-  void _exitToHome() {
+  /// 确认退出（保存/不保存）后的出口，目的地见 [TankBattlePage.exitToHome]
+  void _exitAfterConfirm() {
     restorePortrait();
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    if (widget.exitToHome) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   /// 退出对局请求：比分与进入时相同（未得分，含恢复存档后未推动进度）
@@ -128,7 +138,7 @@ class _TankBattlePageState extends State<TankBattlePage>
           savedAt: DateTime.now(),
         ),
       ),
-      onExit: _exitToHome,
+      onExit: _exitAfterConfirm,
     );
   }
 

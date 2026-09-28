@@ -21,7 +21,10 @@ import 'package:horyx/shared/widgets/confirm_dialog.dart';
 /// 退出存档与恢复续玩、局域网建房入口
 /// 悔棋在后续阶段接入
 class ChessPage extends StatefulWidget {
-  const ChessPage({super.key});
+  const ChessPage({super.key, this.resumeArchiveId});
+
+  /// 存档管理页「开始」按钮定点恢复的存档 id；null 表示常规进入
+  final String? resumeArchiveId;
 
   /// 联机房间标识名：GameRegistry 登记、建房入口与房间标识卡共用的
   /// 单一事实来源（注册数据归游戏模块自身，注册中心只做汇总）
@@ -95,12 +98,21 @@ class _ChessPageState
     super.initState();
     // 进入页面即检测未完成存档，存在则在设置视图展示恢复入口
     loadSavedState();
+    final resumeId = widget.resumeArchiveId;
+    if (resumeId != null) {
+      resumeArchiveById(resumeId, _applySavedState);
+    }
   }
 
   /// 恢复未完成对局：从存档还原局面、轮次与走子历史
   void _resumeSaved() {
     final saved = takeResumeEntry();
     if (saved == null) return;
+    _applySavedState(saved);
+  }
+
+  /// 将存档状态还原进对局视图（恢复入口与存档管理页「开始」共用）
+  void _applySavedState(ChessGameState saved) {
     try {
       // 从初始局面正向重放走子序列还原棋盘，并顺带收集每步被吃子
       // （悔棋 revertMove 需要；存档只存走子不存被吃子，无法直接还原），
@@ -129,7 +141,7 @@ class _ChessPageState
         _restoredTurn = saved.turn;
       });
     } catch (_) {
-      // 存档损坏（局面编码非法/历史矛盾）：删除该档（恢复入口已关闭），
+      // 存档损坏（局面编码非法/历史矛盾）：删除该档（恢复目标已绑定），
       // 与 ArchiveStorage 读侧「损坏数据视为无存档」的容错风格一致
       clearCurrentArchive();
     }

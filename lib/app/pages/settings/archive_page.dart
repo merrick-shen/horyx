@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/app/game_registry.dart';
+import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
@@ -10,7 +11,7 @@ import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 存档管理页
 /// 平铺混排展示所有游戏的全部未完成对局存档（不按游戏分类），
-/// 按保存时间倒序排列，支持按条删除
+/// 按保存时间倒序排列，支持逐条开始（定点恢复该档进入对局）与删除
 /// 删除前弹确认弹窗，确认后清除对应存档并刷新列表。
 /// 条目数据由 ArchiveStorage.loadAllSummaries 统一读出（一次读索引即可，
 /// 摘要/时间为冗余副本无需解析数据键），游戏名称/图标经 gameId 关联
@@ -50,6 +51,7 @@ class _ArchivePageState extends State<ArchivePage> {
         icon: game.icon,
         summary: item.summary,
         savedAt: item.savedAt,
+        start: () => _openGame(game, item.id),
         remove: () => archive.remove(item.id),
       ));
     }
@@ -67,6 +69,19 @@ class _ArchivePageState extends State<ArchivePage> {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(time.month)}-${two(time.day)} '
         '${two(time.hour)}:${two(time.minute)}';
+  }
+
+  /// 定点开始：跳入对应游戏并直接恢复该条存档（页面经 resumeArchiveId
+  /// 加载该档进入对局，此后保存覆盖该档）；返回后刷新列表
+  /// （游玩期间可能保存新档或删除存档，展示集合已变化）
+  Future<void> _openGame(GameInfo game, String archiveId) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) =>
+            game.pageBuilder(context, resumeArchiveId: archiveId),
+      ),
+    );
+    if (mounted) await _loadArchives();
   }
 
   /// 删除确认：弹窗确认后删除对应存档条目并刷新列表
@@ -122,6 +137,7 @@ class _ArchivePageState extends State<ArchivePage> {
                   _ArchiveTile(
                     entry: entry,
                     timeText: _formatTime(entry.savedAt),
+                    onStart: entry.start,
                     onDelete: () => _confirmRemove(entry),
                   ),
                   const SizedBox(height: 12),
@@ -140,11 +156,12 @@ class _ArchivePageState extends State<ArchivePage> {
   }
 }
 
-/// 单个存档条目：游戏图标 + 名称/摘要 + 保存时间 + 删除按钮
+/// 单个存档条目：游戏图标 + 名称/摘要 + 保存时间 + 开始/删除按钮
 class _ArchiveTile extends StatelessWidget {
   const _ArchiveTile({
     required this.entry,
     required this.timeText,
+    required this.onStart,
     required this.onDelete,
   });
 
@@ -152,6 +169,9 @@ class _ArchiveTile extends StatelessWidget {
 
   /// 已格式化的保存时间文本
   final String timeText;
+
+  /// 点击开始按钮回调（由页面跳入对应游戏定点恢复该条存档）
+  final VoidCallback onStart;
 
   /// 点击删除按钮回调（由页面弹确认弹窗后执行删除）
   final VoidCallback onDelete;
@@ -207,6 +227,15 @@ class _ArchiveTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
+          // 开始按钮：点击后跳入对应游戏恢复该条存档
+          IconButton(
+            icon: Icon(
+              Icons.play_arrow_rounded,
+              color: palette.primary,
+              size: 26,
+            ),
+            onPressed: onStart,
+          ),
           // 删除按钮：点击后由页面弹确认弹窗
           IconButton(
             icon: Icon(
@@ -264,6 +293,7 @@ class _ArchiveEntry {
     required this.icon,
     required this.summary,
     required this.savedAt,
+    required this.start,
     required this.remove,
   });
 
@@ -278,6 +308,9 @@ class _ArchiveEntry {
 
   /// 存档时间
   final DateTime savedAt;
+
+  /// 定点开始该存档（跳入对应游戏并恢复该档）
+  final VoidCallback start;
 
   /// 删除该存档条目（按 id 精确移除）
   final Future<void> Function() remove;

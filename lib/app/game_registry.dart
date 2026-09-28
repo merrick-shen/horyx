@@ -28,7 +28,8 @@ abstract final class GameRegistry {
     name: WordPkPage.gameName,
     description: '轮流拼写英文单词，考验词汇量的回合对决',
     icon: WordPkPage.gameIcon,
-    pageBuilder: (context) => const WordPkPage(),
+    pageBuilder: (context, {resumeArchiveId}) =>
+        WordPkPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         WordPkOnlinePage.client(client: client),
     archive: GameArchiveInfo(remove: WordPkStorage.instance.remove),
@@ -39,7 +40,8 @@ abstract final class GameRegistry {
     name: GomokuPage.gameName,
     description: '黑白轮流落子，先连成五子者胜',
     icon: GomokuPage.gameIcon,
-    pageBuilder: (context) => const GomokuPage(),
+    pageBuilder: (context, {resumeArchiveId}) =>
+        GomokuPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         GomokuOnlinePage.client(client: client),
     archive: GameArchiveInfo(remove: GomokuStorage.instance.remove),
@@ -53,7 +55,8 @@ abstract final class GameRegistry {
     name: TankPage.gameName,
     description: '驾驶坦克走位射击，与好友一决高下',
     icon: TankPage.gameIcon,
-    pageBuilder: (context) => const TankPage(),
+    pageBuilder: (context, {resumeArchiveId}) =>
+        TankPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         TankOnlinePage.client(client: client),
     archive: GameArchiveInfo(remove: TankStorage.instance.remove),
@@ -66,7 +69,8 @@ abstract final class GameRegistry {
     name: ChessPage.gameName,
     description: '楚河汉界双人对弈，将死对方取胜',
     icon: ChessPage.gameIcon,
-    pageBuilder: (context) => const ChessPage(),
+    pageBuilder: (context, {resumeArchiveId}) =>
+        ChessPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         ChessOnlinePage.client(client: client),
     archive: GameArchiveInfo(remove: ChessStorage.instance.remove),
@@ -77,7 +81,8 @@ abstract final class GameRegistry {
     name: ScoreboardPage.gameName,
     description: '运动计分板，支持主流运动项目',
     icon: ScoreboardPage.gameIcon,
-    pageBuilder: (context) => const ScoreboardPage(),
+    pageBuilder: (context, {resumeArchiveId}) =>
+        ScoreboardPage(resumeArchiveId: resumeArchiveId),
     archive: GameArchiveInfo(remove: ScoreboardStorage.instance.remove),
   );
 

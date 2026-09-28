@@ -21,7 +21,10 @@ import 'package:horyx/games/scoreboard/widgets/scoreboard_setup_view.dart';
 /// 阶段一（竖屏）：比分设置（赛制 / 每局胜利分 / 领先规则）——见 ScoreboardSetupView
 /// 阶段二（横屏）：全屏红蓝计分板，不展示顶栏
 class ScoreboardPage extends StatefulWidget {
-  const ScoreboardPage({super.key});
+  const ScoreboardPage({super.key, this.resumeArchiveId});
+
+  /// 存档管理页「开始」按钮定点恢复的存档 id；null 表示常规进入
+  final String? resumeArchiveId;
 
   /// 游戏名称：GameRegistry 登记与存档管理页共用的单一事实来源
   /// （与其他游戏页面的 gameName 常量约定一致）
@@ -97,6 +100,10 @@ class _ScoreboardPageState
     // 进入页面即锁定竖屏，避免携横屏状态进入设置视图
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     loadSavedState();
+    final resumeId = widget.resumeArchiveId;
+    if (resumeId != null) {
+      resumeArchiveById(resumeId, _applySavedState);
+    }
   }
 
   // ---- 计分核心逻辑 ----
@@ -321,7 +328,11 @@ class _ScoreboardPageState
   void _resumeSaved() {
     final saved = takeResumeEntry();
     if (saved == null) return;
+    _applySavedState(saved);
+  }
 
+  /// 将存档状态还原进计分视图（恢复入口与存档管理页「开始」共用）
+  void _applySavedState(ScoreboardGameState saved) {
     enterLandscapeImmersive();
     setState(() {
       _bestOf = saved.bestOf;

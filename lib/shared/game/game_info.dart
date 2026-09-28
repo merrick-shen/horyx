@@ -13,6 +13,13 @@ class GameArchiveInfo {
   final Future<void> Function(String id) remove;
 }
 
+/// 游戏页构建器：常规入口（首页卡片等）不传 [resumeArchiveId]；
+/// 存档管理页条目「开始」按钮传入要定点恢复的存档 id
+typedef GamePageBuilder = Widget Function(
+  BuildContext context, {
+  String? resumeArchiveId,
+});
+
 /// 游戏注册项：游戏的单一事实来源
 /// 除静态展示数据外，还承载「游戏 → 页面 / 联机对局页」的映射，
 /// 由 GameRegistry（组合根，位于 app 层）统一登记，UI 层（首页卡片、
@@ -38,7 +45,7 @@ class GameInfo {
 
   /// 游戏页构建器（首页卡片入口跳转用）；
   /// 登记进注册表的游戏必须提供入口，不支持「入口未开放」的占位登记
-  final WidgetBuilder pageBuilder;
+  final GamePageBuilder pageBuilder;
 
   /// 客户端侧联机对局页构建器（加入房间满员开局后跳转用）
   /// null 表示该游戏联机对局未接入（等待页满员后停留「即将开始」）

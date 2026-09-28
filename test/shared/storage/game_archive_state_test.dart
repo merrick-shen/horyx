@@ -172,6 +172,38 @@ void main() {
     expect(state.takeResumeEntry(), isNull);
   });
 
+  testWidgets('resumeArchiveById 定点恢复指定档并绑定覆盖目标', (tester) async {
+    final targetId = await storage
+        .saveArchive(_FakeState('目标档', DateTime(2026, 9, 1)));
+    await storage.saveArchive(_FakeState('更新档', DateTime(2026, 9, 2)));
+    final state = await pumpHarness(tester);
+
+    _FakeState? resumed;
+    await state.resumeArchiveById(targetId, (s) => resumed = s);
+
+    expect(resumed?.summary, '目标档');
+    expect(state.resumedArchiveId, targetId);
+
+    // 定点恢复后保存覆盖目标档而非最新档
+    await state.saveCurrent(_FakeState('推进', DateTime(2026, 9, 3)));
+    final summaries = await storage.loadSummaries();
+    expect(summaries, hasLength(2));
+    expect(
+      summaries.firstWhere((e) => e.id == targetId).summary,
+      '推进',
+    );
+  });
+
+  testWidgets('resumeArchiveById 存档不存在时不回调不绑定', (tester) async {
+    final state = await pumpHarness(tester);
+
+    var called = false;
+    await state.resumeArchiveById('not-exist', (_) => called = true);
+
+    expect(called, isFalse);
+    expect(state.resumedArchiveId, isNull);
+  });
+
   testWidgets('clearCurrentArchive 删除绑定档，未绑定时无操作', (tester) async {
     await storage.saveArchive(_FakeState('进行中', DateTime(2026, 9, 1)));
     final state = await pumpHarness(tester);

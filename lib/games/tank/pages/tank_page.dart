@@ -18,7 +18,10 @@ import 'package:horyx/shared/widgets/app_top_bar.dart';
 /// 存档仅保存双方比分（战场状态不保存）：退出对局时询问保存，
 /// 存在存档时设置视图展示「继续上次对战」恢复入口
 class TankPage extends StatefulWidget {
-  const TankPage({super.key});
+  const TankPage({super.key, this.resumeArchiveId});
+
+  /// 存档管理页「开始」按钮定点恢复的存档 id；null 表示常规进入
+  final String? resumeArchiveId;
 
   /// 联机房间标识名：GameRegistry 登记、建房入口与房间标识卡共用的
   /// 单一事实来源（注册数据归游戏模块自身，注册中心只做汇总）
@@ -45,6 +48,10 @@ class _TankPageState
   void initState() {
     super.initState();
     loadSavedState();
+    final resumeId = widget.resumeArchiveId;
+    if (resumeId != null) {
+      resumeArchiveById(resumeId, (state) => _openBattle(saved: state));
+    }
   }
 
   /// 进入对局页（开始新对战或恢复存档），返回后刷新恢复入口：
@@ -57,10 +64,20 @@ class _TankPageState
           initialGreenScore: saved?.greenScore ?? 0,
           // 经父级基类保存：恢复链路覆盖原档，新对局新建存档
           onSave: saveCurrent,
+          // 定点恢复进入：确认退出仅弹回本页（由下方连本页一并关闭
+          // 直达存档页）；常规入口保持 popUntil 直达主页
+          exitToHome: widget.resumeArchiveId == null,
         ),
       ),
     );
-    if (mounted) loadSavedState();
+    if (!mounted) return;
+    // 定点恢复进入（存档管理页「开始」）：对局退出后直接返回来源页，
+    // 不停留本页设置视图，与其他游戏定点恢复后退出直达存档页一致
+    if (widget.resumeArchiveId != null) {
+      Navigator.of(context).pop();
+      return;
+    }
+    loadSavedState();
   }
 
   /// 开始本地对战：进入横屏对局页（新对局 0:0 起步）
