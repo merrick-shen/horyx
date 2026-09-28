@@ -3,18 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 
+/// 管理页存档条目视图：id + 展示契约字段。
+/// 不携带各游戏具体状态模型，避免跨游戏持有泛型状态类型
+class GameArchiveEntry {
+  const GameArchiveEntry({required this.id, required this.summary});
+
+  /// 存档 id（删除按此定位）
+  final String id;
+
+  /// 展示契约（摘要与保存时间）
+  final GameArchiveSummary summary;
+}
+
 /// 存档管理页的接入适配（GameRegistry 登记时挂接；null 表示不参与存档管理）。
 /// 摘要/保存时间由各游戏存档模型实现 [GameArchiveSummary] 契约提供，
-/// 新增游戏只需在注册表登记一处，存档管理页自动生效
+/// 新增游戏只需在注册表登记一处，存档管理页自动生效。
+/// 多存档口径：读取仅取该游戏最新一条（与游戏页恢复入口一致），
+/// 删除按存档 id 精确移除
 class GameArchiveInfo {
-  const GameArchiveInfo({required this.load, required this.clear});
+  const GameArchiveInfo({required this.loadLatest, required this.remove});
 
-  /// 读取该游戏未完成存档；无存档返回 null
-  /// （直接转发对应 ArchiveStorage.load，模型已实现展示契约）
-  final Future<GameArchiveSummary?> Function() load;
+  /// 读取该游戏最新一条未完成存档；无存档返回 null
+  final Future<GameArchiveEntry?> Function() loadLatest;
 
-  /// 清除该游戏存档（存档管理页删除按钮用）
-  final Future<void> Function() clear;
+  /// 按 id 删除该游戏指定存档（存档管理页删除按钮用）
+  final Future<void> Function(String id) remove;
 }
 
 /// 游戏注册项：游戏的单一事实来源

@@ -32,22 +32,22 @@ class _ArchivePageState extends State<ArchivePage> {
     _loadArchives();
   }
 
-  /// 按 GameRegistry 登记顺序读取各游戏的未完成存档并组装展示条目；
-  /// 单个游戏存档损坏不影响其余展示（各 load 内部已容错返回 null）
+  /// 按 GameRegistry 登记顺序读取各游戏的最新未完成存档并组装展示条目；
+  /// 单个游戏存档损坏不影响其余展示（各读取内部已容错返回 null）
   Future<void> _loadArchives() async {
     // 本地存储读取极快，顺序读取即可（混合类型不宜用 Future.wait）
     final entries = <_ArchiveEntry>[];
     for (final game in GameRegistry.games) {
       final archive = game.archive;
       if (archive == null) continue;
-      final saved = await archive.load();
-      if (saved == null) continue;
+      final latest = await archive.loadLatest();
+      if (latest == null) continue;
       entries.add(_ArchiveEntry(
         name: game.name,
         icon: game.icon,
-        summary: saved.summary,
-        savedAt: saved.savedAt,
-        clear: archive.clear,
+        summary: latest.summary.summary,
+        savedAt: latest.summary.savedAt,
+        remove: () => archive.remove(latest.id),
       ));
     }
 
@@ -78,7 +78,7 @@ class _ArchivePageState extends State<ArchivePage> {
     if (!mounted || result != ConfirmResult.confirm) return;
 
     try {
-      await entry.clear();
+      await entry.remove();
     } catch (e) {
       // 删除失败（存储异常）不阻断流程：刷新后条目仍在列表中可重试，
       // 与 main 启动时读取侧的容错风格对齐
@@ -260,7 +260,7 @@ class _ArchiveEntry {
     required this.icon,
     required this.summary,
     required this.savedAt,
-    required this.clear,
+    required this.remove,
   });
 
   /// 游戏名（与主页卡片一致）
@@ -275,6 +275,6 @@ class _ArchiveEntry {
   /// 存档时间
   final DateTime savedAt;
 
-  /// 清除该游戏存档的服务方法
-  final Future<void> Function() clear;
+  /// 删除该存档条目（按 id 精确移除）
+  final Future<void> Function() remove;
 }
