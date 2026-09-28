@@ -30,9 +30,6 @@ class _TestStorage extends ArchiveStorage<_FakeState> {
   const _TestStorage();
 
   @override
-  String get storageKey => 'test_legacy_key';
-
-  @override
   String get gameId => '测试游戏';
 
   @override
@@ -45,9 +42,6 @@ class _TestStorage extends ArchiveStorage<_FakeState> {
 /// 第二个游戏存储：验证索引按 gameId 隔离
 class _OtherStorage extends ArchiveStorage<_FakeState> {
   const _OtherStorage();
-
-  @override
-  String get storageKey => 'other_legacy_key';
 
   @override
   String get gameId => '另一游戏';
@@ -73,29 +67,6 @@ void main() {
 
   _FakeState stateAt(DateTime time, [String summary = '进度摘要']) =>
       _FakeState(summary, time);
-
-  group('旧单存档 API（过渡期兼容）', () {
-    test('save/load/clear 行为不变（固定键覆盖写）', () async {
-      expect(await storage.load(), isNull);
-
-      await storage.save(stateAt(DateTime(2026, 9, 28, 10)));
-      final loaded = await storage.load();
-      expect(loaded, isNotNull);
-      expect(loaded!.summary, '进度摘要');
-
-      await storage.save(stateAt(DateTime(2026, 9, 28, 11), '覆盖后'));
-      expect((await storage.load())!.summary, '覆盖后');
-
-      await storage.clear();
-      expect(await storage.load(), isNull);
-    });
-
-    test('旧单存档写入不产生多存档索引条目', () async {
-      await storage.save(stateAt(DateTime(2026, 9, 28)));
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString(indexKey), isNull);
-    });
-  });
 
   group('saveArchive 新建与覆盖', () {
     test('新建：返回 id 并写入数据键与索引条目', () async {

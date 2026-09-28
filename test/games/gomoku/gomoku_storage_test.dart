@@ -89,40 +89,6 @@ void main() {
     });
   });
 
-  group('GomokuStorage 存档服务', () {
-    test('存储键正确', () {
-      expect(GomokuStorage.instance.storageKey, 'gomoku_unfinished_state');
-    });
-
-    test('无存档时 load 返回 null', () async {
-      expect(await GomokuStorage.instance.load(), isNull);
-    });
-
-    test('save 后 load 可完整还原', () async {
-      final state = sampleState();
-      await GomokuStorage.instance.save(state);
-
-      final loaded = await GomokuStorage.instance.load();
-      expect(loaded, isNotNull);
-      expect(loaded!.boardSize, state.boardSize);
-      expect(loaded.moves, state.moves);
-      expect(loaded.savedAt, state.savedAt);
-    });
-
-    test('存档数据损坏时 load 容错返回 null', () async {
-      final prefs = await SharedPreferences.getInstance();
-      // 模拟半写/损坏数据
-      await prefs.setString('gomoku_unfinished_state', '{broken json');
-      expect(await GomokuStorage.instance.load(), isNull);
-    });
-
-    test('clear 后存档清空', () async {
-      await GomokuStorage.instance.save(sampleState());
-      await GomokuStorage.instance.clear();
-      expect(await GomokuStorage.instance.load(), isNull);
-    });
-  });
-
   group('GomokuStorage 多存档 API', () {
     test('gameId 与注册表登记名一致', () {
       expect(GomokuStorage.instance.gameId, GomokuPage.gameName);

@@ -106,41 +106,6 @@ void main() {
     });
   });
 
-  group('ChessStorage 存档服务', () {
-    test('存储键正确', () {
-      expect(ChessStorage.instance.storageKey, 'chess_unfinished_state');
-    });
-
-    test('无存档时 load 返回 null', () async {
-      expect(await ChessStorage.instance.load(), isNull);
-    });
-
-    test('save 后 load 可完整还原', () async {
-      final state = sampleState();
-      await ChessStorage.instance.save(state);
-
-      final loaded = await ChessStorage.instance.load();
-      expect(loaded, isNotNull);
-      expect(loaded!.boardCode, state.boardCode);
-      expect(loaded.turn, ChessColor.black);
-      expect(loaded.moves.single, state.moves.single);
-      expect(loaded.savedAt, state.savedAt);
-    });
-
-    test('存档数据损坏时 load 容错返回 null', () async {
-      final prefs = await SharedPreferences.getInstance();
-      // 模拟半写/损坏数据
-      await prefs.setString('chess_unfinished_state', '{broken json');
-      expect(await ChessStorage.instance.load(), isNull);
-    });
-
-    test('clear 后存档清空', () async {
-      await ChessStorage.instance.save(sampleState());
-      await ChessStorage.instance.clear();
-      expect(await ChessStorage.instance.load(), isNull);
-    });
-  });
-
   group('ChessStorage 多存档 API', () {
     test('gameId 与注册表登记名一致', () {
       expect(ChessStorage.instance.gameId, ChessPage.gameName);

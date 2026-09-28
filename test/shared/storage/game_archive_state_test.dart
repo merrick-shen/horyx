@@ -30,9 +30,6 @@ class _FakeArchiveStorage extends ArchiveStorage<_FakeState> {
   const _FakeArchiveStorage();
 
   @override
-  String get storageKey => 'base_test_unfinished_state';
-
-  @override
   String get gameId => '基类测试游戏';
 
   @override

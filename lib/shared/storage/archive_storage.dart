@@ -74,9 +74,7 @@ class ArchiveRecord<T> {
 /// 读取容错：索引整体损坏视为空索引、单条损坏按条跳过、数据键解析失败
 /// 视为无此档；单条存档损坏不影响其余存档。
 ///
-/// 各游戏子类只需声明 gameId、存储键与模型双向序列化（见各 *_storage.dart）。
-/// 旧单存档 save/load/clear 三件套为过渡期兼容 API（现状调用方尚未迁移，
-/// 行为不变），各游戏页接入多存档 API 后移除
+/// 各游戏子类只需声明 gameId 与模型双向序列化（见各 *_storage.dart）
 abstract class ArchiveStorage<T extends GameArchiveSummary> {
   const ArchiveStorage();
 
@@ -88,9 +86,6 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
 
   static final Random _random = Random();
 
-  /// 旧单存档的存储键（各游戏唯一；后续阶段转为迁移源 legacyKey）
-  String get storageKey;
-
   /// 多存档归属游戏标识（与 GameRegistry 登记名一致）
   String get gameId;
 
@@ -99,36 +94,6 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
 
   /// 模型序列化（Dart 泛型无法约束结构化类型，故由子类转发 toJson）
   Map<String, dynamic> toJson(T state);
-
-  // ---------------------------------------------------------------------------
-  // 旧单存档 API（现状行为保留）
-  // ---------------------------------------------------------------------------
-
-  /// 保存对局状态（单存档语义：固定键覆盖写）
-  Future<void> save(T state) async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = jsonEncode(toJson(state));
-    await prefs.setString(storageKey, json);
-  }
-
-  /// 读取未完成对局；无存档或存档损坏时返回 null
-  Future<T?> load() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(storageKey);
-      if (raw == null) return null;
-      return fromJson(jsonDecode(raw) as Map<String, dynamic>);
-    } catch (_) {
-      // JSON 损坏、字段缺失等异常均视为无可用存档
-      return null;
-    }
-  }
-
-  /// 清除存档
-  Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(storageKey);
-  }
 
   // ---------------------------------------------------------------------------
   // 多存档 API

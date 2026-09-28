@@ -100,44 +100,6 @@ void main() {
     });
   });
 
-  group('ScoreboardStorage 存档服务', () {
-    test('存储键正确', () {
-      expect(
-        ScoreboardStorage.instance.storageKey,
-        'scoreboard_unfinished_state',
-      );
-    });
-
-    test('无存档时 load 返回 null', () async {
-      expect(await ScoreboardStorage.instance.load(), isNull);
-    });
-
-    test('save 后 load 可完整还原', () async {
-      final state = sampleState();
-      await ScoreboardStorage.instance.save(state);
-
-      final loaded = await ScoreboardStorage.instance.load();
-      expect(loaded, isNotNull);
-      expect(loaded!.bestOf, state.bestOf);
-      expect(loaded.history, state.history);
-      expect(loaded.gameOver, state.gameOver);
-      expect(loaded.savedAt, state.savedAt);
-    });
-
-    test('存档数据损坏时 load 容错返回 null', () async {
-      final prefs = await SharedPreferences.getInstance();
-      // 模拟半写/损坏数据
-      await prefs.setString('scoreboard_unfinished_state', '{broken json');
-      expect(await ScoreboardStorage.instance.load(), isNull);
-    });
-
-    test('clear 后存档清空', () async {
-      await ScoreboardStorage.instance.save(sampleState());
-      await ScoreboardStorage.instance.clear();
-      expect(await ScoreboardStorage.instance.load(), isNull);
-    });
-  });
-
   group('ScoreboardStorage 多存档 API', () {
     test('gameId 与注册表登记名一致', () {
       expect(ScoreboardStorage.instance.gameId, ScoreboardPage.gameName);

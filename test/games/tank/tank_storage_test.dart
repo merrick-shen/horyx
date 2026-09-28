@@ -40,46 +40,6 @@ void main() {
     });
   });
 
-  group('TankStorage 存档服务', () {
-    test('无存档时 load 返回 null', () async {
-      expect(await TankStorage.instance.load(), isNull);
-    });
-
-    test('save 后 load 可完整还原', () async {
-      await TankStorage.instance.save(
-        TankGameState(
-          redScore: 2,
-          greenScore: 4,
-          savedAt: DateTime(2026, 8, 31),
-        ),
-      );
-
-      final loaded = await TankStorage.instance.load();
-      expect(loaded, isNotNull);
-      expect(loaded!.redScore, 2);
-      expect(loaded.greenScore, 4);
-    });
-
-    test('存档数据损坏时 load 容错返回 null', () async {
-      final prefs = await SharedPreferences.getInstance();
-      // 模拟半写/损坏数据
-      await prefs.setString('tank_unfinished_state', '{broken json');
-      expect(await TankStorage.instance.load(), isNull);
-    });
-
-    test('clear 后存档清空', () async {
-      await TankStorage.instance.save(
-        TankGameState(
-          redScore: 1,
-          greenScore: 1,
-          savedAt: DateTime(2026, 8, 31),
-        ),
-      );
-      await TankStorage.instance.clear();
-      expect(await TankStorage.instance.load(), isNull);
-    });
-  });
-
   group('TankStorage 多存档 API', () {
     TankGameState sampleState() {
       return TankGameState(
