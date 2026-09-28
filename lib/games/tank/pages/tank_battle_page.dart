@@ -124,7 +124,6 @@ class _TankBattlePageState extends State<TankBattlePage>
           savedAt: DateTime.now(),
         ),
       ),
-      onDiscard: TankStorage.instance.clear,
       onExit: _exitToHome,
     );
   }

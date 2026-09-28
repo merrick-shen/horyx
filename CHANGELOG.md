@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 应用默认主题色由紫色调整为蓝色
 - 恢复存档后未进行任何操作时退出，不再弹出保存确认
 
+### Fixed
+
+- 修复对局中点「直接退出」会误删已有存档的问题
+
 ## [0.11.0] - 2026-09-23
 
 ### Added

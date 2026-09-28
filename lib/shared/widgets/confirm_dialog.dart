@@ -21,7 +21,7 @@ enum ConfirmResult {
 /// 弹出确认弹窗并分发动作：
 /// - 保存并退出：先 [onSave] 持久化，完成后 [onExit]；保存失败时弹窗告知，
 ///   由用户选择「仍要退出」或留在本页
-/// - 不保存并退出：先 [onDiscard] 清档（放弃当前进度，避免下次误提示可继续），完成后 [onExit]
+/// - 直接退出：不写不清档（磁盘存档保持原样，下次仍可恢复），直接 [onExit]
 /// - 取消：留在当前页面
 ///
 /// [title]/[message] 有统一默认文案，各游戏无需再传；
@@ -34,7 +34,6 @@ Future<void> confirmExitWithArchive(
   String title = '退出对局？',
   String message = '保存并退出后，下次进入可从当前进度继续',
   required Future<void> Function() onSave,
-  required Future<void> Function() onDiscard,
   required VoidCallback onExit,
 }) async {
   final result = await showConfirmDialog(
@@ -66,12 +65,7 @@ Future<void> confirmExitWithArchive(
       }
       if (state.mounted) onExit();
     case ConfirmResult.neutral:
-      try {
-        await onDiscard();
-      } catch (_) {
-        // 清档失败不阻断退出：本次进度本就未保存，旧档残留仅导致
-        // 下次进入时提示恢复旧进度，属可接受的降级，无需打断用户
-      }
+      // 不写不清档：磁盘存档保持原样，下次进入仍可恢复
       if (state.mounted) onExit();
     case ConfirmResult.cancel:
       // 留在当前页面
@@ -89,8 +83,8 @@ Future<void> confirmExitWithArchive(
 /// 3. [unchangedSinceRestore] 为 true：恢复存档后未产生新进度（状态与
 ///    恢复基线一致），直接 [exitPage] 退出且不写不清档，存档保持原样；
 /// 4. 其余：弹出三选项确认（见 [confirmExitWithArchive]）——保存并退出
-///    执行 [onSave]（各游戏组装存档模型）；不保存退出统一经
-///    [GameArchiveStateBase.archiveStorage] 清档；取消留在本页。
+///    执行 [onSave]（各游戏组装存档模型）；直接退出不写不清档
+///    （存档保持原样，下次仍可恢复）；取消留在本页。
 ///
 /// [title]/[message] 透传给确认弹窗：默认文案面向棋局对弈措辞，
 /// 计分器等场景可覆盖（如「退出计分？」）
@@ -132,9 +126,6 @@ Future<void> requestExitWithArchive<W extends StatefulWidget, T>(
     title: title,
     message: message,
     onSave: onSave,
-    // 不保存退出统一清当前游戏存档：放弃当前进度，
-    // 避免下次进入误提示可继续（清档失败不阻断退出）
-    onDiscard: state.archiveStorage.clear,
     onExit: exitPage,
   );
 }
