@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 新增用户名系统：可在「更多 → 个人资料」设置自己的名字，联机房间与对局中显示玩家名字
 - 本地五子棋、象棋悔棋前新增确认弹窗
 
+### Changed
+
+- 应用图标主色由紫色调整为黑色
+
 ## [0.11.0] - 2026-09-23
 
 ### Added
