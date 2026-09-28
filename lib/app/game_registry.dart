@@ -1,5 +1,4 @@
 import 'package:horyx/shared/game/game_info.dart';
-import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/games/chess/pages/chess_online_page.dart';
 import 'package:horyx/games/chess/pages/chess_page.dart';
 import 'package:horyx/games/chess/services/chess_storage.dart';
@@ -32,7 +31,7 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const WordPkPage(),
     onlineClientBuilder: (context, client) =>
         WordPkOnlinePage.client(client: client),
-    archive: _archiveInfo(WordPkStorage.instance),
+    archive: GameArchiveInfo(remove: WordPkStorage.instance.remove),
   );
 
   /// 五子棋
@@ -43,7 +42,7 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const GomokuPage(),
     onlineClientBuilder: (context, client) =>
         GomokuOnlinePage.client(client: client),
-    archive: _archiveInfo(GomokuStorage.instance),
+    archive: GameArchiveInfo(remove: GomokuStorage.instance.remove),
   );
 
   /// 坦克动荡
@@ -57,7 +56,7 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const TankPage(),
     onlineClientBuilder: (context, client) =>
         TankOnlinePage.client(client: client),
-    archive: _archiveInfo(TankStorage.instance),
+    archive: GameArchiveInfo(remove: TankStorage.instance.remove),
   );
 
   /// 中国象棋
@@ -70,7 +69,7 @@ abstract final class GameRegistry {
     pageBuilder: (context) => const ChessPage(),
     onlineClientBuilder: (context, client) =>
         ChessOnlinePage.client(client: client),
-    archive: _archiveInfo(ChessStorage.instance),
+    archive: GameArchiveInfo(remove: ChessStorage.instance.remove),
   );
 
   /// 计分器（纯本地工具，无联机对局页）
@@ -79,7 +78,7 @@ abstract final class GameRegistry {
     description: '运动计分板，支持主流运动项目',
     icon: ScoreboardPage.gameIcon,
     pageBuilder: (context) => const ScoreboardPage(),
-    archive: _archiveInfo(ScoreboardStorage.instance),
+    archive: GameArchiveInfo(remove: ScoreboardStorage.instance.remove),
   );
 
   /// 首页游戏列表（全部已上架游戏）
@@ -98,20 +97,4 @@ abstract final class GameRegistry {
     }
     return null;
   }
-}
-
-/// 由具体类型的存档服务构造存档管理适配（读取最新档 + 按 id 删除）。
-/// 各游戏状态模型均实现展示契约，故可统一收敛到非泛型条目视图，
-/// 注册表登记处免写逐游戏的闭包样板
-GameArchiveInfo _archiveInfo<A extends GameArchiveSummary>(
-  ArchiveStorage<A> storage,
-) {
-  return GameArchiveInfo(
-    loadLatest: () async {
-      final record = await storage.loadLatest();
-      if (record == null) return null;
-      return GameArchiveEntry(id: record.id, summary: record.state);
-    },
-    remove: storage.remove,
-  );
 }

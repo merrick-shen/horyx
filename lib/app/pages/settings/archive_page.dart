@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/app/game_registry.dart';
+import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
@@ -8,10 +9,12 @@ import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 存档管理页
-/// 聚合展示各游戏的未完成对局存档（列表形式），支持单个删除
-/// 删除前弹确认弹窗，确认后清除对应游戏存档并刷新列表。
-/// 条目完全由 GameRegistry 驱动（名称/图标/摘要/清档经 GameArchiveInfo
-/// 适配注入），新增游戏只需在注册表登记一处，本页自动收录
+/// 平铺混排展示所有游戏的全部未完成对局存档（不按游戏分类），
+/// 按保存时间倒序排列，支持按条删除
+/// 删除前弹确认弹窗，确认后清除对应存档并刷新列表。
+/// 条目数据由 ArchiveStorage.loadAllSummaries 统一读出（一次读索引即可，
+/// 摘要/时间为冗余副本无需解析数据键），游戏名称/图标经 gameId 关联
+/// GameRegistry 取得，删除经各游戏登记的 GameArchiveInfo.remove 执行
 class ArchivePage extends StatefulWidget {
   const ArchivePage({super.key});
 
@@ -32,22 +35,22 @@ class _ArchivePageState extends State<ArchivePage> {
     _loadArchives();
   }
 
-  /// 按 GameRegistry 登记顺序读取各游戏的最新未完成存档并组装展示条目；
-  /// 单个游戏存档损坏不影响其余展示（各读取内部已容错返回 null）
+  /// 读取全部游戏的存档索引并组装展示条目（按保存时间倒序，
+  /// 不同游戏混排平铺，不按游戏分类）；未登记游戏的孤立条目跳过
+  /// （正常不会出现，防御索引残留）；
+  /// 单条索引损坏不影响其余展示（索引读取内部已按条跳过）
   Future<void> _loadArchives() async {
-    // 本地存储读取极快，顺序读取即可（混合类型不宜用 Future.wait）
     final entries = <_ArchiveEntry>[];
-    for (final game in GameRegistry.games) {
-      final archive = game.archive;
-      if (archive == null) continue;
-      final latest = await archive.loadLatest();
-      if (latest == null) continue;
+    for (final item in await ArchiveStorage.loadAllSummaries()) {
+      final game = GameRegistry.byName(item.gameId);
+      final archive = game?.archive;
+      if (game == null || archive == null) continue;
       entries.add(_ArchiveEntry(
         name: game.name,
         icon: game.icon,
-        summary: latest.summary.summary,
-        savedAt: latest.summary.savedAt,
-        remove: () => archive.remove(latest.id),
+        summary: item.summary,
+        savedAt: item.savedAt,
+        remove: () => archive.remove(item.id),
       ));
     }
 
@@ -66,12 +69,13 @@ class _ArchivePageState extends State<ArchivePage> {
         '${two(time.hour)}:${two(time.minute)}';
   }
 
-  /// 删除确认：弹窗确认后清除对应游戏存档并刷新列表
+  /// 删除确认：弹窗确认后删除对应存档条目并刷新列表
   Future<void> _confirmRemove(_ArchiveEntry entry) async {
     final result = await showConfirmDialog(
       context,
       title: '删除存档？',
-      message: '将删除「${entry.name}」的未完成对局存档，删除后无法恢复',
+      message:
+          '将删除「${entry.name}」保存于 ${_formatTime(entry.savedAt)} 的未完成对局存档，删除后无法恢复',
       confirmLabel: '删除',
       cancelLabel: '取消',
     );
@@ -106,7 +110,7 @@ class _ArchivePageState extends State<ArchivePage> {
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 12),
                   child: Text(
-                    '各游戏的未完成对局存档，删除后无法恢复',
+                    '所有游戏的未完成对局存档，按保存时间倒序，删除后无法恢复',
                     style: TextStyle(
                       color: palette.textSecondary,
                       fontSize: 12.5,
