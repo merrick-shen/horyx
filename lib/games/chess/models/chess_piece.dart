@@ -27,13 +27,13 @@ enum ChessPieceType {
         ChessPieceType.pawn => color == ChessColor.red ? 'P' : 'p',
       };
 
-  /// 棋子面上的汉字（红黑用字不同：帅/将、仕/士、相/象、兵/卒）
+  /// 棋子面上的汉字（繁体，红黑用字不同：帥/將、仕/士、相/象、兵/卒）
   String labelOf(ChessColor color) => switch (this) {
-        ChessPieceType.king => color == ChessColor.red ? '帅' : '将',
+        ChessPieceType.king => color == ChessColor.red ? '帥' : '將',
         ChessPieceType.advisor => color == ChessColor.red ? '仕' : '士',
         ChessPieceType.bishop => color == ChessColor.red ? '相' : '象',
-        ChessPieceType.knight => '马',
-        ChessPieceType.rook => '车',
+        ChessPieceType.knight => '馬',
+        ChessPieceType.rook => '車',
         ChessPieceType.cannon => '炮',
         ChessPieceType.pawn => color == ChessColor.red ? '兵' : '卒',
       };
@@ -49,7 +49,7 @@ class ChessPiece {
   /// 紧凑编码字符，如红车 'R'、黑卒 'p'
   String get code => type.codeChar(color);
 
-  /// 棋子面上的汉字，如「帅」「卒」
+  /// 棋子面上的汉字，如「帥」「卒」
   String get label => type.labelOf(color);
 
   /// 从编码字符还原棋子；非法字符返回 null（交由调用方决定如何容错）

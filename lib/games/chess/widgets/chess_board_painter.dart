@@ -150,7 +150,7 @@ class ChessBoardPainter extends CustomPainter {
     _paintCenteredText(
         canvas, '楚河', Offset(geometry.margin + leftCol * geometry.cell, midY), style);
     _paintCenteredText(
-        canvas, '汉界', Offset(geometry.margin + rightCol * geometry.cell, midY), style);
+        canvas, '漢界', Offset(geometry.margin + rightCol * geometry.cell, midY), style);
   }
 
   /// 炮位/兵位标记：交点四角小折线，边线交点只画内侧半边

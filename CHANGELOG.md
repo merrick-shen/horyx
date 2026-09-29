@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 应用图标主色由紫色调整为黑色
 - 应用默认主题色由紫色调整为蓝色
 - 恢复存档后未进行任何操作时退出，不再弹出保存确认
+- 象棋盘面与棋子文字改为繁体
 
 ### Fixed
 

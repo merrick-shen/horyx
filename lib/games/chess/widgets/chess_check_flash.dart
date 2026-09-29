@@ -65,7 +65,7 @@ class _CheckFlashTextState extends State<CheckFlashText>
           borderRadius: BorderRadius.circular(Radii.card),
         ),
         child: Text(
-          '将军',
+          '將軍',
           style: TextStyle(
             fontSize: 64,
             fontWeight: FontWeight.w900,
