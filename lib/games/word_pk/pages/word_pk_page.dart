@@ -81,6 +81,7 @@ class _WordPkPageState
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
           gameName: WordPkPage.gameName,
+          hostName: ProfileScope.of(context).name,
           icon: WordPkPage.gameIcon,
           capacity: count,
           hostGameBuilder: (context, host) =>

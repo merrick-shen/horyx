@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:characters/characters.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:horyx/shared/network/net_message.dart';
@@ -14,6 +15,7 @@ import 'package:horyx/shared/network/net_session.dart';
 class RoomHost extends ChangeNotifier {
   RoomHost({
     required this.gameName,
+    required this.hostName,
     required this.capacity,
     this.basePort = defaultPort,
     this.gameStartPayload = const {},
@@ -21,6 +23,10 @@ class RoomHost extends ChangeNotifier {
 
   /// 游戏名称（等待页标识卡展示用，随 joinResponse 发给客户端，如「单词PK」）
   final String gameName;
+
+  /// 房主名字（座位 1 的展示名；入口经联机引导保证非空，
+  /// 类型收 String? 容错，空值按「玩家 1」兜底）
+  final String? hostName;
 
   /// 本局总人数（2-8，含房主）
   final int capacity;
@@ -50,6 +56,11 @@ class RoomHost extends ChangeNotifier {
   /// 已入座的客户端：座位号 -> 会话（座位 1 为房主本机，不在此表）
   final Map<int, NetSession> _clients = {};
 
+  /// 座位 -> 名字表（含房主 1 号位）：
+  /// 随 joinResponse 全量（键转 String）、playerJoined 增量同步给客户端；
+  /// 名字在入房握手时快照，对局中改名不影响进行中的房间
+  final Map<int, String> _names = {};
+
   /// 已接受但尚未握手入座的会话（10 秒握手超时窗内的连接）：
   /// 房主解散时需一并关闭——否则这些 socket 与握手 Timer 最长滞留 10 秒，
   /// 且其中在途的 hello 会在解散后到达，若无守卫将"幽灵入座"（见 _handleHello）
@@ -78,6 +89,9 @@ class RoomHost extends ChangeNotifier {
   /// 当前已占用的座位（含房主的 1 号位），升序
   List<int> get seats => [1, ..._clients.keys.toList()..sort()];
 
+  /// 座位的展示名（无记录时回退「玩家 N」，供等待页使用）
+  String nameOf(int seat) => _names[seat] ?? '玩家 $seat';
+
   /// 是否满员
   bool get isFull => seats.length >= capacity;
 
@@ -88,6 +102,9 @@ class RoomHost extends ChangeNotifier {
         final server = await ServerSocket.bind('0.0.0.0', port);
         _server = server;
         _port = server.port;
+        // 房主名字入表（空值按「玩家 1」兜底，见 hostName 注释）
+        final host = hostName?.trim() ?? '';
+        _names[1] = host.isEmpty ? '玩家 1' : host;
         // 只处理接入的连接；监听异常（端口被抢占等极端场景）交由各会话自行断开
         server.listen(_onAccept);
         _notifyChanged();
@@ -147,7 +164,7 @@ class RoomHost extends ChangeNotifier {
           if (seat != 0) return; // 忽略重复握手
           helloTimeout?.cancel();
           helloTimeout = null;
-          seat = _handleHello(session);
+          seat = _handleHello(session, message);
           // 入座后移交 _clients 管理；被拒（返回 0）的会话已随拒绝路径
           // close，断线回调会将其从握手名单移除
           if (seat != 0) _handshaking.remove(session);
@@ -165,7 +182,7 @@ class RoomHost extends ChangeNotifier {
   /// 处理握手：解散后迟到的 hello 直接断开（防幽灵入座）；开局后或满员
   /// 则拒绝并断开；否则分配最小空位、应答加入结果、广播入座消息，
   /// 返回分配的座位号（拒绝时返回 0）
-  int _handleHello(NetSession session) {
+  int _handleHello(NetSession session, NetMessage message) {
     // 房主已解散：解散瞬间仍在途的 hello 若放行入座，客户端会收到
     // ok:true 的 joinResponse 进入等待页——此后双方心跳互保活，
     // 房主不会再有第二次 close()（入口短路），客户端永久卡在等待页。
@@ -205,8 +222,17 @@ class RoomHost extends ChangeNotifier {
     }
     _clients[seat] = session;
 
+    // 名字载荷容错：非 String、trim 后为空或超长（>12 字素）不拒绝连接，
+    // 以「玩家$seat」兜底入表，座位号语义仍可用
+    final rawName = message.payload['name'];
+    final name = rawName is String ? rawName.trim() : '';
+    _names[seat] = name.isNotEmpty && name.characters.length <= 12
+        ? name
+        : '玩家$seat';
+
     // 应答：游戏名 + 自己的座位 + 房间总人数 + 当前所有已入座玩家（供等待页渲染）
-    // 客户端改为输入 IP 加入后，连接前不知道游戏名，依赖此处的 gameName
+    // 客户端改为输入 IP 加入后，连接前不知道游戏名，依赖此处的 gameName；
+    // names 为座位 -> 名字全量表（JSON 对象键必须为字符串，座位号 int 转 String）
     session.send(
       NetMessage(
         type: NetMessageType.joinResponse,
@@ -216,14 +242,17 @@ class RoomHost extends ChangeNotifier {
           'seat': seat,
           'capacity': capacity,
           'players': seats,
+          'names': {
+            for (final entry in _names.entries) '${entry.key}': entry.value,
+          },
         },
       ),
     );
-    // 广播给其余玩家（新加入者已通过 joinResponse 获知全量座位）
+    // 广播给其余玩家（新加入者已通过 joinResponse 获知全量座位与名字）
     _broadcast(
       NetMessage(
         type: NetMessageType.playerJoined,
-        payload: {'seat': seat},
+        payload: {'seat': seat, 'name': _names[seat]},
       ),
       except: session,
     );
@@ -252,6 +281,7 @@ class RoomHost extends ChangeNotifier {
     if (_closed) return;
     final session = _clients.remove(seat);
     if (session == null) return; // 已清理过（bye 与断线可能先后触发）
+    _names.remove(seat);
     session.close();
     _broadcast(
       NetMessage(

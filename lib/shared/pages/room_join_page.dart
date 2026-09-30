@@ -56,6 +56,7 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
         builder: (_) => RoomPage.client(
           address: address.host,
           port: address.port,
+          myName: ProfileScope.of(context).name,
           gameResolver: widget.gameResolver,
         ),
       ),
@@ -85,6 +86,7 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
         builder: (_) => RoomPage.client(
           address: address.host,
           port: address.port,
+          myName: ProfileScope.of(context).name,
           gameResolver: widget.gameResolver,
         ),
       ),

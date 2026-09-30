@@ -286,6 +286,7 @@ class _ChessPageState
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
           gameName: ChessPage.gameName,
+          hostName: ProfileScope.of(context).name,
           icon: ChessPage.gameIcon,
           capacity: 2,
           hostGameBuilder: (context, host) => ChessOnlinePage.host(host: host),

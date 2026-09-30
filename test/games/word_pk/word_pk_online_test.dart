@@ -38,7 +38,7 @@ void main() {
   }
 
   test('满员开局后轮流提交：全端单词与回合同步一致', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
+    final host = RoomHost(gameName: '单词PK', hostName: null, capacity: 3, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -89,7 +89,7 @@ void main() {
   });
 
   test('校验拒绝：客户端本地预检即时拒绝，不发网络、输入保留', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
+    final host = RoomHost(gameName: '单词PK', hostName: null, capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);
 
     final client = RoomClient(host: '127.0.0.1', port: host.port);
@@ -121,7 +121,7 @@ void main() {
   });
 
   test('玩家中途退出：轮到的玩家离开后回合跳到下一在线座位', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
+    final host = RoomHost(gameName: '单词PK', hostName: null, capacity: 3, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -152,7 +152,7 @@ void main() {
   });
 
   test('开局后加入被拒绝：对局进行中不放新人', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
+    final host = RoomHost(gameName: '单词PK', hostName: null, capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -170,7 +170,7 @@ void main() {
   });
 
   test('全员离开终局：只剩房主时对局结束', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 3, basePort: 0);
+    final host = RoomHost(gameName: '单词PK', hostName: null, capacity: 3, basePort: 0);
     expect(await host.start(), isTrue);
 
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
@@ -194,7 +194,7 @@ void main() {
   });
 
   test('房主解散终局：客户端对局终止并提示', () async {
-    final host = RoomHost(gameName: '单词PK', capacity: 2, basePort: 0);
+    final host = RoomHost(gameName: '单词PK', hostName: null, capacity: 2, basePort: 0);
     expect(await host.start(), isTrue);
 
     final client = RoomClient(host: '127.0.0.1', port: host.port);

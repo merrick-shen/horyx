@@ -40,6 +40,7 @@ void main() {
   ) async {
     final host = RoomHost(
       gameName: '五子棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: startPayload,
@@ -57,6 +58,7 @@ void main() {
   test('开局规格同步与轮流落子：双端棋盘一致、回合轮换正确', () async {
     final host = RoomHost(
       gameName: '五子棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: {'boardSize': 19},
@@ -97,6 +99,7 @@ void main() {
   test('非法提交被拒：非本人回合与落点占用', () async {
     final host = RoomHost(
       gameName: '五子棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: {'boardSize': 15},
@@ -138,6 +141,7 @@ void main() {
   test('房主侧终极校验：绕过本地拦截的非法提交被回执拒绝', () async {
     final host = RoomHost(
       gameName: '五子棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: {'boardSize': 15},
@@ -207,6 +211,7 @@ void main() {
   test('五连终局：黑方五连后双端判定胜负并停止落子', () async {
     final host = RoomHost(
       gameName: '五子棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: {'boardSize': 15},
@@ -250,6 +255,7 @@ void main() {
   test('对方离开：对局结束且不判胜负（与单词PK一致）', () async {
     final host = RoomHost(
       gameName: '五子棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: {'boardSize': 15},
@@ -278,6 +284,7 @@ void main() {
   test('房主解散终局：客户端对局终止并提示', () async {
     final host = RoomHost(
       gameName: '五子棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: {'boardSize': 15},

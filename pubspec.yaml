@@ -32,6 +32,8 @@ dependencies:
     sdk: flutter
 
   shared_preferences: ^2.5.5
+  # 字素计数（联机名字长度校验按字素算，emoji/中文均记 1）
+  characters: ^1.4.0
   # 读取应用版本号（关于页展示，与 pubspec version 保持同步）
   package_info_plus: ^10.2.1
   flutter_svg: ^2.3.0

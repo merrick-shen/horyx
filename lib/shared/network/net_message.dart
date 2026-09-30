@@ -6,9 +6,9 @@
 enum NetMessageType {
   // ============ 房间管理（各游戏通用） ============
 
-  /// 握手：客户端加入时自报（payload 为空——协议版本由消息层
-  /// 统一注入信封字段 v，见 [NetMessage.protocolVersion]；
-  /// 当前无昵称体系，房间与对局全程以「玩家 N」区分）
+  /// 握手：客户端加入时自报，payload 携带
+  /// `{'name': String}`（trim 后 1-12 字素，由发起方保证）；
+  /// 协议版本由消息层统一注入信封字段 v，见 [NetMessage.protocolVersion]
   hello,
 
   /// 加入结果：房主应答（成功时携带分配的座位号，失败时携带原因）
@@ -130,7 +130,7 @@ class NetMessage {
 
   /// 协议版本号：双端不一致时由房主拒绝连接，
   /// 避免 App 升级改协议后新老版本连上出现不可预期行为
-  static const int protocolVersion = 1;
+  static const int protocolVersion = 2;
 
   /// 序列化为 JSON 映射（供编码器输出）
   Map<String, dynamic> toJson() => {

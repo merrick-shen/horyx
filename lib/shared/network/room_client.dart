@@ -28,13 +28,16 @@ enum RoomClientPhase {
 /// 职责：连接房主、hello 握手、等待加入结果、维护座位快照（入座/离开/开局）。
 /// 对局消息（wordSubmit/wordApplied 等）由步骤 4 的游戏层接入。
 class RoomClient extends ChangeNotifier {
-  RoomClient({required this.host, required this.port});
+  RoomClient({required this.host, required this.port, this.myName});
 
   /// 房主地址（IP 或主机名）
   final String host;
 
   /// 房主监听端口
   final int port;
+
+  /// 自己的名字（hello 握手携带；入口经联机引导保证非空）
+  final String? myName;
 
   NetSession? _session;
   Timer? _joinTimeout;
@@ -105,6 +108,10 @@ class RoomClient extends ChangeNotifier {
   final Set<int> _seats = {};
   List<int> get seats => _seats.toList()..sort();
 
+  /// 座位 -> 名字快照（joinResponse 全量 + playerJoined 增量；玩家离开随座位移除）。
+  /// 无记录的座位展示回退「玩家 N」
+  final Map<int, String> seatNames = {};
+
   /// 发起连接：TCP 连接 -> 发送 hello -> 等待 joinResponse（8 秒超时）
   /// 结果通过 [phase] 与 [failReason] 通知，调用方监听本对象即可
   Future<void> connect() async {
@@ -115,7 +122,12 @@ class RoomClient extends ChangeNotifier {
       _session = session;
       session.onDisconnected = _onDisconnected;
       session.messages.listen(_onMessage);
-      session.send(const NetMessage(type: NetMessageType.hello));
+      session.send(
+        NetMessage(
+          type: NetMessageType.hello,
+          payload: myName == null ? const {} : {'name': myName},
+        ),
+      );
       // 房主应答超时：版本不兼容的客户端消息会被房主静默丢弃（解析失败），
       // 同样走到这里，文案需兼顾提示
       _joinTimeout = Timer(const Duration(seconds: 8), () {
@@ -150,6 +162,16 @@ class RoomClient extends ChangeNotifier {
         if (players is List) {
           _seats.addAll(players.whereType<int>());
         }
+        // 名字全量表：JSON 对象键为字符串化的座位号，int 解析失败的条目忽略
+        final names = message.payload['names'];
+        if (names is Map) {
+          for (final entry in names.entries) {
+            final seat = int.tryParse('${entry.key}');
+            if (seat != null && entry.value is String) {
+              seatNames[seat] = entry.value as String;
+            }
+          }
+        }
         // 房主广播 playerJoined 时会跳过新加入者本人，
         // 自己的座位需在此主动补入，否则等待页会把自己显示成空位
         if (mySeat != null) _seats.add(mySeat!);
@@ -161,12 +183,16 @@ class RoomClient extends ChangeNotifier {
         final joinedSeat = message.payload['seat'];
         if (joinedSeat is! int) return;
         _seats.add(joinedSeat);
+        // 名字载荷非 String 时忽略，该座位展示回退「玩家 N」
+        final joinedName = message.payload['name'];
+        if (joinedName is String) seatNames[joinedSeat] = joinedName;
         _notifyChanged();
       case NetMessageType.playerLeft:
         // 同上，异常载荷忽略，保持座位集合不变式
         final leftSeat = message.payload['seat'];
         if (leftSeat is! int) return;
         _seats.remove(leftSeat);
+        seatNames.remove(leftSeat);
         _notifyChanged();
       case NetMessageType.gameStart:
         // 开局载荷整体保存，游戏层按需取用（如五子棋的 boardSize）

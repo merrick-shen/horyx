@@ -188,6 +188,7 @@ class _GomokuPageState
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
           gameName: GomokuPage.gameName,
+          hostName: ProfileScope.of(context).name,
           icon: GomokuPage.gameIcon,
           capacity: 2,
           gameStartPayload: {'boardSize': boardSize},

@@ -80,6 +80,7 @@ class _TankPageState
       MaterialPageRoute(
         builder: (_) => RoomPage.host(
           gameName: TankPage.gameName,
+          hostName: ProfileScope.of(context).name,
           icon: TankPage.gameIcon,
           capacity: 2,
           hostGameBuilder: (context, host) =>

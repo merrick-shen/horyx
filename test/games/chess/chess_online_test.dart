@@ -42,6 +42,7 @@ void main() {
   Future<(ChessOnlineController, ChessOnlineController)> setupGame() async {
     final host = RoomHost(
       gameName: '中国象棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: const {},
@@ -133,6 +134,7 @@ void main() {
     // 该用例需直接走网络层发消息（模拟绕过本地拦截），内联建房持有原始连接
     final host = RoomHost(
       gameName: '中国象棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: const {},
@@ -264,6 +266,7 @@ void main() {
     // 该用例需直接关闭底层连接，内联建房持有原始连接
     final host = RoomHost(
       gameName: '中国象棋',
+      hostName: null,
       capacity: 2,
       basePort: 0,
       gameStartPayload: const {},

@@ -30,20 +30,24 @@ class RoomPage extends StatefulWidget {
   const RoomPage.host({
     super.key,
     required this.gameName,
+    required this.hostName,
     required this.capacity,
     this.gameStartPayload = const {},
     this.hostGameBuilder,
     this.icon,
   }) : address = null,
        port = null,
+       myName = null,
        gameResolver = null;
 
   const RoomPage.client({
     super.key,
     required this.address,
     required this.port,
+    required this.myName,
     this.gameResolver,
   }) : gameName = null,
+       hostName = null,
        capacity = 0,
        gameStartPayload = const {},
        hostGameBuilder = null,
@@ -52,6 +56,12 @@ class RoomPage extends StatefulWidget {
   /// 游戏名称（仅房主模式；等待页顶部标识卡展示，如「单词PK」。
   /// 客户端模式加入前未知，改为取握手应答中的 gameName 展示）
   final String? gameName;
+
+  /// 房主名字（仅房主模式；入口经联机引导保证非空，随 RoomHost 展示于座位 1）
+  final String? hostName;
+
+  /// 客户端自己的名字（仅客户端模式；hello 握手携带）
+  final String? myName;
 
   /// 本局总人数（仅房主模式有效，含房主）
   final int capacity;
@@ -110,8 +120,11 @@ class _RoomPageState extends State<RoomPage> {
     if (widget.isHost) {
       _initHost();
     } else {
-      _client = RoomClient(host: widget.address!, port: widget.port!)
-        ..connect();
+      _client = RoomClient(
+        host: widget.address!,
+        port: widget.port!,
+        myName: widget.myName,
+      )..connect();
       // 满员开局 -> 跳转对局页（监听而非 build 中触发，导航不能发生在构建期）
       _client!.addListener(_onClientChanged);
     }
@@ -136,6 +149,7 @@ class _RoomPageState extends State<RoomPage> {
   Future<void> _initHost() async {
     final host = RoomHost(
       gameName: widget.gameName!,
+      hostName: widget.hostName,
       capacity: widget.capacity,
       gameStartPayload: widget.gameStartPayload,
     );
@@ -199,8 +213,11 @@ class _RoomPageState extends State<RoomPage> {
       old.removeListener(_onClientChanged);
       old.dispose();
     }
-    final client = RoomClient(host: widget.address!, port: widget.port!)
-      ..connect();
+    final client = RoomClient(
+      host: widget.address!,
+      port: widget.port!,
+      myName: widget.myName,
+    )..connect();
     client.addListener(_onClientChanged);
     setState(() => _client = client);
   }
@@ -291,6 +308,8 @@ class _RoomPageState extends State<RoomPage> {
           capacity: host.capacity,
           seats: host.seats,
           mySeat: 1,
+          // 房主名字表含兜底（nameOf 永不返回空），座位行显示名字
+          seatNameOf: host.nameOf,
           // 加入地址（IP:端口，与加入页输入格式一致）独立成卡展示；
           // IP 获取失败时降级为手动查询提示
           joinAddress: _hostAddress == null
@@ -331,6 +350,8 @@ class _RoomPageState extends State<RoomPage> {
               capacity: client.capacity,
               seats: client.seats,
               mySeat: client.mySeat,
+              // 客户端名字快照无记录的座位回退「玩家 N」
+              seatNameOf: (seat) => client.seatNames[seat],
               hint: '你已加入，是玩家 ${client.mySeat ?? 0}，满员后自动开始',
             );
         }
@@ -402,6 +423,7 @@ class _RoomPageState extends State<RoomPage> {
     required int capacity,
     required List<int> seats,
     required int? mySeat,
+    required String? Function(int seat) seatNameOf,
     required String hint,
     String? joinAddress,
     String? joinCode,
@@ -420,7 +442,12 @@ class _RoomPageState extends State<RoomPage> {
               _buildJoinAddressCard(joinAddress, joinCode: joinCode),
             ],
             const SizedBox(height: 16),
-            _buildSeatCard(capacity: capacity, seats: seats, mySeat: mySeat),
+            _buildSeatCard(
+              capacity: capacity,
+              seats: seats,
+              mySeat: mySeat,
+              seatNameOf: seatNameOf,
+            ),
             const SizedBox(height: 16),
             // 等待状态文案：满员与否二态展示
             Text(
@@ -603,6 +630,7 @@ class _RoomPageState extends State<RoomPage> {
     required int capacity,
     required List<int> seats,
     required int? mySeat,
+    required String? Function(int seat) seatNameOf,
   }) {
     final palette = context.palette;
     return PanelCard(
@@ -650,6 +678,7 @@ class _RoomPageState extends State<RoomPage> {
                 seat: seat,
                 taken: seats.contains(seat),
                 mySeat: mySeat,
+                name: seatNameOf(seat),
               ),
             ),
         ],
@@ -658,9 +687,14 @@ class _RoomPageState extends State<RoomPage> {
   }
 }
 
-/// 单个座位行：座位号圆标 + 玩家标识（房主/你）或等待占位
+/// 单个座位行：座位号圆标 + 玩家名字（房主/你徽标）或等待占位
 class _SeatTile extends StatelessWidget {
-  const _SeatTile({required this.seat, required this.taken, this.mySeat});
+  const _SeatTile({
+    required this.seat,
+    required this.taken,
+    this.mySeat,
+    this.name,
+  });
 
   /// 座位号（1..N，1 号固定为房主）
   final int seat;
@@ -670,6 +704,9 @@ class _SeatTile extends StatelessWidget {
 
   /// 自己的座位号（null 表示房主视图外的未知视角，仅房主/客户端页传入）
   final int? mySeat;
+
+  /// 座位玩家名字（无记录时回退「玩家 N」展示）
+  final String? name;
 
   @override
   Widget build(BuildContext context) {
@@ -710,7 +747,12 @@ class _SeatTile extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              taken ? '玩家 $seat${seat == 1 ? ' · 房主' : ''}' : '等待加入…',
+              // 名字快照缺失（含空串）时回退「玩家 N」
+              taken
+                  ? (name?.isNotEmpty ?? false)
+                      ? '$name${seat == 1 ? ' · 房主' : ''}'
+                      : '玩家 $seat${seat == 1 ? ' · 房主' : ''}'
+                  : '等待加入…',
               style: TextStyle(
                 color: taken ? palette.textPrimary : palette.textSecondary,
                 fontSize: 14,

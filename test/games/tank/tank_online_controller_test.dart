@@ -33,7 +33,12 @@ void main() {
   /// 建一个满员双人房间并接管双方控制器（连接与挂接就绪）
   Future<(RoomHost, RoomClient, TankOnlineController, TankOnlineController)>
       setUpRoom() async {
-    final host = RoomHost(gameName: '坦克动荡', capacity: 2, basePort: 0);
+    final host = RoomHost(
+      gameName: '坦克动荡',
+      hostName: null,
+      capacity: 2,
+      basePort: 0,
+    );
     expect(await host.start(), isTrue);
     final client = RoomClient(host: '127.0.0.1', port: host.port);
     unawaited(client.connect());

@@ -28,6 +28,7 @@ void main() {
     // basePort 0：系统分配临时端口，避免与真实服务端口冲突
     final host = RoomHost(
       gameName: '单词PK',
+      hostName: null,
       capacity: 3,
       basePort: 0,
     );
@@ -66,6 +67,7 @@ void main() {
   test('开局后拒绝：对局已开始时的加入请求被拒绝并断开', () async {
     final host = RoomHost(
       gameName: '单词PK',
+      hostName: null,
       capacity: 2,
       basePort: 0,
     );
@@ -90,6 +92,7 @@ void main() {
   test('玩家退出：房主清理座位并广播给其他玩家', () async {
     final host = RoomHost(
       gameName: '单词PK',
+      hostName: null,
       capacity: 4,
       basePort: 0,
     );
@@ -119,6 +122,7 @@ void main() {
   test('房主解散：已加入的玩家收到断开提示（bye 区分主动解散）', () async {
     final host = RoomHost(
       gameName: '单词PK',
+      hostName: null,
       capacity: 3,
       basePort: 0,
     );
@@ -144,9 +148,127 @@ void main() {
     expect(client.failReason, contains('无法连接'));
   });
 
+  test('名字同步：hello 带 name 时全量表与增量广播一致', () async {
+    final host = RoomHost(
+      gameName: '单词PK',
+      hostName: '房主甲',
+      capacity: 3,
+      basePort: 0,
+    );
+    expect(await host.start(), isTrue);
+
+    final clientA = RoomClient(
+      host: '127.0.0.1',
+      port: host.port,
+      myName: '小明',
+    );
+    unawaited(clientA.connect());
+    await until(() => clientA.phase == RoomClientPhase.joined);
+    // joinResponse 全量：含房主名与自己的名字
+    expect(clientA.seatNames, {1: '房主甲', 2: '小明'});
+    expect(host.nameOf(2), '小明');
+
+    final clientB = RoomClient(
+      host: '127.0.0.1',
+      port: host.port,
+      myName: '小红',
+    );
+    unawaited(clientB.connect());
+    await until(() => clientB.mySeat == 3);
+    // B 的 joinResponse 全量含 A 的名字；A 经 playerJoined 增量获知 B
+    expect(clientB.seatNames, {1: '房主甲', 2: '小明', 3: '小红'});
+    await until(() => clientA.seatNames[3] == '小红');
+
+    await host.close();
+    await clientA.close();
+    await clientB.close();
+  });
+
+  test('名字容错：hello 缺失/非法名字不拒绝连接，回退「玩家N」', () async {
+    final host = RoomHost(
+      gameName: '单词PK',
+      hostName: null,
+      capacity: 3,
+      basePort: 0,
+    );
+    expect(await host.start(), isTrue);
+
+    // 缺 name（myName 为 null）不拒绝入座，以「玩家2」兜底入表
+    final clientA = RoomClient(host: '127.0.0.1', port: host.port);
+    unawaited(clientA.connect());
+    await until(() => clientA.phase == RoomClientPhase.joined);
+    expect(clientA.mySeat, 2);
+    expect(host.nameOf(2), '玩家2');
+
+    // 非法 name（超 12 字素）同样兜底；房主未设置名字时按「玩家 1」兜底
+    final clientB = RoomClient(
+      host: '127.0.0.1',
+      port: host.port,
+      myName: '一二三四五六七八九十十一十二十三',
+    );
+    unawaited(clientB.connect());
+    await until(() => clientB.mySeat == 3);
+    expect(host.nameOf(3), '玩家3');
+    expect(host.nameOf(1), '玩家 1');
+
+    await host.close();
+    await clientA.close();
+    await clientB.close();
+  });
+
+  test('名字随离开清理，补位玩家的名字生效', () async {
+    // 容量 4：三人入座不触发满员开局，保证 A 离开后 C 仍可补位
+    final host = RoomHost(
+      gameName: '单词PK',
+      hostName: '房主甲',
+      capacity: 4,
+      basePort: 0,
+    );
+    expect(await host.start(), isTrue);
+
+    final clientA = RoomClient(
+      host: '127.0.0.1',
+      port: host.port,
+      myName: '小明',
+    );
+    unawaited(clientA.connect());
+    await until(() => clientA.phase == RoomClientPhase.joined);
+
+    final clientB = RoomClient(
+      host: '127.0.0.1',
+      port: host.port,
+      myName: '小红',
+    );
+    unawaited(clientB.connect());
+    await until(() => clientB.mySeat == 3);
+    await until(() => clientA.seatNames[3] == '小红');
+
+    // A 退出：座位 2 的名字随座位一并清理，B 的快照同步移除
+    await clientA.close();
+    await until(() => !clientB.seatNames.containsKey(2));
+    expect(host.nameOf(2), '玩家 2');
+
+    // C 补位 2 号：joinResponse 与增量广播均携带新名字
+    final clientC = RoomClient(
+      host: '127.0.0.1',
+      port: host.port,
+      myName: '小刚',
+    );
+    unawaited(clientC.connect());
+    await until(() => clientC.mySeat == 2);
+    expect(host.nameOf(2), '小刚');
+    await until(() => clientB.seatNames[2] == '小刚');
+    expect(clientC.seatNames, {1: '房主甲', 2: '小刚', 3: '小红'});
+
+    await host.close();
+    await clientB.close();
+    await clientC.close();
+  });
+
   test('解散后迟到的 hello 不再入座，未握手连接随解散一并关闭', () async {
     final host = RoomHost(
       gameName: '单词PK',
+      hostName: null,
       capacity: 2,
       basePort: 0,
     );
