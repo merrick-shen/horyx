@@ -92,7 +92,7 @@ void main() {
   });
 
   group('外环前进', () {
-    test('按骰点前进，落点与格色无关（当前不含跳跃）', () {
+    test('按骰点前进，落点非己色格时不跳跃', () {
       // 红方起飞格 4，前进 3 步到 7
       final state = buildState(
         planes: {
@@ -118,8 +118,8 @@ void main() {
       expect(moved.currentPlayer, AeroplaneColor.blue);
     });
 
-    test('落在己色格不跳跃（跳跃尚未接入）', () {
-      // 红 4 + 4 = 8，8 为红色格，仍停留原步数对应格
+    test('落在己色格顺跳至下一个同色格（至多一次，落点撞子同样生效）', () {
+      // 红 4 + 4 = 8（红色格）→ 顺跳至 12；8 与 12 上的他色棋子均被撞回
       final state = buildState(
         planes: {
           AeroplaneColor.red: [
@@ -127,8 +127,14 @@ void main() {
             ...allInHangar().skip(1),
           ],
           AeroplaneColor.green: allInHangar(),
-          AeroplaneColor.blue: allInHangar(),
-          AeroplaneColor.yellow: allInHangar(),
+          AeroplaneColor.blue: [
+            PlanePosition(zone: PlaneZone.ring, index: 12),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.yellow: [
+            PlanePosition(zone: PlaneZone.ring, index: 8),
+            ...allInHangar().skip(1),
+          ],
         },
         currentPlayer: AeroplaneColor.red,
       );
@@ -137,7 +143,19 @@ void main() {
         const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
         4,
       );
-      expect(moved.planesOf(AeroplaneColor.red)[0], ringAtSteps(AeroplaneColor.red, 4));
+      expect(
+        moved.planesOf(AeroplaneColor.red)[0],
+        ringAtSteps(AeroplaneColor.red, 8),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.yellow)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.blue)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(moved.currentPlayer, AeroplaneColor.blue);
     });
   });
 
@@ -225,20 +243,63 @@ void main() {
       }
     });
 
-    test('超出终点的步数当前不合法（回退尚未接入）', () {
-      final state = buildState(
-        planes: {
-          AeroplaneColor.red: [
-            runwayAt(4),
-            ...allInHangar().skip(1),
-          ],
-          AeroplaneColor.green: allInHangar(),
-          AeroplaneColor.blue: allInHangar(),
-          AeroplaneColor.yellow: allInHangar(),
-        },
-        currentPlayer: AeroplaneColor.red,
-      );
-      expect(AeroplaneEngine.legalMoves(state, 3), isEmpty);
+    test('入口格不触发跳跃（含跳跃恰好落入入口格）', () {
+      // 红：行进 47 步 +1 直落入口；或行进 43 步 +1 落己色格跳至入口后不再跳
+      final cases = [(47, 1), (43, 1)];
+      for (final (steps, dice) in cases) {
+        final state = buildState(
+          planes: {
+            AeroplaneColor.red: [
+              ringAtSteps(AeroplaneColor.red, steps),
+              ...allInHangar().skip(1),
+            ],
+            AeroplaneColor.green: allInHangar(),
+            AeroplaneColor.blue: allInHangar(),
+            AeroplaneColor.yellow: allInHangar(),
+          },
+          currentPlayer: AeroplaneColor.red,
+        );
+        final moved = AeroplaneEngine.applyMove(
+          state,
+          const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
+          dice,
+        );
+        expect(
+          moved.planesOf(AeroplaneColor.red)[0],
+          PlanePosition(zone: PlaneZone.ring, index: 0),
+          reason: '行进 $steps 步 +$dice 应停在入口格',
+        );
+      }
+    });
+
+    test('超出终点从跑道尽头回退', () {
+      // 跑道 4 号格 = 行进 53 步，+5 回退至 52（跑道 3 号格）；跑道 5 +6 回退至 50
+      final cases = [(4, 5, 3), (5, 6, 1)];
+      for (final (runwayIndex, dice, expected) in cases) {
+        final state = buildState(
+          planes: {
+            AeroplaneColor.red: [
+              runwayAt(runwayIndex),
+              ...allInHangar().skip(1),
+            ],
+            AeroplaneColor.green: allInHangar(),
+            AeroplaneColor.blue: allInHangar(),
+            AeroplaneColor.yellow: allInHangar(),
+          },
+          currentPlayer: AeroplaneColor.red,
+        );
+        expect(AeroplaneEngine.legalMoves(state, dice), isNotEmpty);
+        final moved = AeroplaneEngine.applyMove(
+          state,
+          const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
+          dice,
+        );
+        expect(
+          moved.planesOf(AeroplaneColor.red)[0],
+          runwayAt(expected),
+          reason: '跑道 $runwayIndex +$dice 应回退至跑道 $expected 号格',
+        );
+      }
     });
   });
 
@@ -255,12 +316,12 @@ void main() {
       expect(skipped.planes, state.planes);
     });
 
-    test('唯一可动棋子超步、其余不可起飞时同样跳过', () {
+    test('全部棋子抵达终点后无可动，跳过换人', () {
       final state = buildState(
         planes: {
           AeroplaneColor.red: [
-            runwayAt(4),
-            ...allInHangar().skip(1),
+            for (var i = 0; i < 4; i++)
+              PlanePosition(zone: PlaneZone.goal, index: 0),
           ],
           AeroplaneColor.green: allInHangar(),
           AeroplaneColor.blue: allInHangar(),
@@ -268,7 +329,7 @@ void main() {
         },
         currentPlayer: AeroplaneColor.red,
       );
-      expect(AeroplaneEngine.legalMoves(state, 5), isEmpty);
+      expect(AeroplaneEngine.legalMoves(state, 6), isEmpty);
       final skipped = AeroplaneEngine.skipTurn(state);
       expect(skipped.currentPlayer, AeroplaneColor.blue);
     });
@@ -337,6 +398,279 @@ void main() {
         3,
       );
       expect(moved.currentPlayer, AeroplaneColor.yellow);
+    });
+  });
+
+  group('撞子与安全格', () {
+    test('落点撞回他色棋子（含叠子），格主色棋子安全豁免', () {
+      // 红 4 + 3 = 7（绿色格）：绿机（格主）安全，黄机叠子两架被撞回
+      final state = buildState(
+        planes: {
+          AeroplaneColor.red: [
+            ringAtSteps(AeroplaneColor.red, 0),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.green: [
+            PlanePosition(zone: PlaneZone.ring, index: 7),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: [
+            PlanePosition(zone: PlaneZone.ring, index: 7),
+            PlanePosition(zone: PlaneZone.ring, index: 7),
+            ...allInHangar().skip(2),
+          ],
+        },
+        currentPlayer: AeroplaneColor.red,
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
+        3,
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.red)[0],
+        ringAtSteps(AeroplaneColor.red, 3),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.green)[0],
+        PlanePosition(zone: PlaneZone.ring, index: 7),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.yellow)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.yellow)[1],
+        PlanePosition(zone: PlaneZone.hangar, index: 1),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.yellow)[2],
+        PlanePosition(zone: PlaneZone.hangar, index: 2),
+      );
+    });
+
+    test('起飞撞回起飞格上的敌机', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: allInHangar(),
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: [
+            PlanePosition(zone: PlaneZone.ring, index: 43),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        6,
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.green)[0],
+        ringAtSteps(AeroplaneColor.green, 0),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.blue)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+    });
+  });
+
+  group('加油站飞越', () {
+    test('恰好落在航线起点格时枚举飞越与否两个走法', () {
+      // 绿方航线起点 ring 7 = 行进 16 步；行进 15 步 +1 恰好落上
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 15),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final moves = AeroplaneEngine.legalMoves(state, 1);
+      expect(
+        moves,
+        unorderedEquals([
+          const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+          const AeroplaneMove(color: AeroplaneColor.green, planeId: 0, fly: true),
+        ]),
+      );
+    });
+
+    test('不飞越：起点格按跳跃规则顺跳一次', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 15),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        1,
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.green)[0],
+        ringAtSteps(AeroplaneColor.green, 20),
+      );
+    });
+
+    test('飞越后落点接一次跳跃（一次飞跃+一次跳跃上限）', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 15),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0, fly: true),
+        1,
+      );
+      // 飞越至落点（行进 28 步）后顺跳一次至 32，不再连跳
+      expect(
+        moved.planesOf(AeroplaneColor.green)[0],
+        ringAtSteps(AeroplaneColor.green, 32),
+      );
+    });
+
+    test('飞越撞回被穿越跑道上的敌机（跑道安全格不豁免）', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 15),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: [
+            runwayAt(2),
+            runwayAt(1),
+            ...allInHangar().skip(2),
+          ],
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0, fly: true),
+        1,
+      );
+      // 被穿越格（蓝跑道 2 号）上的棋子送回最低空闲机位，相邻跑道格不受影响
+      expect(
+        moved.planesOf(AeroplaneColor.blue)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(moved.planesOf(AeroplaneColor.blue)[1], runwayAt(1));
+      expect(
+        moved.planesOf(AeroplaneColor.green)[0],
+        ringAtSteps(AeroplaneColor.green, 32),
+      );
+    });
+
+    test('穿越格上的叠子整体送回', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 15),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: [
+            runwayAt(2),
+            runwayAt(2),
+            ...allInHangar().skip(2),
+          ],
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0, fly: true),
+        1,
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.blue)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.blue)[1],
+        PlanePosition(zone: PlaneZone.hangar, index: 1),
+      );
+    });
+
+    test('跳跃落点为航线起点格时可接飞越（上限内不再跳跃）', () {
+      // 红方航线起点 ring 20 = 行进 16 步；行进 11 步 +1 落己色格跳至起点
+      final state = buildState(
+        planes: {
+          AeroplaneColor.red: [
+            ringAtSteps(AeroplaneColor.red, 11),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.green: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+        currentPlayer: AeroplaneColor.red,
+      );
+      final moves = AeroplaneEngine.legalMoves(state, 1);
+      expect(moves, hasLength(2));
+      final noFly = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
+        1,
+      );
+      expect(
+        noFly.planesOf(AeroplaneColor.red)[0],
+        ringAtSteps(AeroplaneColor.red, 16),
+      );
+      final fly = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 0, fly: true),
+        1,
+      );
+      // 跳跃已用，飞越落点不再接跳
+      expect(
+        fly.planesOf(AeroplaneColor.red)[0],
+        ringAtSteps(AeroplaneColor.red, 28),
+      );
+    });
+
+    test('未经枚举的飞越走法抛错', () {
+      // 绿机落己色格仅触发跳跃，无飞越选择点
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 3),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      expect(
+        () => AeroplaneEngine.applyMove(
+          state,
+          const AeroplaneMove(color: AeroplaneColor.green, planeId: 0, fly: true),
+          1,
+        ),
+        throwsArgumentError,
+      );
     });
   });
 
