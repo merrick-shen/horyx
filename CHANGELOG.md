@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 本地五子棋、象棋悔棋前新增确认弹窗
 - 新增多存档管理：同一游戏可保留多条未完成对局，按保存时间倒序排列
 - 存档管理页条目新增「开始」按钮，点击直接恢复该条存档继续游玩
+- 五子棋新增最新一手提示
 
 ### Changed
 

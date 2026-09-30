@@ -17,6 +17,7 @@ class StoneBoard extends StatelessWidget {
     required this.size,
     this.stones = const [],
     this.pending,
+    this.lastMove,
     this.onCellTap,
   });
 
@@ -28,6 +29,9 @@ class StoneBoard extends StatelessWidget {
 
   /// 预选棋子（点击棋盘后、确认前，颜色由执子方决定）；null 表示无预选
   final Stone? pending;
+
+  /// 最新一手位置（叠加对比色标记点）；该处无棋子时不绘制，null 表示无标记
+  final (int, int)? lastMove;
 
   /// 点击棋盘回调：换算为最近交叉点坐标（col/row 从 0 起）
   final void Function(int col, int row)? onCellTap;
@@ -106,6 +110,7 @@ class StoneBoard extends StatelessWidget {
                     size: size,
                     stones: stones,
                     pending: pending,
+                    lastMove: lastMove,
                   ),
                 ),
               ),
@@ -138,6 +143,7 @@ class _BoardPainter extends CustomPainter {
     required this.size,
     required this.stones,
     required this.pending,
+    required this.lastMove,
   });
 
   /// 网格线颜色
@@ -151,6 +157,9 @@ class _BoardPainter extends CustomPainter {
 
   /// 预选棋子
   final Stone? pending;
+
+  /// 最新一手位置
+  final (int, int)? lastMove;
 
   /// 各路数对应的星位坐标（0 起算）
   /// 9/13 路：四角星 + 天元；15 路：四角星 + 天元；19 路：九星位
@@ -209,15 +218,24 @@ class _BoardPainter extends CustomPainter {
       }
     }
 
-    // 已确认棋子：颜色显式存储
+    // 已确认棋子：颜色显式存储；最新一手叠加对比色标记点
     for (final (col, row, black) in stones) {
+      final center = Offset(origin + cell * col, origin + cell * row);
       _drawStone(
         canvas,
-        center: Offset(origin + cell * col, origin + cell * row),
+        center: center,
         radius: cell * 0.42,
         black: black,
         opacity: 1,
       );
+      if (lastMove == (col, row)) {
+        canvas.drawCircle(
+          center,
+          cell * 0.13,
+          Paint()
+            ..color = black ? StoneBoard.whiteStone : StoneBoard.blackStone,
+        );
+      }
     }
 
     // 预选棋子：半透明示意「待确认」
@@ -264,5 +282,6 @@ class _BoardPainter extends CustomPainter {
       // 棋子先移除后新增时长度不变，仅比长度会漏掉这次重绘
       // Stone 为 record 自带值语义，可安全逐项 == 比较
       !listEquals(oldDelegate.stones, stones) ||
-      oldDelegate.pending != pending;
+      oldDelegate.pending != pending ||
+      oldDelegate.lastMove != lastMove;
 }

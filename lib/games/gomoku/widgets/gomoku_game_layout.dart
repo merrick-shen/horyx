@@ -86,6 +86,7 @@ class GomokuGameLayout extends StatelessWidget {
                   pending: pending == null
                       ? null
                       : (pending!.$1, pending!.$2, moves.length.isEven),
+                  lastMove: moves.isEmpty ? null : moves.last,
                   onCellTap: onCellTap,
                 ),
               ),
