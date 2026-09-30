@@ -45,6 +45,8 @@ class _MoveChain {
     required this.finalSteps,
     required this.captured,
     required this.hasFlightChoice,
+    required this.jumped,
+    required this.flew,
   });
 
   /// 行动棋子最终位置的累计步数
@@ -55,6 +57,11 @@ class _MoveChain {
 
   /// 迁移链是否落在己方加油站起点格（存在飞越与否两个走法变体）
   final bool hasFlightChoice;
+
+  /// 迁移链中是否发生同色跳跃 / 加油站飞越（再掷奖励判定用）
+  final bool jumped;
+
+  final bool flew;
 }
 
 /// 飞行棋规则引擎
@@ -70,7 +77,13 @@ class _MoveChain {
 ///   飞越落点可再接一次跳跃；
 /// - 落点撞子：己色格对格主安全、对他色不保护，叠子整体送回，
 ///   被撞棋子分配最低空闲机位。
-/// 连 6 计数、再掷奖励与终局判定暂未接入（当前每次迁移后直接换人）。
+/// 回合结算在引擎内闭环：
+/// - 掷 6 / 撞子 / 同色跳跃 / 飞越任一触发即奖励再掷（迁移后行动方不变，
+///   UI 以此识别再掷），同次迁移多触发只奖励一次；
+/// - 连 6 计数随掷骰累计、掷出非 6 即清零；连续第 3 个 6 须在走子前
+///   以 [isThirdSixPenalty] 判定并经 [applyThirdSixPenalty] 惩罚换人，
+///   此时 [legalMoves] 直接抛错，防止把第 3 个 6 当普通走子执行；
+/// - 4 子全部抵达终点即终局，终局后不再产生走法。
 abstract final class AeroplaneEngine {
   /// 起飞所需骰点（已确认变体：2/4/6）
   static const Set<int> takeoffDice = {2, 4, 6};
@@ -86,9 +99,16 @@ abstract final class AeroplaneEngine {
       entrySteps(color) + AeroplaneBoard.runwaySize + 1;
 
   /// 合法走法枚举：当前行动方每架可动棋子一条走法；
-  /// 走法链落在己方加油站起点格时追加「飞越」变体
+  /// 走法链落在己方加油站起点格时追加「飞越」变体。
+  /// 终局后返回空列表；掷出连续第 3 个 6 时抛错（须先走惩罚入口）
   static List<AeroplaneMove> legalMoves(AeroplaneGameState state, int dice) {
     _checkDice(dice);
+    if (state.gameOver) {
+      return const [];
+    }
+    if (isThirdSixPenalty(state, dice)) {
+      throw ArgumentError('连续第 3 个 6 触发惩罚，本回合不走子');
+    }
     final color = state.currentPlayer;
     final moves = <AeroplaneMove>[];
     for (var planeId = 0; planeId < AeroplaneBoard.hangarSlots; planeId++) {
@@ -103,7 +123,7 @@ abstract final class AeroplaneEngine {
     return moves;
   }
 
-  /// 执行走法：完成连锁迁移并换人
+  /// 执行走法：完成连锁迁移与回合结算（再掷奖励 / 连 6 计数 / 终局判定）
   static AeroplaneGameState applyMove(
     AeroplaneGameState state,
     AeroplaneMove move,
@@ -128,12 +148,75 @@ abstract final class AeroplaneEngine {
     planes[move.color]![move.planeId] =
         _positionAtSteps(move.color, chain.finalSteps);
     _sendCapturedToHangar(planes, chain.captured);
-    return _nextState(state, planes: planes);
+    final lastMoved = (move.color, move.planeId);
+    if (planes[move.color]!.every((p) => p.zone == PlaneZone.goal)) {
+      return _advance(
+        state,
+        planes: planes,
+        currentPlayer: move.color,
+        consecutiveSixes: 0,
+        lastMoved: lastMoved,
+        gameOver: true,
+        winner: move.color,
+      );
+    }
+    final reroll =
+        dice == 6 || chain.captured.isNotEmpty || chain.jumped || chain.flew;
+    return _advance(
+      state,
+      planes: planes,
+      currentPlayer: reroll ? move.color : _nextPlayer(state),
+      consecutiveSixes: dice == 6 ? state.consecutiveSixes + 1 : 0,
+      lastMoved: lastMoved,
+    );
   }
 
   /// 无可动棋子时跳过回合换人
-  static AeroplaneGameState skipTurn(AeroplaneGameState state) =>
-      _nextState(state);
+  static AeroplaneGameState skipTurn(AeroplaneGameState state) {
+    if (state.gameOver) {
+      throw ArgumentError('对局已结束');
+    }
+    return _advance(
+      state,
+      planes: state.planes,
+      currentPlayer: _nextPlayer(state),
+      consecutiveSixes: 0,
+      lastMoved: state.lastMoved,
+    );
+  }
+
+  /// 掷骰后是否触发三 6 惩罚：连续第 3 个 6（须在枚举走法前判定）
+  static bool isThirdSixPenalty(AeroplaneGameState state, int dice) {
+    _checkDice(dice);
+    return !state.gameOver && dice == 6 && state.consecutiveSixes >= 2;
+  }
+
+  /// 执行三 6 惩罚：最后移动的己方棋子返回停机坪（已抵达终点者除外），
+  /// 本次掷骰不走子并换人、连 6 计数清零
+  static AeroplaneGameState applyThirdSixPenalty(AeroplaneGameState state) {
+    if (state.gameOver) {
+      throw ArgumentError('对局已结束');
+    }
+    if (state.consecutiveSixes < 2) {
+      throw ArgumentError('当前未触发三 6 惩罚');
+    }
+    final planes = {
+      for (final entry in state.planes.entries) entry.key: [...entry.value],
+    };
+    final last = state.lastMoved;
+    if (last != null &&
+        last.$1 == state.currentPlayer &&
+        planes[last.$1]![last.$2].zone != PlaneZone.goal) {
+      _sendCapturedToHangar(planes, [last]);
+    }
+    return _advance(
+      state,
+      planes: planes,
+      currentPlayer: _nextPlayer(state),
+      consecutiveSixes: 0,
+      lastMoved: state.lastMoved,
+    );
+  }
 
   /// 棋子当前累计步数（仅接受外环/跑道位置；终点棋子不可动，不参与计算）
   static int journeySteps(AeroplaneColor color, PlanePosition pos) {
@@ -246,6 +329,8 @@ abstract final class AeroplaneEngine {
       finalSteps: steps,
       captured: captured,
       hasFlightChoice: hasFlightChoice,
+      jumped: jumpUsed,
+      flew: flyUsed,
     );
   }
 
@@ -314,26 +399,35 @@ abstract final class AeroplaneEngine {
     }
   }
 
-  /// 迁移后状态：换下一位玩家（按 players 列表轮转），连 6 计数清零
-  /// （再掷奖励与三 6 惩罚接入后收敛为完整回合状态机）
-  static AeroplaneGameState _nextState(
-    AeroplaneGameState state, {
-    Map<AeroplaneColor, List<PlanePosition>>? planes,
-  }) {
+  /// 下一位行动方（按 players 列表轮转）
+  static AeroplaneColor _nextPlayer(AeroplaneGameState state) {
     final order = state.players;
     final nextIndex =
         (order.indexWhere((p) => p.color == state.currentPlayer) + 1) %
             order.length;
-    return AeroplaneGameState(
-      players: state.players,
-      planes: planes ?? state.planes,
-      currentPlayer: order[nextIndex].color,
-      consecutiveSixes: 0,
-      gameOver: state.gameOver,
-      winner: state.winner,
-      savedAt: state.savedAt,
-    );
+    return order[nextIndex].color;
   }
+
+  /// 以给定字段构造迁移后状态（其余字段沿用原状态）
+  static AeroplaneGameState _advance(
+    AeroplaneGameState state, {
+    required Map<AeroplaneColor, List<PlanePosition>> planes,
+    required AeroplaneColor currentPlayer,
+    required int consecutiveSixes,
+    required (AeroplaneColor, int)? lastMoved,
+    bool gameOver = false,
+    AeroplaneColor? winner,
+  }) =>
+      AeroplaneGameState(
+        players: state.players,
+        planes: planes,
+        currentPlayer: currentPlayer,
+        consecutiveSixes: consecutiveSixes,
+        lastMoved: lastMoved,
+        gameOver: gameOver,
+        winner: winner,
+        savedAt: state.savedAt,
+      );
 
   static void _checkDice(int dice) {
     if (dice < 1 || dice > 6) {

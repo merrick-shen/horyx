@@ -29,6 +29,7 @@ void main() {
     int consecutiveSixes = 0,
     bool gameOver = false,
     AeroplaneColor? winner,
+    (AeroplaneColor, int)? lastMoved,
   }) =>
       AeroplaneGameState(
         players: players ?? fourPlayers(),
@@ -37,6 +38,7 @@ void main() {
         consecutiveSixes: consecutiveSixes,
         gameOver: gameOver,
         winner: winner,
+        lastMoved: lastMoved,
         savedAt: savedAt,
       );
 
@@ -181,6 +183,33 @@ void main() {
           gameOver: true,
           winner: AeroplaneColor.red,
         ),
+        throwsArgumentError,
+      );
+    });
+
+    test('最后移动棋子非参与玩家或编号越界抛错', () {
+      final twoPlayers = [
+        const AeroplanePlayer(color: AeroplaneColor.green, name: '玩家1'),
+        const AeroplanePlayer(color: AeroplaneColor.blue, name: '玩家2'),
+      ];
+      final twoPlanes = {
+        AeroplaneColor.green: allInHangar()[AeroplaneColor.green]!,
+        AeroplaneColor.blue: allInHangar()[AeroplaneColor.blue]!,
+      };
+      expect(
+        () => buildState(
+          players: twoPlayers,
+          planes: twoPlanes,
+          lastMoved: (AeroplaneColor.red, 0),
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => buildState(lastMoved: (AeroplaneColor.green, 4)),
+        throwsArgumentError,
+      );
+      expect(
+        () => buildState(lastMoved: (AeroplaneColor.green, -1)),
         throwsArgumentError,
       );
     });
@@ -406,6 +435,31 @@ void main() {
       final badTime = buildState().toJson();
       badTime['savedAt'] = 'not-a-date';
       expect(() => AeroplaneGameState.fromJson(badTime), throwsFormatException);
+    });
+
+    test('lastMoved 往返一致（含空值）', () {
+      final withLast = roundTrip(
+        buildState(lastMoved: (AeroplaneColor.green, 2)),
+      );
+      expect(withLast.lastMoved, (AeroplaneColor.green, 2));
+      expect(roundTrip(buildState()).lastMoved, isNull);
+    });
+
+    test('lastMoved 字段非法抛格式异常', () {
+      final badShape = buildState().toJson();
+      badShape['lastMoved'] = ['green'];
+      expect(() => AeroplaneGameState.fromJson(badShape), throwsFormatException);
+
+      final badColor = buildState().toJson();
+      badColor['lastMoved'] = ['purple', 0];
+      expect(() => AeroplaneGameState.fromJson(badColor), throwsFormatException);
+
+      final outOfRange = buildState().toJson();
+      outOfRange['lastMoved'] = ['green', 9];
+      expect(
+        () => AeroplaneGameState.fromJson(outOfRange),
+        throwsFormatException,
+      );
     });
   });
 

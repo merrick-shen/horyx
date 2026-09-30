@@ -35,6 +35,9 @@ void main() {
     Map<AeroplaneColor, List<PlanePosition>>? planes,
     AeroplaneColor currentPlayer = AeroplaneColor.green,
     int consecutiveSixes = 0,
+    (AeroplaneColor, int)? lastMoved,
+    bool gameOver = false,
+    AeroplaneColor? winner,
   }) {
     final colors = players.map((p) => p.color).toSet();
     return AeroplaneGameState(
@@ -43,8 +46,9 @@ void main() {
           {for (final c in colors) c: allInHangar()},
       currentPlayer: currentPlayer,
       consecutiveSixes: consecutiveSixes,
-      gameOver: false,
-      winner: null,
+      lastMoved: lastMoved,
+      gameOver: gameOver,
+      winner: winner,
       savedAt: savedAt,
     );
   }
@@ -70,7 +74,7 @@ void main() {
       }
     });
 
-    test('起飞迁移：落到起飞格，其余棋子不变，换人并清零连 6', () {
+    test('起飞迁移：落到起飞格，掷 6 奖励再掷且连 6 计数 +1', () {
       final state = buildState(currentPlayer: AeroplaneColor.green);
       final moved = AeroplaneEngine.applyMove(
         state,
@@ -85,8 +89,9 @@ void main() {
         ),
       );
       expect(moved.planesOf(AeroplaneColor.green)[0].zone, PlaneZone.hangar);
-      expect(moved.currentPlayer, AeroplaneColor.red);
-      expect(moved.consecutiveSixes, 0);
+      expect(moved.currentPlayer, AeroplaneColor.green);
+      expect(moved.consecutiveSixes, 1);
+      expect(moved.lastMoved, (AeroplaneColor.green, 2));
       expect(moved.savedAt, savedAt);
     });
   });
@@ -155,7 +160,9 @@ void main() {
         moved.planesOf(AeroplaneColor.blue)[0],
         PlanePosition(zone: PlaneZone.hangar, index: 0),
       );
-      expect(moved.currentPlayer, AeroplaneColor.blue);
+      // 跳跃触发再掷奖励，行动方不变；掷非 6 连 6 计数清零
+      expect(moved.currentPlayer, AeroplaneColor.red);
+      expect(moved.consecutiveSixes, 0);
     });
   });
 
@@ -670,6 +677,428 @@ void main() {
           1,
         ),
         throwsArgumentError,
+      );
+    });
+  });
+
+  group('连 6 与再掷', () {
+    test('掷非 6 无触发迁移：换人且连 6 计数清零', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 0),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+        consecutiveSixes: 1,
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        3,
+      );
+      expect(moved.currentPlayer, AeroplaneColor.red);
+      expect(moved.consecutiveSixes, 0);
+      expect(moved.lastMoved, (AeroplaneColor.green, 0));
+    });
+
+    test('起飞掷 2 不触发再掷', () {
+      final moved = AeroplaneEngine.applyMove(
+        buildState(),
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        2,
+      );
+      expect(moved.currentPlayer, AeroplaneColor.red);
+      expect(moved.consecutiveSixes, 0);
+    });
+
+    test('非 6 撞子奖励再掷', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: allInHangar(),
+          AeroplaneColor.red: [
+            ringAtSteps(AeroplaneColor.red, 0),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: [
+            PlanePosition(zone: PlaneZone.ring, index: 7),
+            ...allInHangar().skip(1),
+          ],
+        },
+        currentPlayer: AeroplaneColor.red,
+        consecutiveSixes: 1,
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
+        3,
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.yellow)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(moved.currentPlayer, AeroplaneColor.red);
+      expect(moved.consecutiveSixes, 0);
+    });
+
+    test('飞越奖励再掷', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 15),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0, fly: true),
+        1,
+      );
+      expect(moved.currentPlayer, AeroplaneColor.green);
+      expect(moved.consecutiveSixes, 0);
+    });
+
+    test('掷 6 撞子跳跃多触发只奖励一次，计数仅 +1', () {
+      // 绿 2 + 6 = 8（绿机行进 8 步落己色格）：落点与跳跃落点上各有一架黄机
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 2),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: [
+            PlanePosition(zone: PlaneZone.ring, index: 51),
+            PlanePosition(zone: PlaneZone.ring, index: 3),
+            ...allInHangar().skip(2),
+          ],
+        },
+      );
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        6,
+      );
+      expect(moved.planesOf(AeroplaneColor.green)[0], ringAtSteps(AeroplaneColor.green, 12));
+      expect(
+        moved.planesOf(AeroplaneColor.yellow)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(
+        moved.planesOf(AeroplaneColor.yellow)[1],
+        PlanePosition(zone: PlaneZone.hangar, index: 1),
+      );
+      expect(moved.currentPlayer, AeroplaneColor.green);
+      expect(moved.consecutiveSixes, 1);
+    });
+
+    test('连续两个 6 计数累计至 2', () {
+      var state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 0),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+      );
+      final move = const AeroplaneMove(color: AeroplaneColor.green, planeId: 0);
+      state = AeroplaneEngine.applyMove(state, move, 6);
+      expect(state.consecutiveSixes, 1);
+      state = AeroplaneEngine.applyMove(state, move, 6);
+      // 第二次掷 6 落己色格顺跳一次
+      expect(state.planesOf(AeroplaneColor.green)[0], ringAtSteps(AeroplaneColor.green, 16));
+      expect(state.currentPlayer, AeroplaneColor.green);
+      expect(state.consecutiveSixes, 2);
+    });
+
+    test('连续第 3 个 6：走法枚举抛错，惩罚后最后移动棋子回停机坪并换人', () {
+      // 承接上例：绿0 行进 16 步（ring 7），已连掷两个 6
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            ringAtSteps(AeroplaneColor.green, 16),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+        consecutiveSixes: 2,
+        lastMoved: (AeroplaneColor.green, 0),
+      );
+      expect(AeroplaneEngine.isThirdSixPenalty(state, 6), isTrue);
+      expect(() => AeroplaneEngine.legalMoves(state, 6), throwsArgumentError);
+      final penalized = AeroplaneEngine.applyThirdSixPenalty(state);
+      expect(
+        penalized.planesOf(AeroplaneColor.green)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(penalized.currentPlayer, AeroplaneColor.red);
+      expect(penalized.consecutiveSixes, 0);
+      expect(AeroplaneEngine.isThirdSixPenalty(penalized, 6), isFalse);
+    });
+
+    test('惩罚豁免：最后移动棋子已抵达终点则不返回，仍换人', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            PlanePosition(zone: PlaneZone.goal, index: 0),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+        consecutiveSixes: 2,
+        lastMoved: (AeroplaneColor.green, 0),
+      );
+      final penalized = AeroplaneEngine.applyThirdSixPenalty(state);
+      expect(
+        penalized.planesOf(AeroplaneColor.green)[0],
+        PlanePosition(zone: PlaneZone.goal, index: 0),
+      );
+      expect(penalized.currentPlayer, AeroplaneColor.red);
+      expect(penalized.consecutiveSixes, 0);
+    });
+
+    test('计数不足时执行惩罚抛错', () {
+      expect(
+        () => AeroplaneEngine.applyThirdSixPenalty(buildState(consecutiveSixes: 1)),
+        throwsArgumentError,
+      );
+      expect(
+        () => AeroplaneEngine.applyThirdSixPenalty(buildState()),
+        throwsArgumentError,
+      );
+    });
+
+    test('无最后移动记录时惩罚仅换人', () {
+      final state = buildState(consecutiveSixes: 2);
+      final penalized = AeroplaneEngine.applyThirdSixPenalty(state);
+      expect(penalized.planes, state.planes);
+      expect(penalized.currentPlayer, AeroplaneColor.red);
+      expect(penalized.consecutiveSixes, 0);
+    });
+  });
+
+  group('终局', () {
+    AeroplaneGameState nearFinish(Map<AeroplaneColor, List<PlanePosition>> planes) =>
+        buildState(planes: planes, currentPlayer: AeroplaneColor.red);
+
+    test('第 4 子恰好抵达即终局', () {
+      final state = nearFinish({
+        AeroplaneColor.green: allInHangar(),
+        AeroplaneColor.red: [
+          PlanePosition(zone: PlaneZone.goal, index: 0),
+          PlanePosition(zone: PlaneZone.goal, index: 0),
+          PlanePosition(zone: PlaneZone.goal, index: 0),
+          runwayAt(4),
+        ],
+        AeroplaneColor.blue: allInHangar(),
+        AeroplaneColor.yellow: allInHangar(),
+      });
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 3),
+        2,
+      );
+      expect(moved.gameOver, isTrue);
+      expect(moved.winner, AeroplaneColor.red);
+      expect(moved.currentPlayer, AeroplaneColor.red);
+      expect(
+        moved.planesOf(AeroplaneColor.red).every((p) => p.zone == PlaneZone.goal),
+        isTrue,
+      );
+    });
+
+    test('未满 4 子抵达不终局，正常换人', () {
+      final state = nearFinish({
+        AeroplaneColor.green: allInHangar(),
+        AeroplaneColor.red: [
+          PlanePosition(zone: PlaneZone.goal, index: 0),
+          PlanePosition(zone: PlaneZone.goal, index: 0),
+          runwayAt(4),
+          allInHangar()[3],
+        ],
+        AeroplaneColor.blue: allInHangar(),
+        AeroplaneColor.yellow: allInHangar(),
+      });
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 2),
+        2,
+      );
+      expect(moved.gameOver, isFalse);
+      expect(moved.winner, isNull);
+      expect(moved.currentPlayer, AeroplaneColor.blue);
+    });
+
+    test('终局后禁走：走法为空且各操作入口抛错', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: allInHangar(),
+          AeroplaneColor.red: [
+            for (var i = 0; i < 4; i++)
+              PlanePosition(zone: PlaneZone.goal, index: 0),
+          ],
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+        currentPlayer: AeroplaneColor.red,
+        consecutiveSixes: 2,
+        gameOver: true,
+        winner: AeroplaneColor.red,
+      );
+      expect(AeroplaneEngine.isThirdSixPenalty(state, 6), isFalse);
+      expect(AeroplaneEngine.legalMoves(state, 6), isEmpty);
+      expect(
+        () => AeroplaneEngine.applyMove(
+          state,
+          const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
+          6,
+        ),
+        throwsArgumentError,
+      );
+      expect(() => AeroplaneEngine.skipTurn(state), throwsArgumentError);
+      expect(
+        () => AeroplaneEngine.applyThirdSixPenalty(state),
+        throwsArgumentError,
+      );
+    });
+  });
+
+  group('完整对局脚本', () {
+    test('多回合序列快照：顺跳再掷、连 6 惩罚、换人轮转', () {
+      var state = buildState(
+        planes: {
+          for (final color in AeroplaneColor.values)
+            color: [
+              ringAtSteps(color, 0),
+              ...allInHangar().skip(1),
+            ],
+        },
+      );
+      AeroplaneGameState step(
+        AeroplaneMove move,
+        int dice,
+      ) {
+        final next = AeroplaneEngine.applyMove(state, move, dice);
+        state = next;
+        return next;
+      }
+
+      // 1. 绿掷 4 落己色格顺跳（再掷）
+      var moved = step(
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        4,
+      );
+      expect(moved.planesOf(AeroplaneColor.green)[0], ringAtSteps(AeroplaneColor.green, 8));
+      expect(moved.currentPlayer, AeroplaneColor.green);
+      expect(moved.consecutiveSixes, 0);
+
+      // 2. 绿掷 6 前进（再掷，计数 1）
+      moved = step(
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        6,
+      );
+      expect(moved.planesOf(AeroplaneColor.green)[0], ringAtSteps(AeroplaneColor.green, 14));
+      expect(moved.currentPlayer, AeroplaneColor.green);
+      expect(moved.consecutiveSixes, 1);
+
+      // 3. 绿再掷 6 落己色格顺跳（计数 2）
+      moved = step(
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        6,
+      );
+      expect(moved.planesOf(AeroplaneColor.green)[0], ringAtSteps(AeroplaneColor.green, 24));
+      expect(moved.currentPlayer, AeroplaneColor.green);
+      expect(moved.consecutiveSixes, 2);
+
+      // 4. 绿掷第 3 个 6：惩罚，绿0 回停机坪 0 号机位并换红
+      expect(AeroplaneEngine.isThirdSixPenalty(state, 6), isTrue);
+      state = AeroplaneEngine.applyThirdSixPenalty(state);
+      expect(
+        state.planesOf(AeroplaneColor.green)[0],
+        PlanePosition(zone: PlaneZone.hangar, index: 0),
+      );
+      expect(state.currentPlayer, AeroplaneColor.red);
+      expect(state.consecutiveSixes, 0);
+
+      // 5. 红掷 3 前进无触发，换蓝
+      moved = step(
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 0),
+        3,
+      );
+      expect(moved.planesOf(AeroplaneColor.red)[0], ringAtSteps(AeroplaneColor.red, 3));
+      expect(moved.currentPlayer, AeroplaneColor.blue);
+
+      // 6. 蓝掷 6 前进（再掷，计数 1）
+      moved = step(
+        const AeroplaneMove(color: AeroplaneColor.blue, planeId: 0),
+        6,
+      );
+      expect(moved.planesOf(AeroplaneColor.blue)[0], ringAtSteps(AeroplaneColor.blue, 6));
+      expect(moved.currentPlayer, AeroplaneColor.blue);
+      expect(moved.consecutiveSixes, 1);
+
+      // 7. 蓝掷 1 前进无触发，换黄
+      moved = step(
+        const AeroplaneMove(color: AeroplaneColor.blue, planeId: 0),
+        1,
+      );
+      expect(moved.planesOf(AeroplaneColor.blue)[0], ringAtSteps(AeroplaneColor.blue, 7));
+      expect(moved.currentPlayer, AeroplaneColor.yellow);
+
+      // 8. 黄掷 2 前进换绿，对局持续
+      moved = step(
+        const AeroplaneMove(color: AeroplaneColor.yellow, planeId: 0),
+        2,
+      );
+      expect(moved.planesOf(AeroplaneColor.yellow)[0], ringAtSteps(AeroplaneColor.yellow, 2));
+      expect(moved.currentPlayer, AeroplaneColor.green);
+      expect(moved.gameOver, isFalse);
+    });
+
+    test('无可动跳过与第 4 子抵达收局', () {
+      var state = buildState(
+        planes: {
+          AeroplaneColor.green: allInHangar(),
+          AeroplaneColor.red: [
+            PlanePosition(zone: PlaneZone.goal, index: 0),
+            PlanePosition(zone: PlaneZone.goal, index: 0),
+            PlanePosition(zone: PlaneZone.goal, index: 0),
+            runwayAt(4),
+          ],
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+        currentPlayer: AeroplaneColor.green,
+      );
+      expect(AeroplaneEngine.legalMoves(state, 1), isEmpty);
+      state = AeroplaneEngine.skipTurn(state);
+      expect(state.currentPlayer, AeroplaneColor.red);
+      state = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.red, planeId: 3),
+        2,
+      );
+      expect(state.gameOver, isTrue);
+      expect(state.winner, AeroplaneColor.red);
+      expect(
+        state.planesOf(AeroplaneColor.red).every((p) => p.zone == PlaneZone.goal),
+        isTrue,
       );
     });
   });

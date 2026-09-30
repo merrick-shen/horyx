@@ -105,6 +105,7 @@ class AeroplaneGameState implements GameArchiveSummary {
     required this.consecutiveSixes,
     required this.gameOver,
     required this.winner,
+    this.lastMoved,
     required this.savedAt,
   })  : players = List<AeroplanePlayer>.unmodifiable(players),
         planes = Map<AeroplaneColor, List<PlanePosition>>.unmodifiable({
@@ -137,6 +138,15 @@ class AeroplaneGameState implements GameArchiveSummary {
     if (winner != null && !colors.contains(winner)) {
       throw ArgumentError('获胜方必须是参与玩家');
     }
+    final moved = lastMoved;
+    if (moved != null) {
+      if (!colors.contains(moved.$1)) {
+        throw ArgumentError('最后移动棋子必须是参与玩家');
+      }
+      if (moved.$2 < 0 || moved.$2 > 3) {
+        throw ArgumentError('最后移动棋子编号越界: ${moved.$2}');
+      }
+    }
   }
 
   /// 参与玩家（2..4 人，列表顺序 = 回合轮转顺序）
@@ -156,6 +166,9 @@ class AeroplaneGameState implements GameArchiveSummary {
 
   /// 获胜方（gameOver 为 true 时非空）
   final AeroplaneColor? winner;
+
+  /// 最近一步移动的棋子（颜色, 编号），三 6 惩罚的目标；尚无移动记录时为 null
+  final (AeroplaneColor, int)? lastMoved;
 
   /// 存档时间
   @override
@@ -204,6 +217,10 @@ class AeroplaneGameState implements GameArchiveSummary {
         'consecutiveSixes': consecutiveSixes,
         'gameOver': gameOver,
         'winner': winner?.name,
+        'lastMoved': switch (lastMoved) {
+          null => null,
+          (var color, var planeId) => [color.name, planeId],
+        },
         'savedAt': savedAt.toIso8601String(),
       };
 
@@ -275,6 +292,20 @@ class AeroplaneGameState implements GameArchiveSummary {
       }
       winner = AeroplaneColor.parse(rawWinner);
     }
+    final rawLastMoved = json['lastMoved'];
+    (AeroplaneColor, int)? lastMoved;
+    if (rawLastMoved != null) {
+      if (rawLastMoved is! List ||
+          rawLastMoved.length != 2 ||
+          rawLastMoved[0] is! String ||
+          rawLastMoved[1] is! int) {
+        throw const FormatException('存档 lastMoved 字段无效');
+      }
+      lastMoved = (
+        AeroplaneColor.parse(rawLastMoved[0] as String),
+        rawLastMoved[1] as int,
+      );
+    }
     final rawSavedAt = json['savedAt'];
     if (rawSavedAt is! String) {
       throw const FormatException('存档 savedAt 字段无效');
@@ -287,6 +318,7 @@ class AeroplaneGameState implements GameArchiveSummary {
         consecutiveSixes: sixes,
         gameOver: gameOver,
         winner: winner,
+        lastMoved: lastMoved,
         savedAt: DateTime.parse(rawSavedAt),
       );
     } on ArgumentError {
