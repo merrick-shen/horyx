@@ -92,44 +92,57 @@ class _ChessBoardCanvasState extends State<ChessBoardCanvas>
   Widget build(BuildContext context) {
     final palette = context.palette;
 
+    // 棋盘卡片：圆角与描边对齐五子棋棋盘卡片（Radii.card + 主题描边色）
     return Center(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final geometry = ChessBoardGeometry.forSize(
-            constraints.biggest,
-            flipped: widget.flipped,
-          );
-          return GestureDetector(
-            onTapUp: (details) {
-              // 点击吸附到最近线路交点，棋盘外框以外不响应
-              final pos = geometry.offsetToPos(details.localPosition);
-              if (pos != null) widget.onCellTap(pos);
-            },
-            // AnimatedBuilder 只驱动棋盘重绘：动画逐帧以当前进度重建
-            // painter（easeOut 缓出直接按值取曲线；几何在闭包内随布局
-            // 实时换算，画布尺寸变化中途动画也按最新尺寸正确呈现）
-            child: AnimatedBuilder(
-              animation: _moveAnim,
-              builder: (context, _) => CustomPaint(
-                size: geometry.boardSize,
-                painter: ChessBoardPainter(
-                  board: widget.board,
-                  geometry: geometry,
-                  surfaceColor: palette.surfaceBg,
-                  strokeColor: palette.stroke,
-                  textSecondaryColor: palette.textSecondary,
-                  primaryColor: palette.primary,
-                  selected: widget.selected,
-                  legalTargets: widget.legalTargets,
-                  pendingMove: widget.pendingMove,
-                  lastMove: widget.lastMove,
-                  capturedPiece: widget.capturedPiece,
-                  animProgress: Curves.easeOut.transform(_moveAnim.value),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: palette.surfaceBg,
+          borderRadius: BorderRadius.circular(Radii.card),
+          border: Border.all(color: palette.stroke),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(Radii.control),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final geometry = ChessBoardGeometry.forSize(
+                constraints.biggest,
+                flipped: widget.flipped,
+              );
+              return GestureDetector(
+                onTapUp: (details) {
+                  // 点击吸附到最近线路交点，棋盘外框以外不响应
+                  final pos = geometry.offsetToPos(details.localPosition);
+                  if (pos != null) widget.onCellTap(pos);
+                },
+                // AnimatedBuilder 只驱动棋盘重绘：动画逐帧以当前进度重建
+                // painter（easeOut 缓出直接按值取曲线；几何在闭包内随布局
+                // 实时换算，画布尺寸变化中途动画也按最新尺寸正确呈现）
+                child: AnimatedBuilder(
+                  animation: _moveAnim,
+                  builder: (context, _) => CustomPaint(
+                    size: geometry.boardSize,
+                    painter: ChessBoardPainter(
+                      board: widget.board,
+                      geometry: geometry,
+                      surfaceColor: palette.surfaceBg,
+                      strokeColor: palette.stroke,
+                      textSecondaryColor: palette.textSecondary,
+                      primaryColor: palette.primary,
+                      selected: widget.selected,
+                      legalTargets: widget.legalTargets,
+                      pendingMove: widget.pendingMove,
+                      lastMove: widget.lastMove,
+                      capturedPiece: widget.capturedPiece,
+                      animProgress:
+                          Curves.easeOut.transform(_moveAnim.value),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }

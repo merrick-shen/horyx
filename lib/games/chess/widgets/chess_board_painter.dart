@@ -77,20 +77,13 @@ class ChessBoardPainter extends CustomPainter {
     _paintMovingPiece(canvas);
   }
 
-  /// 底板：圆角面板 + 描边外框
+  /// 底板：圆角面板（描边由外层棋盘卡片负责）
   void _paintBase(Canvas canvas, Size size) {
     final rrect = RRect.fromRectAndRadius(
       Offset.zero & size,
       Radius.circular(geometry.cell * 0.18),
     );
     canvas.drawRRect(rrect, Paint()..color = surfaceColor);
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = geometry.cell * 0.045
-        ..color = strokeColor,
-    );
   }
 
   /// 线路：10 条横线全宽；9 条竖线中，中间 7 条被河界断开为上下两段
