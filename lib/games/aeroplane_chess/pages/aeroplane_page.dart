@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
+import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_board_view.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/shared/profile/profile_controller.dart';
@@ -216,7 +217,7 @@ class _AeroplanePageState
     );
   }
 
-  /// 对局视图占位：棋盘渲染与掷骰走子交互自后续阶段接入
+  /// 对局视图：静态棋盘层（掷骰走子交互自后续阶段接入）
   Widget _buildGameView() {
     if (_state == null) {
       // 不变式：_started 为 true 时必有对局状态，此分支不可达（纯防御）。
@@ -225,6 +226,6 @@ class _AeroplanePageState
       assert(false, '_started 为 true 时 _state 不应为 null');
       return const SizedBox.shrink();
     }
-    return SizedBox.expand(key: const ValueKey('board'));
+    return AeroplaneBoardView(key: const ValueKey('board'));
   }
 }

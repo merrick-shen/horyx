@@ -112,15 +112,15 @@ void main() {
   });
 
   group('坐标换算', () {
-    test('四个跑道入口位于四边中点', () {
-      expect(AeroplaneBoard.ringCellCenter(0), const Point(7, 0));
-      expect(AeroplaneBoard.ringCellCenter(13), const Point(14, 7));
-      expect(AeroplaneBoard.ringCellCenter(26), const Point(7, 14));
-      expect(AeroplaneBoard.ringCellCenter(39), const Point(0, 7));
+    test('四个跑道入口位于四边中央', () {
+      expect(AeroplaneBoard.ringCellCenter(0), const Point(0, -3.75));
+      expect(AeroplaneBoard.ringCellCenter(13), const Point(3.75, 0));
+      expect(AeroplaneBoard.ringCellCenter(26), const Point(0, 3.75));
+      expect(AeroplaneBoard.ringCellCenter(39), const Point(-3.75, 0));
     });
 
     test('索引 +13 等于绕中心顺时针旋转 90°', () {
-      Point<double> rotate(Point<double> p) => Point(14 - p.y, p.x);
+      Point<double> rotate(Point<double> p) => Point(-p.y, p.x);
       for (var i = 0; i < AeroplaneBoard.ringSize - 13; i++) {
         expect(
           AeroplaneBoard.ringCellCenter(i + 13),
@@ -129,69 +129,79 @@ void main() {
       }
     });
 
-    test('外环相邻格中心互相衔接（距离在 0 与 1.5 格之间）', () {
+    test('对角分割格的两枚三角中心重合', () {
+      for (var q = 0; q < 4; q++) {
+        expect(
+          AeroplaneBoard.ringCellCenter(q * 13 + 6),
+          AeroplaneBoard.ringCellCenter(q * 13 + 7),
+        );
+      }
+    });
+
+    test('外环相邻格中心衔接（距离不超过 1.5 格）', () {
       for (var i = 0; i < AeroplaneBoard.ringSize; i++) {
         final a = AeroplaneBoard.ringCellCenter(i);
         final b = AeroplaneBoard.ringCellCenter((i + 1) % AeroplaneBoard.ringSize);
-        expect(a.distanceTo(b), greaterThan(0));
         expect(a.distanceTo(b), lessThanOrEqualTo(1.5));
       }
     });
 
-    test('入口与跑道 0 号格、跑道末格与终点均相邻', () {
+    test('入口与跑道 0 号格、跑道格间、跑道末格与终点的距离', () {
       for (final color in colors) {
         final entry = AeroplaneBoard.ringCellCenter(
           AeroplaneBoard.runwayEntryIndex[color]!,
         );
         expect(
           entry.distanceTo(AeroplaneBoard.runwayCellCenter(color, 0)),
-          1,
+          0.75,
         );
         for (var i = 0; i < AeroplaneBoard.runwaySize - 1; i++) {
           expect(
             AeroplaneBoard.runwayCellCenter(color, i).distanceTo(
               AeroplaneBoard.runwayCellCenter(color, i + 1),
             ),
-            1,
+            0.5,
           );
         }
         expect(
           AeroplaneBoard
               .runwayCellCenter(color, AeroplaneBoard.runwaySize - 1)
               .distanceTo(AeroplaneBoard.goalCenter),
-          1,
+          0.5,
         );
       }
     });
 
     test('跑道与机位坐标抽样', () {
       expect(AeroplaneBoard.runwayCellCenter(AeroplaneColor.red, 0),
-          const Point(7, 1));
+          const Point(0, -3.0));
       expect(AeroplaneBoard.runwayCellCenter(AeroplaneColor.green, 5),
-          const Point(6, 7));
-      expect(AeroplaneBoard.hangarSlotCenter(AeroplaneColor.green, 0),
-          const Point(2, 2));
-      expect(AeroplaneBoard.hangarSlotCenter(AeroplaneColor.blue, 3),
-          const Point(14, 14));
-      expect(AeroplaneBoard.goalCenter, const Point(7, 7));
+          const Point(-0.5, 0));
+      final greenSlot0 = AeroplaneBoard.hangarSlotCenter(AeroplaneColor.green, 0);
+      expect(greenSlot0.x, closeTo(-3.7, 1e-9));
+      expect(greenSlot0.y, closeTo(-3.7, 1e-9));
+      final blueSlot3 = AeroplaneBoard.hangarSlotCenter(AeroplaneColor.blue, 3);
+      expect(blueSlot3.x, closeTo(2.85, 1e-9));
+      expect(blueSlot3.y, closeTo(2.85, 1e-9));
+      expect(AeroplaneBoard.goalCenter, const Point(0, 0));
     });
 
-    test('全部坐标落在 0..14 画布范围内', () {
+    test('全部坐标落在画布范围内', () {
       for (var i = 0; i < AeroplaneBoard.ringSize; i++) {
         final p = AeroplaneBoard.ringCellCenter(i);
-        expect(p.x, inInclusiveRange(0, 14));
-        expect(p.y, inInclusiveRange(0, 14));
+        expect(p.x, inInclusiveRange(-4.25, 4.25));
+        expect(p.y, inInclusiveRange(-4.25, 4.25));
       }
       for (final color in colors) {
         for (var i = 0; i < AeroplaneBoard.runwaySize; i++) {
           final p = AeroplaneBoard.runwayCellCenter(color, i);
-          expect(p.x, inInclusiveRange(0, 14));
-          expect(p.y, inInclusiveRange(0, 14));
+          expect(p.x, inInclusiveRange(-4.25, 4.25));
+          expect(p.y, inInclusiveRange(-4.25, 4.25));
         }
         for (var s = 0; s < AeroplaneBoard.hangarSlots; s++) {
           final p = AeroplaneBoard.hangarSlotCenter(color, s);
-          expect(p.x, inInclusiveRange(0, 14));
-          expect(p.y, inInclusiveRange(0, 14));
+          expect(p.x, inInclusiveRange(-4.25, 4.25));
+          expect(p.y, inInclusiveRange(-4.25, 4.25));
         }
       }
     });

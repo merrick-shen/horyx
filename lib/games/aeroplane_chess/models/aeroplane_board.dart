@@ -29,8 +29,11 @@ class FlightRoute {
 /// 外环 52 格，索引按行进方向（顺时针）递增；颜色序列为
 /// 红/蓝/黄/绿 四色循环（index % 4），同色格间隔恒 4。
 /// 各色自起飞格沿外环行进 48 格到达己方跑道入口，再经 6 格跑道奔向中心终点。
-/// 坐标以「格」为单位（y 轴向下），供棋盘渲染按比例缩放；
-/// 外环坐标由第一象限 14 点表绕中心 90° 旋转生成（旋转同时完成颜色轮转）。
+/// 坐标为以棋盘中心为原点、大格为单位的理想化模型（y 轴向下），
+/// 供棋盘渲染按比例缩放：外环为八角环——四条正交边中心线半径 3.75，
+/// 方格是长边垂直于行进方向的半格长条，转角由转角大三角与对角分割格
+/// 衔接；外环坐标由第一象限 13 点表绕中心 90° 旋转生成（旋转同时完成
+/// 颜色轮转）。
 abstract final class AeroplaneBoard {
   /// 外环格数
   static const int ringSize = 52;
@@ -42,7 +45,11 @@ abstract final class AeroplaneBoard {
   static const int hangarSlots = 4;
 
   /// 画布中心（终点）坐标
-  static const Point<double> goalCenter = Point(7, 7);
+  static const Point<double> goalCenter = Point(0, 0);
+
+  /// 画布半宽（格）：外环格外缘与停机坪块外缘平齐于 ±4.25，
+  /// 即画布边缘（棋盘内容铺满画布，无额外留白）
+  static const double canvasExtent = 4.25;
 
   /// 外环格颜色（行进序索引 mod 4：0 红 / 1 蓝 / 2 黄 / 3 绿）
   static AeroplaneColor ringColor(int index) {
@@ -108,68 +115,68 @@ abstract final class AeroplaneBoard {
   // 环格索引 ↔ 画布坐标
   // ---------------------------------------------------------------------------
 
-  /// 第一象限 14 点表（行进序 0..13，含红方入口 W 至蓝方入口 R）；
-  /// 其中 6/7 为对角分割格的两枚三角格中心
-  static const List<Point<double>> _quadrantA = [
-    Point(7, 0), // 0 红入口 W
-    Point(8, 0),
-    Point(9, 0),
-    Point(10, 0), // 3 N
-    Point(10, 1),
-    Point(10, 2), // 5 P
-    Point(10.5, 3), // 6 分割格三角 1
-    Point(11, 3.5), // 7 分割格三角 2
-    Point(12, 3.5),
-    Point(13, 3.5),
-    Point(14, 4), // 10 Q
-    Point(14, 5),
-    Point(14, 6),
-    Point(14, 7), // 13 蓝入口 R
+  /// 第一象限（右上）行进序 0..12 中心点表：0 为红方入口（顶行中央），
+  /// 6/7 为同一对角分割格的两枚三角中心；其余象限绕中心顺时针旋转生成
+  static const List<Point<double>> _quadrant = [
+    Point(0, -3.75), // 0 入口
+    Point(0.5, -3.75),
+    Point(1.0, -3.75),
+    Point(1.75, -3.75), // 3 转角三角
+    Point(1.75, -3.0),
+    Point(1.75, -2.5),
+    Point(1.75, -1.75), // 6 分割格
+    Point(1.75, -1.75), // 7 分割格（同格另一三角）
+    Point(2.5, -1.75),
+    Point(3.0, -1.75),
+    Point(3.75, -1.75), // 10 转角三角
+    Point(3.75, -1.0),
+    Point(3.75, -0.5),
   ];
 
-  /// 绕中心 (7,7) 顺时针旋转 90°
-  static Point<double> _rotate(Point<double> p) =>
-      Point(14 - p.y, p.x);
+  /// 绕中心顺时针旋转 90°（y 轴向下）
+  static Point<double> _rotate(Point<double> p) => Point(-p.y, p.x);
 
   /// 外环格中心坐标（格单位）
   static Point<double> ringCellCenter(int index) {
     if (index < 0 || index >= ringSize) {
       throw ArgumentError('外环索引越界: $index');
     }
-    var p = _quadrantA[index % 13];
+    var p = _quadrant[index % 13];
     for (var i = 0; i < index ~/ 13; i++) {
       p = _rotate(p);
     }
     return p;
   }
 
-  /// 跑道格中心坐标（0 号格为外端入口格，向中心递增）
+  /// 跑道格中心坐标（0 号格为外端入口格，向中心以半格步长递增）
   static Point<double> runwayCellCenter(AeroplaneColor color, int index) {
     if (index < 0 || index >= runwaySize) {
       throw ArgumentError('跑道索引越界: $index');
     }
+    final d = 3.0 - 0.5 * index;
     return switch (color) {
-      AeroplaneColor.red => Point(7, 1 + index.toDouble()),
-      AeroplaneColor.blue => Point(13 - index.toDouble(), 7),
-      AeroplaneColor.yellow => Point(7, 13 - index.toDouble()),
-      AeroplaneColor.green => Point(1 + index.toDouble(), 7),
+      AeroplaneColor.red => Point(0, -d),
+      AeroplaneColor.blue => Point(d, 0),
+      AeroplaneColor.yellow => Point(0, d),
+      AeroplaneColor.green => Point(-d, 0),
     };
   }
 
-  /// 停机坪机位中心坐标
+  /// 停机坪机位中心坐标（2×2 布局，slot 0 靠外角，间距 0.85 格；
+  /// base ±3.7 使机位外缘 3.7+0.55 与外环格外缘 ±4.25 平齐）
   static Point<double> hangarSlotCenter(AeroplaneColor color, int slot) {
     if (slot < 0 || slot >= hangarSlots) {
       throw ArgumentError('机位索引越界: $slot');
     }
     final base = switch (color) {
-      AeroplaneColor.green => [2, 2],
-      AeroplaneColor.red => [12, 2],
-      AeroplaneColor.blue => [12, 12],
-      AeroplaneColor.yellow => [2, 12],
+      AeroplaneColor.green => [-3.7, -3.7, 1.0, 1.0],
+      AeroplaneColor.red => [3.7, -3.7, -1.0, 1.0],
+      AeroplaneColor.blue => [3.7, 3.7, -1.0, -1.0],
+      AeroplaneColor.yellow => [-3.7, 3.7, 1.0, -1.0],
     };
     return Point(
-      (base[0] + (slot % 2) * 2).toDouble(),
-      (base[1] + (slot ~/ 2) * 2).toDouble(),
+      base[0] + (slot % 2) * 0.85 * base[2],
+      base[1] + (slot ~/ 2) * 0.85 * base[3],
     );
   }
 }
