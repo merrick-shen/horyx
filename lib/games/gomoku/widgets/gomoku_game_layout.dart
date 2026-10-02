@@ -59,8 +59,6 @@ class GomokuGameLayout extends StatelessWidget {
 
     return SizedBox.expand(
       child: PageContent(
-        // 对局页收窄页边距：棋盘卡片自带边框，把宽度尽量让给棋盘
-        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
