@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
+import 'package:horyx/games/aeroplane_chess/pages/aeroplane_page.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
 
 void main() {
@@ -41,8 +42,8 @@ void main() {
       );
 
   group('AeroplaneStorage 多存档 API', () {
-    test('gameId 为飞行棋（阶段 7 登记页面后与 gameName 同源校验）', () {
-      expect(AeroplaneStorage.instance.gameId, '飞行棋');
+    test('gameId 与注册表登记名一致', () {
+      expect(AeroplaneStorage.instance.gameId, AeroplanePage.gameName);
     });
 
     test('saveArchive 新建后 loadLatest/loadById 可完整还原', () async {

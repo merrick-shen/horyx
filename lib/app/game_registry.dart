@@ -1,4 +1,6 @@
 import 'package:horyx/shared/game/game_info.dart';
+import 'package:horyx/games/aeroplane_chess/pages/aeroplane_page.dart';
+import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
 import 'package:horyx/games/chess/pages/chess_online_page.dart';
 import 'package:horyx/games/chess/pages/chess_page.dart';
 import 'package:horyx/games/chess/services/chess_storage.dart';
@@ -76,6 +78,18 @@ abstract final class GameRegistry {
     archive: GameArchiveInfo(remove: ChessStorage.instance.remove),
   );
 
+  /// 飞行棋
+  /// 本地 2～4 人同屏轮流 + 局域网联机（联机对局页自后续阶段接入，
+  /// 当前满员后等待页停留「即将开始」）
+  static final GameInfo aeroplaneChess = GameInfo(
+    name: AeroplanePage.gameName,
+    description: '掷骰起飞，率先送四架飞机抵达终点',
+    icon: AeroplanePage.gameIcon,
+    pageBuilder: (context, {resumeArchiveId}) =>
+        AeroplanePage(resumeArchiveId: resumeArchiveId),
+    archive: GameArchiveInfo(remove: AeroplaneStorage.instance.remove),
+  );
+
   /// 计分器（纯本地工具，无联机对局页）
   static final GameInfo scoreboard = GameInfo(
     name: ScoreboardPage.gameName,
@@ -92,6 +106,7 @@ abstract final class GameRegistry {
     gomoku,
     tank,
     chess,
+    aeroplaneChess,
     scoreboard,
   ];
 
