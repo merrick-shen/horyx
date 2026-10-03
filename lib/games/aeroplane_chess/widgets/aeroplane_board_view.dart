@@ -22,7 +22,10 @@ class AeroplaneBoardView extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     return PageContent(
-      child: Center(
+      // 棋盘贴区域顶部而非垂直居中：对局页棋盘区与骰子区等分剩余
+      // 空间，居中会在棋盘上方留出大片空白、把骰子压向页面底部
+      child: Align(
+        alignment: Alignment.topCenter,
         child: AspectRatio(
           aspectRatio: 1,
           child: Container(

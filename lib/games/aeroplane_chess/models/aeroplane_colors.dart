@@ -15,6 +15,10 @@ abstract final class AeroplaneColors {
   /// 外环格 / 跑道格上的白色圆点与停机坪机位底色
   static const Color cellDot = Color(0xFFF7F4EA);
 
+  /// 骰面点色：骰身与棋盘同为白底，点色为固有深色不随主题
+  /// （白骰身上深浅主题均清晰）
+  static const Color dicePip = Color(0xFF1B2136);
+
   static Color of(AeroplaneColor color) => switch (color) {
         AeroplaneColor.green => green,
         AeroplaneColor.red => red,
