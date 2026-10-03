@@ -28,9 +28,10 @@ enum AeroplaneColor {
 /// 棋子所在区域
 enum PlaneZone {
   hangar, // 停机坪机位
+  ready, // 准备区（起飞后的待飞位，尚未踏上跑道）
   ring, // 外环
   runway, // 己方终点跑道
-  goal; // 中心终点
+  goal; // 终点（己方跑道末格）
 
   /// 从持久化编码（枚举 name）还原；非法编码抛 [FormatException]
   static PlaneZone parse(String code) {
@@ -44,6 +45,7 @@ enum PlaneZone {
 /// 棋子位置 = 区域 + 线性索引（不可变值对象）
 /// 索引含义按区域区分：
 /// - [PlaneZone.hangar]：机位序号 0..3
+/// - [PlaneZone.ready]：恒为 0（每方一个准备位）
 /// - [PlaneZone.ring]：外环线性索引，上界由棋盘拓扑表约束，模型层只校验非负
 /// - [PlaneZone.runway]：己方跑道格序号 0..4（末格即各方终点格，归 goal 表达）
 /// - [PlaneZone.goal]：恒为 0（棋子立于己方跑道末格）
@@ -53,6 +55,7 @@ class PlanePosition {
   factory PlanePosition({required PlaneZone zone, required int index}) {
     final valid = switch (zone) {
       PlaneZone.hangar => index >= 0 && index <= 3,
+      PlaneZone.ready => index == 0,
       PlaneZone.ring => index >= 0,
       PlaneZone.runway => index >= 0 && index <= 4,
       PlaneZone.goal => index == 0,

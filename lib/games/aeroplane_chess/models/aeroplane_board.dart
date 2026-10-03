@@ -51,6 +51,24 @@ abstract final class AeroplaneBoard {
   static Point<double> goalCellCenter(AeroplaneColor color) =>
       runwayCellCenter(color, runwaySize - 1);
 
+  /// 各方准备区（待飞位）中心坐标：基地旁转角大三角所在方格的空白
+  /// 半格（实心三角内心的对侧，参考图 ready 标记处），圆环不压路径格。
+  /// 红方位于顶行右端转角方格，四色按象限旋转对称（红 0 / 蓝 1 /
+  /// 黄 2 / 绿 3）
+  static Point<double> readyCellCenter(AeroplaneColor color) {
+    var p = const Point(1.96, -3.96);
+    final times = switch (color) {
+      AeroplaneColor.red => 0,
+      AeroplaneColor.blue => 1,
+      AeroplaneColor.yellow => 2,
+      AeroplaneColor.green => 3,
+    };
+    for (var i = 0; i < times; i++) {
+      p = _rotate(p);
+    }
+    return p;
+  }
+
   /// 画布半宽（格）：外环格外缘与停机坪块外缘平齐于 ±4.25，
   /// 即画布边缘（棋盘内容铺满画布，无额外留白）
   static const double canvasExtent = 4.25;

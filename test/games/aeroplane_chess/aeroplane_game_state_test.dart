@@ -91,6 +91,15 @@ void main() {
       );
     });
 
+    test('准备区索引恒为 0 且编码可解析', () {
+      expect(PlanePosition(zone: PlaneZone.ready, index: 0).index, 0);
+      expect(
+        () => PlanePosition(zone: PlaneZone.ready, index: 1),
+        throwsArgumentError,
+      );
+      expect(PlaneZone.parse('ready'), PlaneZone.ready);
+    });
+
     test('终点索引恒为 0', () {
       expect(PlanePosition(zone: PlaneZone.goal, index: 0).index, 0);
       expect(

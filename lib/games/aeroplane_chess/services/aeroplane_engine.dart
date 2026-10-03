@@ -70,6 +70,8 @@ class _MoveChain {
 /// 本地与联机共用同源判定。棋子行程以「自起飞格起的累计步数」统一表达：
 /// 0 = 起飞格，entrySteps = 跑道入口格，之后依次为 6 格跑道，totalSteps = 终点；
 /// 到达己方入口后必转入跑道，不继续绕环。
+/// 起飞流程：停机坪掷出 2/4/6 先落到基地旁的准备区（不踏上跑道、不参与
+/// 环道撞子），下次掷骰任意点数即可从准备区出发，起飞格为第 1 步。
 /// 单次迁移内收敛全部连锁效果，全程至多一次飞越 + 一次跳跃：
 /// - 超出终点的步数从跑道尽头回退；
 /// - 落在己色外环格顺跳至下一同色格（起飞格与入口格除外，自动触发）；
@@ -145,8 +147,12 @@ abstract final class AeroplaneEngine {
     final planes = <AeroplaneColor, List<PlanePosition>>{
       for (final entry in state.planes.entries) entry.key: [...entry.value],
     };
-    planes[move.color]![move.planeId] =
-        positionAtSteps(move.color, chain.finalSteps);
+    // 起飞走法落准备区（待飞位），不踏上跑道；其余按连锁迁移落位
+    final wasTakeoff =
+        state.planesOf(move.color)[move.planeId].zone == PlaneZone.hangar;
+    planes[move.color]![move.planeId] = wasTakeoff
+        ? PlanePosition(zone: PlaneZone.ready, index: 0)
+        : positionAtSteps(move.color, chain.finalSteps);
     _sendCapturedToHangar(planes, chain.captured);
     final lastMoved = (move.color, move.planeId);
     if (planes[move.color]!.every((p) => p.zone == PlaneZone.goal)) {
@@ -218,7 +224,8 @@ abstract final class AeroplaneEngine {
     );
   }
 
-  /// 棋子当前累计步数（仅接受外环/跑道位置；终点棋子不可动，不参与计算）
+  /// 棋子当前累计步数（仅接受外环/跑道位置；停机坪与准备区棋子无步数，
+  /// 终点棋子不可动，不参与计算）
   static int journeySteps(AeroplaneColor color, PlanePosition pos) {
     switch (pos.zone) {
       case PlaneZone.ring:
@@ -233,6 +240,8 @@ abstract final class AeroplaneEngine {
         return entrySteps(color) + 1 + pos.index;
       case PlaneZone.hangar:
         throw ArgumentError('停机坪棋子无行进步数');
+      case PlaneZone.ready:
+        throw ArgumentError('准备区棋子无行进步数');
       case PlaneZone.goal:
         return totalSteps(color);
     }
@@ -267,12 +276,14 @@ abstract final class AeroplaneEngine {
     if (zone == PlaneZone.hangar) {
       return takeoffDice.contains(dice);
     }
+    // 准备区棋子任意点数即可踏上跑道（起飞格为第 1 步）；
     // 超出终点从跑道尽头回退，外环/跑道棋子恒可动；终点棋子不可再动
-    return zone != PlaneZone.goal;
+    return zone == PlaneZone.ready || zone != PlaneZone.goal;
   }
 
   /// 解析单次迁移的完整连锁：落点（含回退/跳跃/飞越）、沿途撞子、
-  /// 是否存在飞越选择点；[fly] 决定选择点上是否执行飞越
+  /// 是否存在飞越选择点；[fly] 决定选择点上是否执行飞越。
+  /// 起飞（停机坪 → 准备区）无环道连锁；准备区出发以起飞格为第 1 步
   static _MoveChain _resolve(
     AeroplaneGameState state,
     AeroplaneColor color,
@@ -281,8 +292,17 @@ abstract final class AeroplaneEngine {
     bool fly,
   ) {
     final from = state.planesOf(color)[planeId];
-    var steps = from.zone == PlaneZone.hangar
-        ? 0
+    if (from.zone == PlaneZone.hangar) {
+      return const _MoveChain(
+        finalSteps: 0,
+        captured: [],
+        hasFlightChoice: false,
+        jumped: false,
+        flew: false,
+      );
+    }
+    var steps = from.zone == PlaneZone.ready
+        ? dice - 1
         : journeySteps(color, from) + dice;
     if (steps > totalSteps(color)) {
       steps = 2 * totalSteps(color) - steps;

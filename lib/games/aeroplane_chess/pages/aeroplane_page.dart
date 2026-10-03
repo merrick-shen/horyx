@@ -341,7 +341,12 @@ class _AeroplanePageState
     final finalSteps = newPos.zone == PlaneZone.goal
         ? total
         : AeroplaneEngine.journeySteps(color, newPos);
-    final s0 = AeroplaneEngine.journeySteps(color, old);
+    // 准备区出发：起飞格为第 1 步，行进段自 journey 1 起
+    final s0 = old.zone == PlaneZone.ready
+        ? 0
+        : AeroplaneEngine.journeySteps(color, old);
+    // 准备区掷 N 落 journey N-1（比常规少 1 步：起飞格占第 1 步）
+    final effectiveDice = old.zone == PlaneZone.ready ? dice - 1 : dice;
 
     if (move.fly) {
       final route = AeroplaneBoard.flightRoutes[color]!;
@@ -374,7 +379,7 @@ class _AeroplanePageState
       return points;
     }
 
-    final raw = s0 + dice;
+    final raw = s0 + effectiveDice;
     final forwardEnd = min(raw, total);
     for (var s = s0 + 1; s <= forwardEnd; s++) {
       points.add(_stepsCoord(color, s));
@@ -412,6 +417,7 @@ class _AeroplanePageState
     final pos = state.planesOf(color)[planeId];
     return switch (pos.zone) {
       PlaneZone.hangar => AeroplaneBoard.hangarSlotCenter(color, pos.index),
+      PlaneZone.ready => AeroplaneBoard.readyCellCenter(color),
       PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
       PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
       PlaneZone.goal => AeroplaneBoard.goalCellCenter(color),

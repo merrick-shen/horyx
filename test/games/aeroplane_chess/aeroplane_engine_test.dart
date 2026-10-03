@@ -74,7 +74,7 @@ void main() {
       }
     });
 
-    test('起飞迁移：落到起飞格，掷 6 奖励再掷且连 6 计数 +1', () {
+    test('起飞迁移：落到准备区，掷 6 奖励再掷且连 6 计数 +1', () {
       final state = buildState(currentPlayer: AeroplaneColor.green);
       final moved = AeroplaneEngine.applyMove(
         state,
@@ -83,16 +83,36 @@ void main() {
       );
       expect(
         moved.planesOf(AeroplaneColor.green)[2],
-        PlanePosition(
-          zone: PlaneZone.ring,
-          index: AeroplaneBoard.takeoffIndex[AeroplaneColor.green]!,
-        ),
+        PlanePosition(zone: PlaneZone.ready, index: 0),
       );
       expect(moved.planesOf(AeroplaneColor.green)[0].zone, PlaneZone.hangar);
       expect(moved.currentPlayer, AeroplaneColor.green);
       expect(moved.consecutiveSixes, 1);
       expect(moved.lastMoved, (AeroplaneColor.green, 2));
       expect(moved.savedAt, savedAt);
+    });
+
+    test('准备区棋子任意点数可动，掷 N 落 journey N-1（起飞格为第 1 步）', () {
+      final state = buildState(
+        planes: {
+          AeroplaneColor.green: [
+            PlanePosition(zone: PlaneZone.ready, index: 0),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.red: allInHangar(),
+          AeroplaneColor.blue: allInHangar(),
+          AeroplaneColor.yellow: allInHangar(),
+        },
+        currentPlayer: AeroplaneColor.green,
+      );
+      // 掷 1 也可动（落在起飞格）
+      expect(AeroplaneEngine.legalMoves(state, 1), isNotEmpty);
+      final moved = AeroplaneEngine.applyMove(
+        state,
+        const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
+        3,
+      );
+      expect(moved.planesOf(AeroplaneColor.green)[0], ringAtSteps(AeroplaneColor.green, 2));
     });
   });
 
@@ -458,10 +478,13 @@ void main() {
       );
     });
 
-    test('起飞撞回起飞格上的敌机', () {
+    test('准备区出发撞回起飞格上的敌机（起飞格为第 1 步）', () {
       final state = buildState(
         planes: {
-          AeroplaneColor.green: allInHangar(),
+          AeroplaneColor.green: [
+            PlanePosition(zone: PlaneZone.ready, index: 0),
+            ...allInHangar().skip(1),
+          ],
           AeroplaneColor.red: allInHangar(),
           AeroplaneColor.blue: [
             PlanePosition(zone: PlaneZone.ring, index: 43),
@@ -473,7 +496,7 @@ void main() {
       final moved = AeroplaneEngine.applyMove(
         state,
         const AeroplaneMove(color: AeroplaneColor.green, planeId: 0),
-        6,
+        1,
       );
       expect(
         moved.planesOf(AeroplaneColor.green)[0],

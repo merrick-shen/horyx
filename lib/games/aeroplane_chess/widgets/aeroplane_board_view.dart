@@ -152,6 +152,7 @@ class AeroplaneBoardView extends StatelessWidget {
   static Point<double> _coordOf(AeroplaneColor color, PlanePosition pos) =>
       switch (pos.zone) {
         PlaneZone.hangar => AeroplaneBoard.hangarSlotCenter(color, pos.index),
+        PlaneZone.ready => AeroplaneBoard.readyCellCenter(color),
         PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
         PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
         PlaneZone.goal => AeroplaneBoard.goalCellCenter(color),
@@ -188,6 +189,23 @@ class _BoardPainter extends CustomPainter {
     _drawFlightRoutes(canvas);
     _drawRing(canvas);
     _drawRunways(canvas);
+    _drawReadySpots(canvas);
+  }
+
+  /// 准备区空位：己色圆环（棋子起飞后落此待飞；尺寸控制在空白半格
+  /// 内切圆内，不压转角三角与画布边缘）
+  void _drawReadySpots(Canvas canvas) {
+    for (final color in AeroplaneColor.values) {
+      final c = AeroplaneColors.of(color);
+      canvas.drawCircle(
+        _pt(AeroplaneBoard.readyCellCenter(color)),
+        0.22 * _s,
+        Paint()
+          ..color = c
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.07 * _s,
+      );
+    }
   }
 
   @override
