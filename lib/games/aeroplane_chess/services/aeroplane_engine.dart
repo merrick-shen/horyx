@@ -72,6 +72,7 @@ class _MoveChain {
 /// 到达己方入口后必转入跑道，不继续绕环。
 /// 起飞流程：停机坪掷出 2/4/6 先落到基地旁的准备区（不踏上跑道、不参与
 /// 环道撞子），下次掷骰任意点数即可从准备区出发，起飞格为第 1 步。
+/// 完成流程：恰好抵达终点（跑道末格）后飞回基地机位，以勾标识展示。
 /// 单次迁移内收敛全部连锁效果，全程至多一次飞越 + 一次跳跃：
 /// - 超出终点的步数从跑道尽头回退；
 /// - 落在己色外环格顺跳至下一同色格（起飞格与入口格除外，自动触发）；
@@ -147,12 +148,24 @@ abstract final class AeroplaneEngine {
     final planes = <AeroplaneColor, List<PlanePosition>>{
       for (final entry in state.planes.entries) entry.key: [...entry.value],
     };
-    // 起飞走法落准备区（待飞位），不踏上跑道；其余按连锁迁移落位
+    // 起飞走法落准备区（待飞位），不踏上跑道；其余按连锁迁移落位；
+    // 恰好抵达终点（跑道末格）的飞机分配基地机位，随后飞回基地
     final wasTakeoff =
         state.planesOf(move.color)[move.planeId].zone == PlaneZone.hangar;
-    planes[move.color]![move.planeId] = wasTakeoff
-        ? PlanePosition(zone: PlaneZone.ready, index: 0)
-        : positionAtSteps(move.color, chain.finalSteps);
+    if (wasTakeoff) {
+      planes[move.color]![move.planeId] = PlanePosition(
+        zone: PlaneZone.ready,
+        index: 0,
+      );
+    } else {
+      final target = positionAtSteps(move.color, chain.finalSteps);
+      planes[move.color]![move.planeId] = target.zone == PlaneZone.goal
+          ? PlanePosition(
+              zone: PlaneZone.goal,
+              index: _allocGoalSlot(planes[move.color]!, move.planeId),
+            )
+          : target;
+    }
     _sendCapturedToHangar(planes, chain.captured);
     final lastMoved = (move.color, move.planeId);
     if (planes[move.color]!.every((p) => p.zone == PlaneZone.goal)) {
@@ -392,7 +405,24 @@ abstract final class AeroplaneEngine {
     }
   }
 
-  /// 被撞棋子送回停机坪，分配各色最低空闲机位
+  /// 为已完成的飞机分配基地机位：避开停机坪棋子与其他已完成棋子
+  /// 占用的机位，取最低空闲位（完成的飞机回基地后以待飞位展示勾标识）
+  static int _allocGoalSlot(List<PlanePosition> list, int planeId) {
+    final used = <int>{
+      for (var i = 0; i < list.length; i++)
+        if (i != planeId &&
+            (list[i].zone == PlaneZone.hangar ||
+                list[i].zone == PlaneZone.goal))
+          list[i].index,
+    };
+    var slot = 0;
+    while (used.contains(slot)) {
+      slot++;
+    }
+    return slot;
+  }
+
+  /// 被撞棋子送回停机坪，分配各色最低空闲机位（已完成棋子的机位不占用）
   static void _sendCapturedToHangar(
     Map<AeroplaneColor, List<PlanePosition>> planes,
     List<(AeroplaneColor, int)> captured,
@@ -406,7 +436,9 @@ abstract final class AeroplaneEngine {
       final list = planes[entry.key]!;
       final usedSlots = <int>{
         for (var i = 0; i < list.length; i++)
-          if (!planeIds.contains(i) && list[i].zone == PlaneZone.hangar)
+          if (!planeIds.contains(i) &&
+              (list[i].zone == PlaneZone.hangar ||
+                  list[i].zone == PlaneZone.goal))
             list[i].index,
       };
       var slot = 0;

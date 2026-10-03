@@ -490,6 +490,10 @@ class _AeroplanePageState
     } else if (finalSteps != raw) {
       points.add(_planeCoord(newState, color, move.planeId));
     }
+    // 恰好抵达终点：从跑道末格飞回基地机位（动画末段）
+    if (newPos.zone == PlaneZone.goal) {
+      points.add(_planeCoord(newState, color, move.planeId));
+    }
     return points;
   }
 
@@ -515,7 +519,7 @@ class _AeroplanePageState
       PlaneZone.ready => AeroplaneBoard.readyCellCenter(color),
       PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
       PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
-      PlaneZone.goal => AeroplaneBoard.goalCellCenter(color),
+      PlaneZone.goal => AeroplaneBoard.hangarSlotCenter(color, pos.index),
     };
   }
 

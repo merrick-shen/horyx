@@ -135,6 +135,7 @@ class AeroplaneBoardView extends StatelessWidget {
             height: pieceSize,
             child: AeroplanePlane(
               color: key.$1,
+              finished: planes[key.$1]![key.$2].zone == PlaneZone.goal,
               highlighted: movable.contains(key),
               selected: selected == key,
               onTap: movable.contains(key) && tap != null
@@ -176,7 +177,7 @@ class AeroplaneBoardView extends StatelessWidget {
         PlaneZone.ready => AeroplaneBoard.readyCellCenter(color),
         PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
         PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
-        PlaneZone.goal => AeroplaneBoard.goalCellCenter(color),
+        PlaneZone.goal => AeroplaneBoard.hangarSlotCenter(color, pos.index),
       };
 
   /// 同格分组的近似坐标 key

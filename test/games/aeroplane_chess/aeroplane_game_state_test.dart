@@ -100,10 +100,15 @@ void main() {
       expect(PlaneZone.parse('ready'), PlaneZone.ready);
     });
 
-    test('终点索引恒为 0', () {
+    test('终点索引为基地机位 0..3（完成的飞机飞回基地展示）', () {
       expect(PlanePosition(zone: PlaneZone.goal, index: 0).index, 0);
+      expect(PlanePosition(zone: PlaneZone.goal, index: 3).index, 3);
       expect(
-        () => PlanePosition(zone: PlaneZone.goal, index: 1),
+        () => PlanePosition(zone: PlaneZone.goal, index: 4),
+        throwsArgumentError,
+      );
+      expect(
+        () => PlanePosition(zone: PlaneZone.goal, index: -1),
         throwsArgumentError,
       );
     });

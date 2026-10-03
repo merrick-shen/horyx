@@ -48,7 +48,7 @@ enum PlaneZone {
 /// - [PlaneZone.ready]：恒为 0（每方一个准备位）
 /// - [PlaneZone.ring]：外环线性索引，上界由棋盘拓扑表约束，模型层只校验非负
 /// - [PlaneZone.runway]：己方跑道格序号 0..4（末格即各方终点格，归 goal 表达）
-/// - [PlaneZone.goal]：恒为 0（棋子立于己方跑道末格）
+/// - [PlaneZone.goal]：基地机位序号 0..3（已完成的飞机飞回基地以待飞位展示）
 class PlanePosition {
   const PlanePosition._(this.zone, this.index);
 
@@ -58,7 +58,7 @@ class PlanePosition {
       PlaneZone.ready => index == 0,
       PlaneZone.ring => index >= 0,
       PlaneZone.runway => index >= 0 && index <= 4,
-      PlaneZone.goal => index == 0,
+      PlaneZone.goal => index >= 0 && index <= 3,
     };
     if (!valid) {
       throw ArgumentError('棋子位置索引越界: ${zone.name}#$index');

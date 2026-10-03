@@ -3,13 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_colors.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 
-/// 飞行棋棋子：主色圈 + 白内圆 + 飞机图标（与棋盘停机坪机位原静态装饰
-/// 同视觉），尺寸由父层约束决定（填充父给定的正方形空间）
+/// 飞行棋棋子：主色圈 + 白内圆 + 图标（未完成显示飞机、已完成显示勾）
+/// （与棋盘停机坪机位原静态装饰同视觉），尺寸由父层约束决定
+/// （填充父给定的正方形空间）
 /// [highlighted] 可动高亮：呼吸脉冲提示可点；[selected] 选中态：白描边
 class AeroplanePlane extends StatefulWidget {
   const AeroplanePlane({
     super.key,
     required this.color,
+    this.finished = false,
     this.highlighted = false,
     this.selected = false,
     this.onTap,
@@ -17,6 +19,9 @@ class AeroplanePlane extends StatefulWidget {
 
   /// 棋子颜色
   final AeroplaneColor color;
+
+  /// 已完成（抵达终点飞回基地）：图标显示勾
+  final bool finished;
 
   /// 可动高亮（呼吸脉冲）
   final bool highlighted;
@@ -94,7 +99,9 @@ class _AeroplanePlaneState extends State<AeroplanePlane>
               ),
               alignment: Alignment.center,
               child: Icon(
-                Icons.flight_takeoff_rounded,
+                widget.finished
+                    ? Icons.check_rounded
+                    : Icons.flight_takeoff_rounded,
                 color: c,
                 size: d * 0.58,
               ),
