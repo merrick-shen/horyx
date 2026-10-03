@@ -222,8 +222,8 @@ void main() {
     });
 
     test('恰好步数抵达终点', () {
-      // 跑道 4 号格 = 行进 53 步，+2 恰好 55 步到终点；跑道 5 +1 同理
-      final cases = [(4, 2), (5, 1)];
+      // 跑道 4 号格 = 行进 53 步，+1 恰好 54 步到终点（跑道末格）；跑道 3 +2 同理
+      final cases = [(4, 1), (3, 2)];
       for (final (runwayIndex, dice) in cases) {
         final state = buildState(
           planes: {
@@ -280,8 +280,9 @@ void main() {
     });
 
     test('超出终点从跑道尽头回退', () {
-      // 跑道 4 号格 = 行进 53 步，+5 回退至 52（跑道 3 号格）；跑道 5 +6 回退至 50
-      final cases = [(4, 5, 3), (5, 6, 1)];
+      // 跑道 4 号格 = 行进 53 步，+5 超出 4 格回退至 50（跑道 1 号格）；
+      // 跑道 3 +5 超出 3 格回退至 51（跑道 2 号格）
+      final cases = [(4, 5, 1), (3, 5, 2)];
       for (final (runwayIndex, dice, expected) in cases) {
         final state = buildState(
           planes: {
@@ -346,7 +347,7 @@ void main() {
         planes: {
           AeroplaneColor.red: [
             PlanePosition(zone: PlaneZone.goal, index: 0),
-            runwayAt(5),
+            runwayAt(4),
             allInHangar()[2],
             allInHangar()[3],
           ],
@@ -912,7 +913,7 @@ void main() {
       final moved = AeroplaneEngine.applyMove(
         state,
         const AeroplaneMove(color: AeroplaneColor.red, planeId: 3),
-        2,
+        1,
       );
       expect(moved.gameOver, isTrue);
       expect(moved.winner, AeroplaneColor.red);
@@ -1092,7 +1093,7 @@ void main() {
       state = AeroplaneEngine.applyMove(
         state,
         const AeroplaneMove(color: AeroplaneColor.red, planeId: 3),
-        2,
+        1,
       );
       expect(state.gameOver, isTrue);
       expect(state.winner, AeroplaneColor.red);

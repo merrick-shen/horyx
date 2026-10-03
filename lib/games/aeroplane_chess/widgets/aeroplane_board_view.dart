@@ -154,7 +154,7 @@ class AeroplaneBoardView extends StatelessWidget {
         PlaneZone.hangar => AeroplaneBoard.hangarSlotCenter(color, pos.index),
         PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
         PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
-        PlaneZone.goal => AeroplaneBoard.goalCenter,
+        PlaneZone.goal => AeroplaneBoard.goalCellCenter(color),
       };
 
   /// 同格分组的近似坐标 key

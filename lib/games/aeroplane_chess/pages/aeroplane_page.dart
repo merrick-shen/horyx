@@ -399,7 +399,7 @@ class _AeroplanePageState
     return switch (pos.zone) {
       PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
       PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
-      _ => AeroplaneBoard.goalCenter,
+      _ => AeroplaneBoard.goalCellCenter(color),
     };
   }
 
@@ -414,7 +414,7 @@ class _AeroplanePageState
       PlaneZone.hangar => AeroplaneBoard.hangarSlotCenter(color, pos.index),
       PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
       PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
-      PlaneZone.goal => AeroplaneBoard.goalCenter,
+      PlaneZone.goal => AeroplaneBoard.goalCellCenter(color),
     };
   }
 

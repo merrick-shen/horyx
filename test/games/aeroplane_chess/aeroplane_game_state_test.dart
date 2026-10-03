@@ -73,11 +73,11 @@ void main() {
       );
     });
 
-    test('跑道索引范围 0..5', () {
+    test('跑道索引范围 0..4（末格即终点格，归 goal 表达）', () {
       expect(PlanePosition(zone: PlaneZone.runway, index: 0).index, 0);
-      expect(PlanePosition(zone: PlaneZone.runway, index: 5).index, 5);
+      expect(PlanePosition(zone: PlaneZone.runway, index: 4).index, 4);
       expect(
-        () => PlanePosition(zone: PlaneZone.runway, index: 6),
+        () => PlanePosition(zone: PlaneZone.runway, index: 5),
         throwsArgumentError,
       );
     });

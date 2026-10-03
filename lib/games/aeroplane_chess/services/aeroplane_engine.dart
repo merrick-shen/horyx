@@ -94,9 +94,9 @@ abstract final class AeroplaneEngine {
           AeroplaneBoard.takeoffIndex[color]!) %
       AeroplaneBoard.ringSize;
 
-  /// 起飞格到终点的总步数（恰好抵达所需步数）
+  /// 起飞格到终点的总步数（恰好抵达所需步数；终点即己方跑道末格）
   static int totalSteps(AeroplaneColor color) =>
-      entrySteps(color) + AeroplaneBoard.runwaySize + 1;
+      entrySteps(color) + AeroplaneBoard.runwaySize;
 
   /// 合法走法枚举：当前行动方每架可动棋子一条走法；
   /// 走法链落在己方加油站起点格时追加「飞越」变体。
@@ -238,7 +238,7 @@ abstract final class AeroplaneEngine {
     }
   }
 
-  /// 累计步数 → 棋子位置（steps 超出终点时映射为终点）；
+  /// 累计步数 → 棋子位置（steps 达到总步数即抵达己方跑道末格终点）；
   /// 公开供走子动画的路径点推导与引擎迁移共用同一映射
   static PlanePosition positionAtSteps(AeroplaneColor color, int steps) {
     final entry = entrySteps(color);
@@ -251,7 +251,7 @@ abstract final class AeroplaneEngine {
       );
     }
     final runwayIndex = steps - entry - 1;
-    if (runwayIndex < AeroplaneBoard.runwaySize) {
+    if (runwayIndex < AeroplaneBoard.runwaySize - 1) {
       return PlanePosition(zone: PlaneZone.runway, index: runwayIndex);
     }
     return PlanePosition(zone: PlaneZone.goal, index: 0);

@@ -45,8 +45,8 @@ enum PlaneZone {
 /// 索引含义按区域区分：
 /// - [PlaneZone.hangar]：机位序号 0..3
 /// - [PlaneZone.ring]：外环线性索引，上界由棋盘拓扑表约束，模型层只校验非负
-/// - [PlaneZone.runway]：己方跑道格序号 0..5
-/// - [PlaneZone.goal]：恒为 0
+/// - [PlaneZone.runway]：己方跑道格序号 0..4（末格即各方终点格，归 goal 表达）
+/// - [PlaneZone.goal]：恒为 0（棋子立于己方跑道末格）
 class PlanePosition {
   const PlanePosition._(this.zone, this.index);
 
@@ -54,7 +54,7 @@ class PlanePosition {
     final valid = switch (zone) {
       PlaneZone.hangar => index >= 0 && index <= 3,
       PlaneZone.ring => index >= 0,
-      PlaneZone.runway => index >= 0 && index <= 5,
+      PlaneZone.runway => index >= 0 && index <= 4,
       PlaneZone.goal => index == 0,
     };
     if (!valid) {

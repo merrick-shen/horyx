@@ -163,11 +163,10 @@ void main() {
             0.5,
           );
         }
+        // 跑道末格即各方终点格
         expect(
-          AeroplaneBoard
-              .runwayCellCenter(color, AeroplaneBoard.runwaySize - 1)
-              .distanceTo(AeroplaneBoard.goalCenter),
-          0.5,
+          AeroplaneBoard.runwayCellCenter(color, AeroplaneBoard.runwaySize - 1),
+          AeroplaneBoard.goalCellCenter(color),
         );
       }
     });
@@ -183,7 +182,7 @@ void main() {
       final blueSlot3 = AeroplaneBoard.hangarSlotCenter(AeroplaneColor.blue, 3);
       expect(blueSlot3.x, closeTo(2.85, 1e-9));
       expect(blueSlot3.y, closeTo(2.85, 1e-9));
-      expect(AeroplaneBoard.goalCenter, const Point(0, 0));
+      expect(AeroplaneBoard.boardCenter, const Point(0, 0));
     });
 
     test('全部坐标落在画布范围内', () {
