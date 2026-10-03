@@ -6,10 +6,11 @@ import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
+import 'package:horyx/shared/widgets/turn_card.dart';
 
-/// 飞行棋 - 本地对局视图：棋盘（含棋子层）+ 骰面 + 走子确认 + 掷骰按钮
-/// 交互链路：底部按钮掷骰 -> 点可动棋子选中 -> 确认行「取消/下棋/飞越」
-/// 执行走法；回合指示卡与动效反馈自下一阶段接入
+/// 飞行棋 - 本地对局视图：回合卡 + 棋盘（含棋子层）+ 骰面 + 走子确认 +
+/// 掷骰按钮。交互链路：底部按钮掷骰 -> 点可动棋子选中 -> 确认行
+/// 「取消/下棋」执行走法；动效反馈自下一阶段接入
 class AeroplaneGameView extends StatelessWidget {
   const AeroplaneGameView({
     super.key,
@@ -57,11 +58,27 @@ class AeroplaneGameView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final over = state.gameOver;
+    final turnColor = over ? state.winner! : state.currentPlayer;
+    final turnPlayer = state.players
+        .firstWhere((p) => p.color == turnColor);
     return SizedBox.expand(
       child: PageContent(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // 回合卡：对局中提示当前行动方，终局切换为胜方展示
+            TurnCard(
+              icon: over
+                  ? Icons.emoji_events_rounded
+                  : Icons.flight_takeoff_rounded,
+              subtitle: over ? '对局结束' : '当前回合',
+              title: over
+                  ? '${turnColor.label}方胜利'
+                  : '${turnPlayer.name} · ${turnColor.label}方',
+              titleKey: ValueKey(turnColor),
+            ),
+            const SizedBox(height: 12),
             // 棋盘独占剩余高度（贴顶满宽）：骰子若与之均分弹性空间，
             // 会把棋盘压小、两侧出现超出页边距的留白
             Expanded(
