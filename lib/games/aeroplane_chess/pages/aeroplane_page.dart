@@ -588,7 +588,7 @@ class _AeroplanePageState
         savedAt: DateTime.now(),
       );
 
-  /// 清空回合内临时状态（掷骰/选子/动画），回到等待掷骰
+  /// 清空回合内临时状态（掷骰/选子/动画/提示），回到等待掷骰
   void _resetRound() {
     _rollTimer?.cancel();
     _moveController.stop();
@@ -602,6 +602,8 @@ class _AeroplanePageState
     _pendingTo = null;
     _pendingDone = null;
     _movers.value = const [];
+    _hintTrigger = 0;
+    _hintText = '';
   }
 
   /// 局域网模式：创建房间并进入等待页（容量 2..4，自己为玩家 1）。

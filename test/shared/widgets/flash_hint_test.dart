@@ -29,6 +29,20 @@ void main() {
     expect(tester.widget<Opacity>(opacityOf('提示')).opacity, 0.0);
   });
 
+  testWidgets('挂载时已带触发序号立即播放（首次提示场景）', (tester) async {
+    await tester.pumpWidget(wrap(const FlashHint(
+      trigger: 1,
+      text: '提示',
+      accentColor: Colors.red,
+      fontSize: 30,
+    )));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(
+      tester.widget<Opacity>(opacityOf('提示')).opacity,
+      greaterThan(0.0),
+    );
+  });
+
   testWidgets('trigger 递增播放一遍动画：播完归零，再次递增重播', (tester) async {
     await tester.pumpWidget(
       wrap(

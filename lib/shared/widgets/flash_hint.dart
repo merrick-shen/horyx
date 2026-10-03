@@ -43,6 +43,16 @@ class _FlashHintState extends State<FlashHint>
   );
 
   @override
+  void initState() {
+    super.initState();
+    // 挂载时已带触发序号则立即播放：首次提示是组件从无到有挂载
+    // （不走 didUpdateWidget），不补这一步动画会停在透明不显示
+    if (widget.trigger > 0) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
   void didUpdateWidget(covariant FlashHint oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.trigger != oldWidget.trigger && widget.trigger > 0) {
