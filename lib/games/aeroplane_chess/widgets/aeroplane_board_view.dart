@@ -5,45 +5,184 @@ import 'package:flutter/material.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_board.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_colors.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
+import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_plane.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/widgets/page_content.dart';
 
-/// 飞行棋 - 静态棋盘层
-/// 按拓扑坐标表纯静态绘制，不参与对局状态：八角外环（顶/底行为
-/// 半格竖条、转角列为半格横条、转角大三角与对角分割格衔接）、
-/// 中央四色跑道（半格小格）与末端风车箭头、四角停机坪机位、
-/// 加油站短虚线箭头（指向被穿越的敌方跑道格）；四色取自
-/// [AeroplaneColors]，绘制层不写死色值；棋盘卡片圆角描边与其他
-/// 游戏棋盘统一（Radii.card + 主题描边色）
+/// 绕中心顺时针旋转 90°，与拓扑表同一旋转
+Point<double> _rotQuadrant(Point<double> p) => Point(-p.y, p.x);
+
+List<Point<double>> _rotN(List<Point<double>> pts, int times) {
+  var r = pts;
+  for (var i = 0; i < times; i++) {
+    r = [for (final p in r) _rotQuadrant(p)];
+  }
+  return r;
+}
+
+/// 八个转角大三角白点（三角内心）：转角大三角与对角分割格的视觉中心
+/// 是三角内心而非所在方格的几何中心，白点绘制与棋子定位共用此锚点
+const Map<int, Point<double>> _cornerDots = {
+  3: Point(1.54, -3.54),
+  10: Point(3.54, -1.54),
+  16: Point(3.54, 1.54),
+  23: Point(1.54, 3.54),
+  29: Point(-1.54, 3.54),
+  36: Point(-3.54, 1.54),
+  42: Point(-3.54, -1.54),
+  49: Point(-1.54, -3.54),
+};
+
+/// 分割格两枚白点（第一象限局部：t6 左上半 / t7 右下半，随象限旋转）
+const List<Point<double>> _splitDots = [
+  Point(1.54, -1.96),
+  Point(1.96, -1.54),
+];
+
+/// 分割格白点坐标：index 为外环行进序（t 必为 6 或 7），
+/// 第一象限局部白点按象限旋转得绝对坐标
+Point<double> _splitDotAt(int index) =>
+    _rotN([_splitDots[index % 13 - 6]], index ~/ 13).first;
+
+/// 飞行棋 - 棋盘视图：静态格子层 + 棋子层
+/// 格子层按拓扑坐标表纯静态绘制（CustomPainter）：八角外环（顶/底行为
+/// 半格竖条、转角列为半格横条、转角大三角与对角分割格衔接）、中央四色
+/// 跑道（半格小格）与末端风车箭头、四角停机坪空机位、加油站短虚线箭头；
+/// 棋子层按对局状态定位四区域（停机坪/外环/跑道/终点），同格多子横向
+/// 错开；四色取自 [AeroplaneColors]，绘制层不写死色值；棋盘卡片圆角
+/// 描边与其他游戏棋盘统一（Radii.card + 主题描边色）
 class AeroplaneBoardView extends StatelessWidget {
-  const AeroplaneBoardView({super.key});
+  const AeroplaneBoardView({
+    super.key,
+    required this.planes,
+    this.movable = const {},
+    this.selected,
+    this.onPlaneTap,
+  });
+
+  /// 各色棋子位置（每色 4 枚）
+  final Map<AeroplaneColor, List<PlanePosition>> planes;
+
+  /// 可动棋子（高亮 + 可点击）
+  final Set<(AeroplaneColor, int)> movable;
+
+  /// 选中的棋子（白描边）
+  final (AeroplaneColor, int)? selected;
+
+  /// 点击可动棋子回调
+  final void Function(AeroplaneColor color, int planeId)? onPlaneTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return PageContent(
-      // 棋盘贴区域顶部而非垂直居中：对局页棋盘区与骰子区等分剩余
-      // 空间，居中会在棋盘上方留出大片空白、把骰子压向页面底部
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: AspectRatio(
-          aspectRatio: 1,
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(Radii.card),
-              border: Border.all(color: palette.stroke),
-            ),
-            // 裁切保证贴边绘制的棋盘内容不溢出圆角
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(Radii.control),
-              child: CustomPaint(painter: _BoardPainter()),
-            ),
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(Radii.card),
+          border: Border.all(color: palette.stroke),
+        ),
+        // 裁切保证贴边绘制的棋盘内容不溢出圆角
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(Radii.control),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final size = constraints.biggest.width;
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  CustomPaint(painter: _BoardPainter()),
+                  ..._buildPieces(size),
+                ],
+              );
+            },
           ),
         ),
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // 棋子层
+  // ---------------------------------------------------------------------------
+
+  /// 棋子直径占画布比例（0.42 格 / 画布 8.5 格，与机位圆盘比例一致）
+  static const double _pieceRatio = 0.42 / (AeroplaneBoard.canvasExtent * 2);
+
+  List<Widget> _buildPieces(double size) {
+    final pieceSize = size * _pieceRatio;
+    // 格子坐标 → 画布像素（与格子绘制层同一线性映射）。
+    // 不能用 Align 定位：其 alignment 映射空间是「父尺寸 − 子尺寸」，
+    // 离中心越远偏差越大（边缘约半个棋子宽），棋子会整体向中心收缩
+    Offset pixelOf(Point<double> p) => Offset(
+          (p.x + AeroplaneBoard.canvasExtent) /
+              (AeroplaneBoard.canvasExtent * 2) *
+              size,
+          (p.y + AeroplaneBoard.canvasExtent) /
+              (AeroplaneBoard.canvasExtent * 2) *
+              size,
+        );
+    final coords = <(AeroplaneColor, int), Point<double>>{};
+    for (final entry in planes.entries) {
+      for (var i = 0; i < entry.value.length; i++) {
+        coords[(entry.key, i)] = _coordOf(entry.key, entry.value[i]);
+      }
+    }
+    // 同格分组（坐标近似相同），组内横向错开保证叠子可见
+    final groups = <String, List<(AeroplaneColor, int)>>{};
+    for (final entry in coords.entries) {
+      (groups[_cellKey(entry.value)] ??= []).add(entry.key);
+    }
+    final pieces = <Widget>[];
+    for (final group in groups.values) {
+      for (var i = 0; i < group.length; i++) {
+        final key = group[i];
+        final base = coords[key]!;
+        final offset = (i - (group.length - 1) / 2) * 0.16;
+        final center = pixelOf(Point(base.x + offset, base.y));
+        final tap = onPlaneTap;
+        pieces.add(
+          Positioned(
+            left: center.dx - pieceSize / 2,
+            top: center.dy - pieceSize / 2,
+            width: pieceSize,
+            height: pieceSize,
+            child: AeroplanePlane(
+              color: key.$1,
+              highlighted: movable.contains(key),
+              selected: selected == key,
+              onTap: movable.contains(key) && tap != null
+                  ? () => tap(key.$1, key.$2)
+                  : null,
+            ),
+          ),
+        );
+      }
+    }
+    return pieces;
+  }
+
+  /// 棋子位置 → 格子坐标
+  static Point<double> _coordOf(AeroplaneColor color, PlanePosition pos) =>
+      switch (pos.zone) {
+        PlaneZone.hangar => AeroplaneBoard.hangarSlotCenter(color, pos.index),
+        PlaneZone.ring => _ringAnchor(pos.index),
+        PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
+        PlaneZone.goal => AeroplaneBoard.goalCenter,
+      };
+
+  /// 外环格上的棋子锚点：与格上白点同位（转角大三角与对角分割格的
+  /// 白点在三角内心，其余格在几何中心）
+  static Point<double> _ringAnchor(int index) {
+    final t = index % 13;
+    if (t == 6 || t == 7) return _splitDotAt(index);
+    if (_cornerDots.containsKey(index)) return _cornerDots[index]!;
+    return AeroplaneBoard.ringCellCenter(index);
+  }
+
+  /// 同格分组的近似坐标 key
+  static String _cellKey(Point<double> p) =>
+      '${p.x.toStringAsFixed(1)},${p.y.toStringAsFixed(1)}';
 }
 
 class _BoardPainter extends CustomPainter {
@@ -63,17 +202,6 @@ class _BoardPainter extends CustomPainter {
 
   Offset _pt(Point<double> p) =>
       Offset((p.x + _extent) * _s, (p.y + _extent) * _s);
-
-  /// 绕中心顺时针旋转 90°，与拓扑表同一旋转
-  static Point<double> _rot(Point<double> p) => Point(-p.y, p.x);
-
-  static List<Point<double>> _rotN(List<Point<double>> pts, int times) {
-    var r = pts;
-    for (var i = 0; i < times; i++) {
-      r = [for (final p in r) _rot(p)];
-    }
-    return r;
-  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -113,24 +241,12 @@ class _BoardPainter extends CustomPainter {
       );
       canvas.drawRect(block, Paint()..color = c);
       for (final slot in slots) {
-        // 停机位：半透明白圆盘（叠在基地色上），比棋子大一点
+        // 空机位：半透明白圆盘（棋子由棋子层按对局状态渲染）
         canvas.drawCircle(
           _pt(slot),
           0.28 * _s,
           Paint()..color = AeroplaneColors.cellDot.withValues(alpha: 0.45),
         );
-        // 棋子：主色圈 + 纯白内圆 + 主色飞机（与路径圆点同大）
-        canvas.drawCircle(
-          _pt(slot),
-          0.21 * _s,
-          Paint()..color = c,
-        );
-        canvas.drawCircle(
-          _pt(slot),
-          0.16 * _s,
-          Paint()..color = Colors.white,
-        );
-        _drawPlane(canvas, slot, 0.23, c);
       }
     }
   }
@@ -196,25 +312,6 @@ class _BoardPainter extends CustomPainter {
     49: [Point(-1.25, -4.25), Point(-1.25, -3.25), Point(-2.25, -3.25)],
   };
 
-  /// 转角大三角白点：各三角形内心（内切圆圆心，距三条边等距 0.293 格，
-  /// 即由直角顶点向格中心内缩），白点完整不裁
-  static const Map<int, Point<double>> _cornerDots = {
-    3: Point(1.54, -3.54),
-    10: Point(3.54, -1.54),
-    16: Point(3.54, 1.54),
-    23: Point(1.54, 3.54),
-    29: Point(-1.54, 3.54),
-    36: Point(-3.54, 1.54),
-    42: Point(-3.54, -1.54),
-    49: Point(-1.54, -3.54),
-  };
-
-  /// 分割格两枚白点（第一象限局部：t6 左上半 / t7 右下半，随象限旋转）
-  static const List<Point<double>> _splitDots = [
-    Point(1.54, -1.96),
-    Point(1.96, -1.54),
-  ];
-
   /// 长条方格尺寸（宽, 高，第一象限局部）：顶行竖条 0.5×1.0、
   /// 转角列横条 1.0×0.5（长边垂直于行进方向）
   static Point<double> _barSize(int t) =>
@@ -276,7 +373,10 @@ class _BoardPainter extends CustomPainter {
     // 中心风车箭头按序绘制形成旋转叠压
     for (final color in AeroplaneColor.values) {
       final arrow = _rotN(_arrowPoints, _quadrantOf[color]!);
-      canvas.drawPath(_pathOf(arrow), Paint()..color = AeroplaneColors.of(color));
+      canvas.drawPath(
+        _pathOf(arrow),
+        Paint()..color = AeroplaneColors.of(color),
+      );
     }
     // 跑道白点最后绘制（与路径圆点同大小），叠印在箭头之上
     for (final color in AeroplaneColor.values) {
@@ -304,11 +404,6 @@ class _BoardPainter extends CustomPainter {
     }
   }
 
-  /// 分割格白点坐标：index 为外环行进序（t 必为 6 或 7），
-  /// 第一象限局部白点按象限旋转得绝对坐标
-  Point<double> _splitDotAt(int index) =>
-      _rotN([_splitDots[index % 13 - 6]], index ~/ 13).first;
-
   /// 加油站航线虚线：自起点己色分割格沿行/列中心线直行，飞越敌方
   /// 跑道（跑道块处断开）直达落点己色分割格
   void _dashedArrow(
@@ -318,9 +413,12 @@ class _BoardPainter extends CustomPainter {
     Color color,
   ) {
     final isHorizontal = from.y == to.y;
-    final d = isHorizontal ? (to.x > from.x ? 1.0 : -1.0) : (to.y > from.y ? 1.0 : -1.0);
+    final d = isHorizontal
+        ? (to.x > from.x ? 1.0 : -1.0)
+        : (to.y > from.y ? 1.0 : -1.0);
     double axisOf(Point<double> p) => isHorizontal ? p.x : p.y;
-    Point<double> pointAt(double c) => isHorizontal ? Point(c, from.y) : Point(from.x, c);
+    Point<double> pointAt(double c) =>
+        isHorizontal ? Point(c, from.y) : Point(from.x, c);
     Offset pt(Point<double> p) => _pt(p);
 
     // 起止端贴圆点边缘（圆点半径 0.21），飞越跑道块处留断口
@@ -361,30 +459,6 @@ class _BoardPainter extends CustomPainter {
       _pt(center),
       radiusUnits * _s,
       Paint()..color = AeroplaneColors.cellDot,
-    );
-  }
-
-  /// 飞机标识（Material 图标字形，居中绘制）
-  void _drawPlane(
-    Canvas canvas,
-    Point<double> center,
-    double units,
-    Color color,
-  ) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: String.fromCharCode(Icons.flight_takeoff_rounded.codePoint),
-        style: TextStyle(
-          fontFamily: Icons.flight_takeoff_rounded.fontFamily,
-          fontSize: units * _s,
-          color: color,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(
-      canvas,
-      _pt(center) - Offset(painter.width / 2, painter.height / 2),
     );
   }
 }
