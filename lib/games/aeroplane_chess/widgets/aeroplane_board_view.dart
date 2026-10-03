@@ -19,30 +19,6 @@ List<Point<double>> _rotN(List<Point<double>> pts, int times) {
   return r;
 }
 
-/// 八个转角大三角白点（三角内心）：转角大三角与对角分割格的视觉中心
-/// 是三角内心而非所在方格的几何中心，白点绘制与棋子定位共用此锚点
-const Map<int, Point<double>> _cornerDots = {
-  3: Point(1.54, -3.54),
-  10: Point(3.54, -1.54),
-  16: Point(3.54, 1.54),
-  23: Point(1.54, 3.54),
-  29: Point(-1.54, 3.54),
-  36: Point(-3.54, 1.54),
-  42: Point(-3.54, -1.54),
-  49: Point(-1.54, -3.54),
-};
-
-/// 分割格两枚白点（第一象限局部：t6 左上半 / t7 右下半，随象限旋转）
-const List<Point<double>> _splitDots = [
-  Point(1.54, -1.96),
-  Point(1.96, -1.54),
-];
-
-/// 分割格白点坐标：index 为外环行进序（t 必为 6 或 7），
-/// 第一象限局部白点按象限旋转得绝对坐标
-Point<double> _splitDotAt(int index) =>
-    _rotN([_splitDots[index % 13 - 6]], index ~/ 13).first;
-
 /// 飞行棋 - 棋盘视图：静态格子层 + 棋子层
 /// 格子层按拓扑坐标表纯静态绘制（CustomPainter）：八角外环（顶/底行为
 /// 半格竖条、转角列为半格横条、转角大三角与对角分割格衔接）、中央四色
@@ -56,6 +32,7 @@ class AeroplaneBoardView extends StatelessWidget {
     required this.planes,
     this.movable = const {},
     this.selected,
+    this.movingOverride,
     this.onPlaneTap,
   });
 
@@ -67,6 +44,10 @@ class AeroplaneBoardView extends StatelessWidget {
 
   /// 选中的棋子（白描边）
   final (AeroplaneColor, int)? selected;
+
+  /// 走子动画中的棋子位置覆盖（颜色, 编号, 格子坐标）：
+  /// 动画期间该棋子按覆盖坐标渲染而非其对局状态位置
+  final (AeroplaneColor, int, Point<double>)? movingOverride;
 
   /// 点击可动棋子回调
   final void Function(AeroplaneColor color, int planeId)? onPlaneTap;
@@ -125,7 +106,12 @@ class AeroplaneBoardView extends StatelessWidget {
     final coords = <(AeroplaneColor, int), Point<double>>{};
     for (final entry in planes.entries) {
       for (var i = 0; i < entry.value.length; i++) {
-        coords[(entry.key, i)] = _coordOf(entry.key, entry.value[i]);
+        var coord = _coordOf(entry.key, entry.value[i]);
+        final override = movingOverride;
+        if (override != null && override.$1 == entry.key && override.$2 == i) {
+          coord = override.$3;
+        }
+        coords[(entry.key, i)] = coord;
       }
     }
     // 同格分组（坐标近似相同），组内横向错开保证叠子可见
@@ -166,19 +152,10 @@ class AeroplaneBoardView extends StatelessWidget {
   static Point<double> _coordOf(AeroplaneColor color, PlanePosition pos) =>
       switch (pos.zone) {
         PlaneZone.hangar => AeroplaneBoard.hangarSlotCenter(color, pos.index),
-        PlaneZone.ring => _ringAnchor(pos.index),
+        PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
         PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
         PlaneZone.goal => AeroplaneBoard.goalCenter,
       };
-
-  /// 外环格上的棋子锚点：与格上白点同位（转角大三角与对角分割格的
-  /// 白点在三角内心，其余格在几何中心）
-  static Point<double> _ringAnchor(int index) {
-    final t = index % 13;
-    if (t == 6 || t == 7) return _splitDotAt(index);
-    if (_cornerDots.containsKey(index)) return _cornerDots[index]!;
-    return AeroplaneBoard.ringCellCenter(index);
-  }
 
   /// 同格分组的近似坐标 key
   static String _cellKey(Point<double> p) =>
@@ -270,7 +247,7 @@ class _BoardPainter extends CustomPainter {
         canvas.drawPath(path, Paint()..color = c);
         canvas.save();
         canvas.clipPath(path);
-        _dot(canvas, _splitDotAt(i), 0.21);
+        _dot(canvas, AeroplaneBoard.splitDotAt(i), 0.21);
         canvas.restore();
       } else if (_cornerTriangles.containsKey(i)) {
         // 转角大三角：按参考图逐格核对，朝向不满足旋转对称
@@ -278,7 +255,7 @@ class _BoardPainter extends CustomPainter {
         canvas.drawPath(path, Paint()..color = c);
         canvas.save();
         canvas.clipPath(path);
-        _dot(canvas, _cornerDots[i]!, 0.21);
+        _dot(canvas, AeroplaneBoard.cornerDots[i]!, 0.21);
         canvas.restore();
       } else {
         final center = AeroplaneBoard.ringCellCenter(i);
@@ -397,8 +374,8 @@ class _BoardPainter extends CustomPainter {
       // 飞行线两端对齐起/落点分割格上己色的圆点（而非格子几何中心）
       _dashedArrow(
         canvas,
-        _splitDotAt(route.start),
-        _splitDotAt(route.landing),
+        AeroplaneBoard.splitDotAt(route.start),
+        AeroplaneBoard.splitDotAt(route.landing),
         c,
       );
     }

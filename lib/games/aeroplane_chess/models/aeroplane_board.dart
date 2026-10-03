@@ -179,4 +179,49 @@ abstract final class AeroplaneBoard {
       base[1] + (slot ~/ 2) * 0.85 * base[3],
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // 外环格视觉锚点（白点绘制、棋子定位与路径动画共用）
+  // ---------------------------------------------------------------------------
+
+  /// 八个转角大三角白点（三角内心）：转角大三角与对角分割格的视觉中心
+  /// 是三角内心而非所在方格的几何中心
+  static const Map<int, Point<double>> cornerDots = {
+    3: Point(1.54, -3.54),
+    10: Point(3.54, -1.54),
+    16: Point(3.54, 1.54),
+    23: Point(1.54, 3.54),
+    29: Point(-1.54, 3.54),
+    36: Point(-3.54, 1.54),
+    42: Point(-3.54, -1.54),
+    49: Point(-1.54, -3.54),
+  };
+
+  /// 分割格两枚白点（第一象限局部：t6 左上半 / t7 右下半，随象限旋转）
+  static const List<Point<double>> _splitDots = [
+    Point(1.54, -1.96),
+    Point(1.96, -1.54),
+  ];
+
+  /// 分割格白点坐标：index 为外环行进序（t 必为 6 或 7），
+  /// 第一象限局部白点按象限旋转得绝对坐标
+  static Point<double> splitDotAt(int index) {
+    var p = _splitDots[index % 13 - 6];
+    for (var i = 0; i < index ~/ 13; i++) {
+      p = _rotate(p);
+    }
+    return p;
+  }
+
+  /// 外环格上的棋子锚点：与格上白点同位（转角大三角与对角分割格的
+  /// 白点在三角内心，其余格在几何中心）
+  static Point<double> ringAnchor(int index) {
+    if (index < 0 || index >= ringSize) {
+      throw ArgumentError('外环索引越界: $index');
+    }
+    final t = index % 13;
+    if (t == 6 || t == 7) return splitDotAt(index);
+    if (cornerDots.containsKey(index)) return cornerDots[index]!;
+    return ringCellCenter(index);
+  }
 }

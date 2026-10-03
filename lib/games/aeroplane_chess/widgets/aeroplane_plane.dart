@@ -5,8 +5,8 @@ import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 
 /// 飞行棋棋子：主色圈 + 白内圆 + 飞机图标（与棋盘停机坪机位原静态装饰
 /// 同视觉），尺寸由父层约束决定（填充父给定的正方形空间）
-/// [highlighted] 可动高亮（主色光晕）；[selected] 选中态（白描边）
-class AeroplanePlane extends StatelessWidget {
+/// [highlighted] 可动高亮：呼吸脉冲提示可点；[selected] 选中态：白描边
+class AeroplanePlane extends StatefulWidget {
   const AeroplanePlane({
     super.key,
     required this.color,
@@ -18,7 +18,7 @@ class AeroplanePlane extends StatelessWidget {
   /// 棋子颜色
   final AeroplaneColor color;
 
-  /// 可动高亮
+  /// 可动高亮（呼吸脉冲）
   final bool highlighted;
 
   /// 选中态（白描边）
@@ -28,47 +28,82 @@ class AeroplanePlane extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<AeroplanePlane> createState() => _AeroplanePlaneState();
+}
+
+class _AeroplanePlaneState extends State<AeroplanePlane>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 600),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.highlighted) {
+      _pulse.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AeroplanePlane oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.highlighted != oldWidget.highlighted) {
+      if (widget.highlighted) {
+        _pulse.repeat(reverse: true);
+      } else {
+        _pulse.stop();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final c = AeroplaneColors.of(color);
-    final plane = LayoutBuilder(
-      builder: (context, constraints) {
-        final d = constraints.biggest.shortestSide;
-        return Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: c,
-            border: selected
-                ? Border.all(color: Colors.white, width: d * 0.09)
-                : null,
-            boxShadow: highlighted
-                ? [
-                    BoxShadow(
-                      color: c.withValues(alpha: 0.65),
-                      blurRadius: d * 0.28,
-                      spreadRadius: d * 0.04,
-                    ),
-                  ]
-                : null,
-          ),
-          alignment: Alignment.center,
-          child: Container(
-            width: d * 0.76,
-            height: d * 0.76,
-            decoration: const BoxDecoration(
+    final c = AeroplaneColors.of(widget.color);
+    final plane = AnimatedBuilder(
+      animation: _pulse,
+      builder: (context, child) {
+        // 呼吸脉冲：1.0 -> 1.12 缩放
+        return Transform.scale(scale: 1.0 + 0.12 * _pulse.value, child: child);
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final d = constraints.biggest.shortestSide;
+          return Container(
+            decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white,
+              color: c,
+              border: widget.selected
+                  ? Border.all(color: Colors.white, width: d * 0.09)
+                  : null,
             ),
             alignment: Alignment.center,
-            child: Icon(
-              Icons.flight_takeoff_rounded,
-              color: c,
-              size: d * 0.58,
+            child: Container(
+              width: d * 0.76,
+              height: d * 0.76,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                Icons.flight_takeoff_rounded,
+                color: c,
+                size: d * 0.58,
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
-    final tap = onTap;
+    final tap = widget.onTap;
     if (tap == null) {
       return plane;
     }

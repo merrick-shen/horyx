@@ -146,7 +146,7 @@ abstract final class AeroplaneEngine {
       for (final entry in state.planes.entries) entry.key: [...entry.value],
     };
     planes[move.color]![move.planeId] =
-        _positionAtSteps(move.color, chain.finalSteps);
+        positionAtSteps(move.color, chain.finalSteps);
     _sendCapturedToHangar(planes, chain.captured);
     final lastMoved = (move.color, move.planeId);
     if (planes[move.color]!.every((p) => p.zone == PlaneZone.goal)) {
@@ -238,8 +238,9 @@ abstract final class AeroplaneEngine {
     }
   }
 
-  /// 累计步数 → 棋子位置
-  static PlanePosition _positionAtSteps(AeroplaneColor color, int steps) {
+  /// 累计步数 → 棋子位置（steps 超出终点时映射为终点）；
+  /// 公开供走子动画的路径点推导与引擎迁移共用同一映射
+  static PlanePosition positionAtSteps(AeroplaneColor color, int steps) {
     final entry = entrySteps(color);
     if (steps <= entry) {
       return PlanePosition(
@@ -292,7 +293,7 @@ abstract final class AeroplaneEngine {
     final captured = <(AeroplaneColor, int)>[];
     final entry = entrySteps(color);
     while (true) {
-      final pos = _positionAtSteps(color, steps);
+      final pos = positionAtSteps(color, steps);
       if (pos.zone != PlaneZone.ring) {
         break;
       }
