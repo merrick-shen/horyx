@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:horyx/games/chess/models/chess_board.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/games/chess/widgets/chess_board_canvas.dart';
-import 'package:horyx/games/chess/widgets/chess_check_flash.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
+import 'package:horyx/shared/widgets/flash_hint.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
@@ -141,7 +141,13 @@ class ChessBoardView extends StatelessWidget {
           // 「将军」提示覆盖层：不拦截触摸，仅做视觉提醒
           IgnorePointer(
             child: Center(
-              child: CheckFlashText(trigger: checkFlashTrigger),
+              child: FlashHint(
+                trigger: checkFlashTrigger,
+                text: '將軍',
+                accentColor: ChessPieceColors.red,
+                fontSize: 64,
+                letterSpacing: 10,
+              ),
             ),
           ),
         ],

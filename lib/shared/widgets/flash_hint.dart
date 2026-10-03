@@ -1,21 +1,41 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 
-/// 「将军」渐现渐隐提示：[trigger] 每递增一次播放一遍动画
-/// （快速放大淡入 -> 短暂停留 -> 淡出），黑底胶囊 + 白色大字保证醒目
-/// 本地对局视图与联机对局视图共用
-class CheckFlashText extends StatefulWidget {
-  const CheckFlashText({super.key, required this.trigger});
+/// 全屏居中的渐现渐隐提示：[trigger] 每递增一次播放一遍动画
+/// （快速放大淡入 -> 短暂停留 -> 淡出），黑底胶囊 + 白色大字保证醒目，
+/// [accentColor] 作文字光晕呼应提示语义（如象棋「將軍」红光晕）
+/// 各游戏对局视图共用，覆盖层使用时外包 IgnorePointer 不拦截触摸
+class FlashHint extends StatefulWidget {
+  const FlashHint({
+    super.key,
+    required this.trigger,
+    required this.text,
+    required this.accentColor,
+    required this.fontSize,
+    this.letterSpacing = 4,
+  });
 
+  /// 触发序号：每递增一次播放一遍动画
   final int trigger;
 
+  /// 提示文本
+  final String text;
+
+  /// 文字光晕色（按提示语义传入）
+  final Color accentColor;
+
+  /// 文字字号（象棋「將軍」大字、飞行棋短句等场景自定）
+  final double fontSize;
+
+  /// 字间距（大字标语可加大）
+  final double letterSpacing;
+
   @override
-  State<CheckFlashText> createState() => _CheckFlashTextState();
+  State<FlashHint> createState() => _FlashHintState();
 }
 
-class _CheckFlashTextState extends State<CheckFlashText>
+class _FlashHintState extends State<FlashHint>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
@@ -23,7 +43,7 @@ class _CheckFlashTextState extends State<CheckFlashText>
   );
 
   @override
-  void didUpdateWidget(covariant CheckFlashText oldWidget) {
+  void didUpdateWidget(covariant FlashHint oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.trigger != oldWidget.trigger && widget.trigger > 0) {
       _controller.forward(from: 0);
@@ -52,10 +72,7 @@ class _CheckFlashTextState extends State<CheckFlashText>
         final scale = t < 0.15 ? 1.4 - 0.4 * (t / 0.15) : 1.0;
         return Opacity(
           opacity: opacity.clamp(0.0, 1.0),
-          child: Transform.scale(
-            scale: scale,
-            child: child,
-          ),
+          child: Transform.scale(scale: scale, child: child),
         );
       },
       child: Container(
@@ -65,17 +82,18 @@ class _CheckFlashTextState extends State<CheckFlashText>
           borderRadius: BorderRadius.circular(Radii.card),
         ),
         child: Text(
-          '將軍',
+          widget.text,
+          textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: 64,
+            fontSize: widget.fontSize,
             fontWeight: FontWeight.w900,
             color: Colors.white,
-            letterSpacing: 10,
+            letterSpacing: widget.letterSpacing,
             shadows: [
-              // 红色光晕 + 黑色锐影，双层阴影保证任何主题下都醒目
+              // 语义色光晕 + 黑色锐影，双层阴影保证任何主题下都醒目
               Shadow(
                 blurRadius: 18,
-                color: ChessPieceColors.red.withValues(alpha: 0.9),
+                color: widget.accentColor.withValues(alpha: 0.9),
               ),
               const Shadow(blurRadius: 4, color: Colors.black),
             ],
