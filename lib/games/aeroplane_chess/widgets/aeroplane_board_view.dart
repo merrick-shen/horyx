@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_board.dart';
@@ -32,7 +33,7 @@ class AeroplaneBoardView extends StatelessWidget {
     required this.planes,
     this.movable = const {},
     this.selected,
-    this.movingOverride,
+    this.moveAnim,
     this.onPlaneTap,
   });
 
@@ -45,9 +46,9 @@ class AeroplaneBoardView extends StatelessWidget {
   /// 选中的棋子（白描边）
   final (AeroplaneColor, int)? selected;
 
-  /// 走子动画中的棋子位置覆盖（颜色, 编号, 格子坐标）：
-  /// 动画期间该棋子按覆盖坐标渲染而非其对局状态位置
-  final (AeroplaneColor, int, Point<double>)? movingOverride;
+  /// 走子/被撞飞行动画：移动中棋子（颜色, 编号, 格子坐标）的帧级坐标
+  /// 流。动画期间这些棋子按帧坐标渲染、不参与静态定位与叠子分组
+  final ValueListenable<List<(AeroplaneColor, int, Point<double>)>>? moveAnim;
 
   /// 点击可动棋子回调
   final void Function(AeroplaneColor color, int planeId)? onPlaneTap;
@@ -103,15 +104,14 @@ class AeroplaneBoardView extends StatelessWidget {
               (AeroplaneBoard.canvasExtent * 2) *
               size,
         );
+    // 移动中的棋子由动画帧驱动单独渲染，不参与静态定位与叠子分组
+    final movers = moveAnim?.value ?? const [];
+    final moverKeys = {for (final m in movers) (m.$1, m.$2): m.$3};
     final coords = <(AeroplaneColor, int), Point<double>>{};
     for (final entry in planes.entries) {
       for (var i = 0; i < entry.value.length; i++) {
-        var coord = _coordOf(entry.key, entry.value[i]);
-        final override = movingOverride;
-        if (override != null && override.$1 == entry.key && override.$2 == i) {
-          coord = override.$3;
-        }
-        coords[(entry.key, i)] = coord;
+        if (moverKeys.containsKey((entry.key, i))) continue;
+        coords[(entry.key, i)] = _coordOf(entry.key, entry.value[i]);
       }
     }
     // 同格分组（坐标近似相同），组内横向错开保证叠子可见
@@ -144,6 +144,27 @@ class AeroplaneBoardView extends StatelessWidget {
           ),
         );
       }
+    }
+    // 动画棋子：随 ValueNotifier 帧坐标平滑移动（仅此子树逐帧重建）
+    final anim = moveAnim;
+    if (anim != null) {
+      pieces.add(
+        ValueListenableBuilder<List<(AeroplaneColor, int, Point<double>)>>(
+          valueListenable: anim,
+          builder: (context, mv, _) => Stack(
+            children: [
+              for (final m in mv)
+                Positioned(
+                  left: pixelOf(m.$3).dx - pieceSize / 2,
+                  top: pixelOf(m.$3).dy - pieceSize / 2,
+                  width: pieceSize,
+                  height: pieceSize,
+                  child: AeroplanePlane(color: m.$1),
+                ),
+            ],
+          ),
+        ),
+      );
     }
     return pieces;
   }

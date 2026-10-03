@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
@@ -23,7 +24,7 @@ class AeroplaneGameView extends StatelessWidget {
     required this.canRoll,
     required this.movable,
     required this.selected,
-    required this.movingOverride,
+    required this.moveAnim,
     required this.onRoll,
     required this.onPlaneTap,
     required this.onCancelMove,
@@ -52,8 +53,8 @@ class AeroplaneGameView extends StatelessWidget {
   /// 选中的棋子
   final (AeroplaneColor, int)? selected;
 
-  /// 走子动画中的棋子位置覆盖
-  final (AeroplaneColor, int, Point<double>)? movingOverride;
+  /// 走子/被撞飞行动画的移动棋子坐标流
+  final ValueListenable<List<(AeroplaneColor, int, Point<double>)>>? moveAnim;
 
   /// 点击「掷骰子」回调
   final VoidCallback onRoll;
@@ -108,7 +109,7 @@ class AeroplaneGameView extends StatelessWidget {
                       planes: state.planes,
                       movable: movable,
                       selected: selected,
-                      movingOverride: movingOverride,
+                      moveAnim: moveAnim,
                       onPlaneTap: onPlaneTap,
                     ),
                   ),
