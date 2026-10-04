@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 五子棋对局页边距与其他游戏统一
 - 象棋棋盘圆角与其他游戏统一
 
+### Fixed
+
+- 修复存档管理页在无任何存档（如新装或清除数据后）进入时显示空白的问题
+
 ## [0.12.0] - 2026-09-30
 
 ### Added

@@ -193,12 +193,14 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
     await _writeIndex(prefs, [for (final e in entries) if (e.id != id) e]);
   }
 
-  /// 读取索引：整体损坏视为空索引，单条损坏按条跳过
+  /// 读取索引：整体损坏视为空索引，单条损坏按条跳过；
+  /// 空索引返回可增长空列表而非共享 const 列表（调用方会原地排序，
+  /// 对 const 列表排序会抛异常）
   static Future<List<ArchiveIndexEntry>> _loadIndex(
     SharedPreferences prefs,
   ) async {
     final raw = prefs.getString(_indexKey);
-    if (raw == null) return const [];
+    if (raw == null) return [];
     try {
       final list = jsonDecode(raw) as List;
       final entries = <ArchiveIndexEntry>[];
@@ -213,7 +215,7 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
       return entries;
     } catch (_) {
       // 索引整体损坏：视为空索引（数据键留存，等待覆盖或懒清理）
-      return const [];
+      return [];
     }
   }
 
