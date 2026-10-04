@@ -19,10 +19,24 @@ abstract final class AeroplaneColors {
   /// （白骰身上深浅主题均清晰）
   static const Color dicePip = Color(0xFF1B2136);
 
+  /// 棋子专用色：与棋盘格/基地块同色系但明显加深，棋子停己色格
+  /// 或己方基地上时靠深浅差分辨，不与底色融合
+  static const Color pieceGreen = Color(0xFF33691E);
+  static const Color pieceRed = Color(0xFFAD1457);
+  static const Color pieceBlue = Color(0xFF1565C0);
+  static const Color pieceYellow = Color(0xFFE65100);
+
   static Color of(AeroplaneColor color) => switch (color) {
         AeroplaneColor.green => green,
         AeroplaneColor.red => red,
         AeroplaneColor.blue => blue,
         AeroplaneColor.yellow => yellow,
+      };
+
+  static Color pieceOf(AeroplaneColor color) => switch (color) {
+        AeroplaneColor.green => pieceGreen,
+        AeroplaneColor.red => pieceRed,
+        AeroplaneColor.blue => pieceBlue,
+        AeroplaneColor.yellow => pieceYellow,
       };
 }

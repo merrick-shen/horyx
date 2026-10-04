@@ -71,7 +71,8 @@ class _AeroplanePlaneState extends State<AeroplanePlane>
 
   @override
   Widget build(BuildContext context) {
-    final c = AeroplaneColors.of(widget.color);
+    // 棋子用加深变体色，停己色格/基地上不与底色融合
+    final c = AeroplaneColors.pieceOf(widget.color);
     final plane = AnimatedBuilder(
       animation: _pulse,
       builder: (context, child) {
