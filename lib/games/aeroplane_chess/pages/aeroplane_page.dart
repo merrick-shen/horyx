@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_board.dart';
@@ -87,6 +88,10 @@ class _AeroplanePageState
   /// 被撞棋子在主棋子走完全程（碰上）后才进入飞回阶段
   double _moveSplit = 1.0;
 
+  /// 恢复存档时的棋盘基线（各色棋子位置展平）：退出时与当前比对一致
+  /// 则视为未产生新进度，直接退出且不写档（磁盘存档保持原样）；
+  /// 非恢复进入（新开局/重开）为 null
+  List<PlanePosition>? _restoredPlanes;
 
   /// 覆盖层提示（触发序号递增播放，文本为空不显示）
   int _hintTrigger = 0;
@@ -308,6 +313,7 @@ class _AeroplanePageState
     setState(() {
       _state = _initialState(_state!.players);
       _resetRound();
+      _restoredPlanes = null;
     });
   }
 
@@ -550,8 +556,14 @@ class _AeroplanePageState
       _state = saved;
       _started = true;
       _resetRound();
+      _restoredPlanes = _flatPlanes(saved);
     });
   }
+
+  /// 各色棋子位置展平（比对基线用；遍历序 = players 顺序，稳定一致）
+  List<PlanePosition> _flatPlanes(AeroplaneGameState state) => [
+        for (final list in state.planes.values) ...list,
+      ];
 
   /// 开始本地对局：进入对局视图，初始化开局状态（全部棋子在停机坪，
   /// 座位顺序首位先手），并解绑恢复入口（此后保存新建存档）
@@ -567,6 +579,7 @@ class _AeroplanePageState
       _state = _initialState(players);
       _started = true;
       _resetRound();
+      _restoredPlanes = null;
       discardResumeEntry();
     });
   }
@@ -640,14 +653,21 @@ class _AeroplanePageState
     });
   }
 
-  /// 退出请求：设置阶段直接退出页面；对局阶段尚无走子存档语义
-  /// （三选项保存确认自下一阶段接入），一律回设置视图不打扰
+  /// 退出请求：设置阶段与终局（已清档）直接退出页面；对局中无棋子
+  /// 离开停机坪回设置视图不打扰；恢复存档后未走子直接退出且不写档
+  /// （磁盘存档保持原样）；否则弹出三选项确认（保存退出/不保存退出/取消）
   Future<void> _requestExit() async {
     await requestExitWithArchive(
       this,
-      hasProgress: _started,
-      hasMoves: false,
-      unchangedSinceRestore: false,
+      hasProgress: _started && !(_state?.gameOver ?? true),
+      hasMoves: _state?.planes.values
+              .any((list) => list.any((p) => p.zone != PlaneZone.hangar)) ??
+          false,
+      unchangedSinceRestore: _restoredPlanes != null &&
+          listEquals(
+            _state == null ? null : _flatPlanes(_state!),
+            _restoredPlanes,
+          ),
       onSave: () async {
         final state = _state;
         if (state == null) return;
