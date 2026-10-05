@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 新增飞行棋：支持本地 2～4 人同屏轮流与局域网 2～4 人联机对战
 - 存档管理页条目支持自定义重命名，留空恢复默认游戏名
+- 关于页新增GitHub仓库入口
 
 ### Changed
 

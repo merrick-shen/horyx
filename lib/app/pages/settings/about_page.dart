@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/update/download_launcher.dart';
@@ -19,6 +20,10 @@ import 'package:horyx/app/pages/settings/oss_licenses_page.dart';
 /// 并提供检查更新入口（GitHub Release 检测）
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
+
+  /// 项目仓库地址（关于页入口展示与跳转）
+  static const String repositoryUrl =
+      'https://github.com/merrick-shen/horyx';
 
   @override
   State<AboutPage> createState() => _AboutPageState();
@@ -50,6 +55,22 @@ class _AboutPageState extends State<AboutPage> {
     } catch (e) {
       // 极端平台异常：记录线索后保持空串，页面仅省略版本行（与注释约定一致）
       debugPrint('读取版本信息失败: $e');
+    }
+  }
+
+  /// 打开项目仓库：外部浏览器接管，无可处理链接的应用等异常时提示
+  Future<void> _openRepository() async {
+    try {
+      final launched = await launchUrl(
+        Uri.parse(AboutPage.repositoryUrl),
+        mode: LaunchMode.externalApplication,
+      );
+      if (!mounted) return;
+      if (!launched) await showAlertDialog(context, message: '无法打开链接');
+    } catch (_) {
+      if (mounted) {
+        await showAlertDialog(context, message: '无法打开链接');
+      }
     }
   }
 
@@ -191,6 +212,17 @@ class _AboutPageState extends State<AboutPage> {
                         MaterialPageRoute(
                           builder: (_) => const OssLicensesPage(),
                         ),
+                      ),
+                    ),
+                    // 项目仓库入口：外部浏览器打开 GitHub 仓库
+                    SettingTile(
+                      icon: Icons.code_rounded,
+                      title: 'GitHub仓库',
+                      subtitle: 'github.com/merrick-shen/horyx',
+                      onTap: _openRepository,
+                      trailing: Icon(
+                        Icons.open_in_new_rounded,
+                        color: palette.textSecondary,
                       ),
                     ),
                   ],
