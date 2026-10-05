@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - 修复存档管理页在无任何存档（如新装或清除数据后）进入时显示空白的问题
+- 单词PK词表恢复合法单字母单词 a 与 i，其余单字母仍不接受
 
 ## [0.12.0] - 2026-09-30
 
