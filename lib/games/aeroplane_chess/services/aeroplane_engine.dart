@@ -389,14 +389,16 @@ abstract final class AeroplaneEngine {
     }
   }
 
-  /// 飞越航线穿越敌方跑道格：其上敌机（含叠子）一律撞回，安全格不豁免
+  /// 飞越航线穿越敌方跑道格：其上敌机（含叠子）一律撞回，安全格不豁免；
+  /// 穿越色未参与对局（2/3 人局默认配色）则无子可撞
   static void _captureRunwayCell(
     AeroplaneGameState state,
     AeroplaneColor owner,
     int runwayIndex,
     List<(AeroplaneColor, int)> captured,
   ) {
-    final planes = state.planesOf(owner);
+    final planes = state.planes[owner];
+    if (planes == null) return;
     for (var i = 0; i < planes.length; i++) {
       final pos = planes[i];
       if (pos.zone == PlaneZone.runway && pos.index == runwayIndex) {

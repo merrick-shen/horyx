@@ -644,6 +644,30 @@ void main() {
       );
     });
 
+    test('三人局飞越：穿越色未参与对局时无子可撞且不崩溃', () {
+      // 三人局默认色 绿红蓝，红方航线穿越黄色（未参与）跑道
+      final state = buildState(
+        players: fourPlayers.take(3).toList(),
+        currentPlayer: AeroplaneColor.red,
+        planes: {
+          AeroplaneColor.green: allInHangar(),
+          AeroplaneColor.red: [
+            ringAtSteps(AeroplaneColor.red, 15),
+            ...allInHangar().skip(1),
+          ],
+          AeroplaneColor.blue: allInHangar(),
+        },
+      );
+      const move = AeroplaneMove(color: AeroplaneColor.red, planeId: 0, fly: true);
+      expect(AeroplaneEngine.legalMoves(state, 1), contains(move));
+      final moved = AeroplaneEngine.applyMove(state, move, 1);
+      // 落点（行进 28 步）为己色格接一次跳跃至行进 32 步
+      expect(
+        moved.planesOf(AeroplaneColor.red)[0],
+        ringAtSteps(AeroplaneColor.red, 32),
+      );
+    });
+
     test('跳跃落点为航线起点格时可接飞越（上限内不再跳跃）', () {
       // 红方航线起点 ring 20 = 行进 16 步；行进 11 步 +1 落己色格跳至起点
       final state = buildState(
