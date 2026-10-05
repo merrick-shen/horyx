@@ -4,12 +4,13 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'package:horyx/games/aeroplane_chess/models/aeroplane_board.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_colors.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
+import 'package:horyx/games/aeroplane_chess/pages/aeroplane_online_page.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_game_view.dart';
+import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
 import 'package:horyx/shared/profile/profile_controller.dart';
@@ -64,29 +65,11 @@ class _AeroplanePageState
   /// 选中的棋子（颜色, 编号）
   (AeroplaneColor, int)? _selected;
 
-  /// 走子动画：路径点（格子坐标）与移动中的主棋子、被撞棋子回程
-  List<Point<double>>? _movePath;
-  (AeroplaneColor, int)? _movingPlane;
-  List<((AeroplaneColor, int), Point<double>, Point<double>)> _capturedFlights =
-      const [];
-
-  /// 走子/被撞飞行动画：帧驱动移动棋子坐标流（每段 140ms 匀速滑行，
-  /// 经 ValueNotifier 下发，动画中仅重建移动棋子子树）
-  late final AnimationController _moveController = AnimationController(
+  /// 走子/被撞飞行动画器（路径逐段滑行，帧坐标经 ValueNotifier 下发，
+  /// 动画中仅重建移动棋子子树）；动画结束回调里应用目标状态
+  late final AeroplaneMoveAnimator _animator = AeroplaneMoveAnimator(
     vsync: this,
-    duration: const Duration(milliseconds: 600),
   );
-
-  final ValueNotifier<List<(AeroplaneColor, int, Point<double>)>> _movers =
-      ValueNotifier(const []);
-
-  /// 动画结束时应用的目标状态与结算回调
-  AeroplaneGameState? _pendingTo;
-  VoidCallback? _pendingDone;
-
-  /// 走子动画分段：主棋子滑行占总时长的比例（无被撞时为 1）；
-  /// 被撞棋子在主棋子走完全程（碰上）后才进入飞回阶段
-  double _moveSplit = 1.0;
 
   /// 恢复存档时的棋盘基线（各色棋子位置展平）：退出时与当前比对一致
   /// 则视为未产生新进度，直接退出且不写档（磁盘存档保持原样）；
@@ -118,15 +101,12 @@ class _AeroplanePageState
     if (resumeId != null) {
       resumeArchiveById(resumeId, _applySavedState);
     }
-    _moveController.addListener(_updateMovers);
-    _moveController.addStatusListener(_onMoveStatus);
   }
 
   @override
   void dispose() {
     _rollTimer?.cancel();
-    _moveController.dispose();
-    _movers.dispose();
+    _animator.dispose();
     super.dispose();
   }
 
@@ -175,8 +155,8 @@ class _AeroplanePageState
           to: newState,
           plane: target,
           path: [
-            _planeCoord(state, target.$1, target.$2),
-            _planeCoord(newState, target.$1, target.$2),
+            planeCoord(state, target.$1, target.$2),
+            planeCoord(newState, target.$1, target.$2),
           ],
           onDone: () => _hint('连续三个 6！最后移动的飞机返回停机坪', AeroplaneColors.yellow),
         );
@@ -185,10 +165,7 @@ class _AeroplanePageState
           _state = newState;
           _phase = _TurnPhase.awaitingRoll;
         });
-        _hint(
-          '连续三个 6！${newState.currentPlayer.label}方行动',
-          AeroplaneColors.yellow,
-        );
+        _hint('无可动棋子，跳过回合', context.palette.textSecondary);
       }
       return;
     }
@@ -248,14 +225,14 @@ class _AeroplanePageState
       for (final (color, planeId) in captured)
         (
           (color, planeId),
-          _planeCoord(state, color, planeId),
-          _planeCoord(newState, color, planeId),
+          planeCoord(state, color, planeId),
+          planeCoord(newState, color, planeId),
         ),
     ];
     _animateMove(
       to: newState,
       plane: (move.color, move.planeId),
-      path: _buildMovePath(state, move, _dice!, newState),
+      path: buildMovePath(state: state, move: move, dice: _dice!, newState: newState),
       onDone: () => _onMoveDone(newState, move.color),
       capturedFlights: capturedFlights,
     );
@@ -309,7 +286,7 @@ class _AeroplanePageState
     });
   }
 
-  /// 走子/惩罚动画：按路径点逐段推进（每段 140ms），动画期间锁输入，
+  /// 走子/惩罚动画：按路径点逐段推进，动画期间锁输入，
   /// 结束时应用目标状态并回调结算
   void _animateMove({
     required AeroplaneGameState to,
@@ -323,79 +300,20 @@ class _AeroplanePageState
       _phase = _TurnPhase.moving;
       _selected = null;
       _moves = const [];
-      _movingPlane = plane;
-      _movePath = path;
-      _capturedFlights = capturedFlights;
-      _pendingTo = to;
-      _pendingDone = onDone;
     });
-    // 主棋子每段 140ms 匀速滑行（单段最短 300ms）；被撞棋子在主棋子
-    // 走完全程（碰上）后用 300ms 飞回基地
-    final pathMs = max(300, 140 * (path.length - 1));
-    final totalMs = pathMs + (capturedFlights.isEmpty ? 0 : 300);
-    _moveSplit = capturedFlights.isEmpty ? 1.0 : pathMs / totalMs;
-    _moveController.duration = Duration(milliseconds: totalMs);
-    _updateMoversAt(0);
-    _moveController.forward(from: 0);
-  }
-
-  /// 动画帧：主棋子沿路径等时长段插值连续滑行（飞越段插值点更密、
-  /// 滑速更快，表现掠过感），被撞棋子同步直线飞回停机坪机位
-  void _updateMovers() => _updateMoversAt(_moveController.value);
-
-  void _updateMoversAt(double t) {
-    final path = _movePath;
-    final plane = _movingPlane;
-    if (path == null || plane == null || path.isEmpty) return;
-    // 分段进度：主棋子先沿路径滑行（走到落点碰上），被撞棋子保持原位，
-    // 主棋子走完全程后才进入飞回阶段
-    final split = _moveSplit;
-    final pathT = split >= 1 ? t : (t / split).clamp(0.0, 1.0);
-    final f = pathT * (path.length - 1);
-    final k = f.floor();
-    final main = k >= path.length - 1
-        ? path.last
-        : Point(
-            path[k].x + (path[k + 1].x - path[k].x) * (f - k),
-            path[k].y + (path[k + 1].y - path[k].y) * (f - k),
-          );
-    final movers = <(AeroplaneColor, int, Point<double>)>[
-      (plane.$1, plane.$2, main),
-    ];
-    if (_capturedFlights.isNotEmpty) {
-      final returnT = split >= 1
-          ? 0.0
-          : ((t - split) / (1 - split)).clamp(0.0, 1.0);
-      for (final (planeKey, from, to) in _capturedFlights) {
-        movers.add((
-          planeKey.$1,
-          planeKey.$2,
-          Point(
-            from.x + (to.x - from.x) * returnT,
-            from.y + (to.y - from.y) * returnT,
-          ),
-        ));
-      }
-    }
-    _movers.value = movers;
-  }
-
-  void _onMoveStatus(AnimationStatus status) {
-    if (status != AnimationStatus.completed || !mounted) return;
-    final to = _pendingTo;
-    final done = _pendingDone;
-    if (to == null) return;
-    setState(() {
-      _state = to;
-      _phase = _TurnPhase.awaitingRoll;
-      _movingPlane = null;
-      _movePath = null;
-      _capturedFlights = const [];
-      _movers.value = const [];
-      _pendingTo = null;
-      _pendingDone = null;
-    });
-    done?.call();
+    _animator.start(
+      plane: plane,
+      path: path,
+      capturedFlights: capturedFlights,
+      onCompleted: () {
+        if (!mounted) return;
+        setState(() {
+          _state = to;
+          _phase = _TurnPhase.awaitingRoll;
+        });
+        onDone();
+      },
+    );
   }
 
   /// 触发覆盖层提示
@@ -405,120 +323,6 @@ class _AeroplanePageState
       _hintText = text;
       _hintColor = color;
     });
-  }
-
-  // ---------------------------------------------------------------------------
-  // 走子路径推导
-  // ---------------------------------------------------------------------------
-
-  /// 走法迁移的动画路径（格子坐标停留点序列）：
-  /// 普通行进逐格推进；超出终点冲至尽头再逐格回退；跳跃/回退后跳跃
-  /// 一次滑到最终落点；飞越先逐格至航线起点、直线插值飞至落点，
-  /// 落点再接跳跃同样一次滑到最终点
-  List<Point<double>> _buildMovePath(
-    AeroplaneGameState state,
-    AeroplaneMove move,
-    int dice,
-    AeroplaneGameState newState,
-  ) {
-    final color = move.color;
-    final old = state.planesOf(color)[move.planeId];
-    final newPos = newState.planesOf(color)[move.planeId];
-    final points = <Point<double>>[_planeCoord(state, color, move.planeId)];
-    if (old.zone == PlaneZone.hangar) {
-      // 起飞直达起飞格（起飞落点不触发连锁）
-      points.add(_planeCoord(newState, color, move.planeId));
-      return points;
-    }
-    final total = AeroplaneEngine.totalSteps(color);
-    final finalSteps = newPos.zone == PlaneZone.goal
-        ? total
-        : AeroplaneEngine.journeySteps(color, newPos);
-    // 准备区出发：起飞格为第 1 步，行进段自 journey 1 起
-    // 准备区出发：起飞格（journey 0）为第 1 步，行进段自 journey 0 起
-    // （s0 取 -1 使逐格序列包含起飞格）
-    final s0 = old.zone == PlaneZone.ready
-        ? -1
-        : AeroplaneEngine.journeySteps(color, old);
-
-    if (move.fly) {
-      final route = AeroplaneBoard.flightRoutes[color]!;
-      final startSteps =
-          (route.start - AeroplaneBoard.takeoffIndex[color]!) %
-          AeroplaneBoard.ringSize;
-      for (var s = s0 + 1; s <= startSteps; s++) {
-        points.add(_stepsCoord(color, s));
-      }
-      // 飞越段直线插值（快速滑过虚线航线）
-      final landing = AeroplaneBoard.ringAnchor(route.landing);
-      final last = points.last;
-      for (var i = 1; i <= 3; i++) {
-        final t = i / 4;
-        points.add(
-          Point(
-            last.x + (landing.x - last.x) * t,
-            last.y + (landing.y - last.y) * t,
-          ),
-        );
-      }
-      final landingSteps =
-          (route.landing - AeroplaneBoard.takeoffIndex[color]!) %
-          AeroplaneBoard.ringSize;
-      points.add(
-        finalSteps == landingSteps
-            ? landing
-            : _planeCoord(newState, color, move.planeId),
-      );
-      return points;
-    }
-
-    final raw = s0 + dice;
-    final forwardEnd = min(raw, total);
-    for (var s = s0 + 1; s <= forwardEnd; s++) {
-      points.add(_stepsCoord(color, s));
-    }
-    if (raw > total) {
-      final landSteps = 2 * total - raw;
-      for (var s = total - 1; s >= landSteps; s--) {
-        points.add(_stepsCoord(color, s));
-      }
-      if (finalSteps != landSteps) {
-        points.add(_planeCoord(newState, color, move.planeId));
-      }
-    } else if (finalSteps != raw) {
-      points.add(_planeCoord(newState, color, move.planeId));
-    }
-    // 恰好抵达终点：从跑道末格飞回基地机位（动画末段）
-    if (newPos.zone == PlaneZone.goal) {
-      points.add(_planeCoord(newState, color, move.planeId));
-    }
-    return points;
-  }
-
-  /// 累计步数 → 格子坐标（行进途中经停点）
-  Point<double> _stepsCoord(AeroplaneColor color, int steps) {
-    final pos = AeroplaneEngine.positionAtSteps(color, steps);
-    return switch (pos.zone) {
-      PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
-      PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
-      _ => AeroplaneBoard.goalCellCenter(color),
-    };
-  }
-
-  /// 对局状态中的棋子 → 格子坐标
-  Point<double> _planeCoord(
-    AeroplaneGameState state,
-    AeroplaneColor color,
-    int planeId,
-  ) {
-    final pos = state.planesOf(color)[planeId];
-    return switch (pos.zone) {
-      PlaneZone.hangar => AeroplaneBoard.hangarSlotCenter(color, pos.index),
-      PlaneZone.ready => AeroplaneBoard.readyCellCenter(color),
-      PlaneZone.ring => AeroplaneBoard.ringAnchor(pos.index),
-      PlaneZone.runway => AeroplaneBoard.runwayCellCenter(color, pos.index),
-      PlaneZone.goal => AeroplaneBoard.hangarSlotCenter(color, pos.index),
-    };
   }
 
   // ---------------------------------------------------------------------------
@@ -579,24 +383,17 @@ class _AeroplanePageState
   /// 清空回合内临时状态（掷骰/选子/动画/提示），回到等待掷骰
   void _resetRound() {
     _rollTimer?.cancel();
-    _moveController.stop();
+    _animator.reset();
     _phase = _TurnPhase.awaitingRoll;
     _dice = null;
     _moves = const [];
     _selected = null;
-    _movingPlane = null;
-    _movePath = null;
-    _capturedFlights = const [];
-    _pendingTo = null;
-    _pendingDone = null;
-    _movers.value = const [];
     _hintTrigger = 0;
     _hintText = '';
   }
 
-  /// 局域网模式：创建房间并进入等待页（容量 2..4，自己为玩家 1）。
-  /// 联机对局页自后续阶段接入，hostGameBuilder 留空——
-  /// 满员后等待页停留「即将开始」（联机未接入的既有兜底，不报错）
+  /// 局域网模式：创建房间并进入等待页（容量 2..4，自己为玩家 1），
+  /// 满员后跳转联机对局页并移交房间连接
   Future<void> _createRoom(int capacity) async {
     if (!await ensureProfileForOnline(context)) return;
     if (!mounted) return;
@@ -607,6 +404,8 @@ class _AeroplanePageState
           hostName: ProfileScope.of(context).name,
           icon: AeroplanePage.gameIcon,
           capacity: capacity,
+          hostGameBuilder: (context, host) =>
+              AeroplaneOnlinePage.host(host: host),
         ),
       ),
     );
@@ -726,7 +525,7 @@ class _AeroplanePageState
       canRoll: _phase == _TurnPhase.awaitingRoll && !state.gameOver,
       movable: _movable,
       selected: _selected,
-      moveAnim: _movers,
+      moveAnim: _animator.movers,
       onRoll: _roll,
       onPlaneTap: _onPlaneTap,
       onCancelMove: () => setState(() => _selected = null),

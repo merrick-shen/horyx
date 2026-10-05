@@ -1,4 +1,5 @@
 import 'package:horyx/shared/game/game_info.dart';
+import 'package:horyx/games/aeroplane_chess/pages/aeroplane_online_page.dart';
 import 'package:horyx/games/aeroplane_chess/pages/aeroplane_page.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
 import 'package:horyx/games/chess/pages/chess_online_page.dart';
@@ -79,14 +80,16 @@ abstract final class GameRegistry {
   );
 
   /// 飞行棋
-  /// 本地 2～4 人同屏轮流 + 局域网联机（联机对局页自后续阶段接入，
-  /// 当前满员后等待页停留「即将开始」）
+  /// 本地 2～4 人同屏轮流 + 局域网联机（房主权威 + 全量快照重同步，详见
+  /// lib/games/aeroplane_chess/services/aeroplane_online_controller.dart）
   static final GameInfo aeroplaneChess = GameInfo(
     name: AeroplanePage.gameName,
     description: '掷骰起飞，率先送四架飞机抵达终点',
     icon: AeroplanePage.gameIcon,
     pageBuilder: (context, {resumeArchiveId}) =>
         AeroplanePage(resumeArchiveId: resumeArchiveId),
+    onlineClientBuilder: (context, client) =>
+        AeroplaneOnlinePage.client(client: client),
     archive: GameArchiveInfo(remove: AeroplaneStorage.instance.remove),
   );
 
