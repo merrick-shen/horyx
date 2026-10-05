@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- 新增飞行棋：支持本地 2～4 人同屏轮流与局域网 2～4 人联机对战
+
 ### Changed
 
 - 五子棋对局页边距与其他游戏统一
