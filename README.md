@@ -34,6 +34,7 @@ lib/
 │   ├── gomoku/             # 五子棋（规则引擎、联机对局控制器、存档）
 │   ├── tank/               # 坦克动荡（Flame 战场：随机迷宫、原版摇杆驾驶、坦克与子弹碰撞、回合计分；内分 engine/ 实体逻辑、特效与音效；联机为房主权威快照广播 + 客户端影子战场）
 │   ├── chess/              # 中国象棋（CustomPainter 绘制棋盘与棋子、规则引擎、联机对局控制器、存档）
+│   ├── aeroplane_chess/    # 飞行棋（掷骰与飞越连锁规则引擎、联机对局控制器、存档）
 │   └── scoreboard/         # 计分器（BO 赛制规则引擎、存档）
 ├── shared/                 # 共享层
 │   ├── game/               # 游戏元数据模型（GameInfo，注册组合根位于 app/game_registry.dart）
