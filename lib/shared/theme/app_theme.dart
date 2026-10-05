@@ -150,6 +150,21 @@ abstract final class AppTheme {
         ),
         // 注入调色板，组件侧经 context.palette 读取
         extensions: [palette],
+        // 开关配色与调色板对齐：M3 Switch 默认取 ColorScheme.fromSeed 的
+        // 派生色，与自绘组件使用的原始主题色存在色差（观感偏深）
+        switchTheme: SwitchThemeData(
+          thumbColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? Colors.white
+                : palette.scaffoldBg,
+          ),
+          trackColor: WidgetStateProperty.resolveWith(
+            (states) => states.contains(WidgetState.selected)
+                ? palette.primary
+                : palette.textSecondary.withValues(alpha: 0.35),
+          ),
+          trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+        ),
         // 底部导航栏配色与主页统一：
         // M3 默认背景取 colorScheme.surfaceContainer（偏灰），需覆盖为表面色
         navigationBarTheme: NavigationBarThemeData(

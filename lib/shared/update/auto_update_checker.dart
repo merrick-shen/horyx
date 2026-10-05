@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'package:horyx/shared/storage/auto_update_storage.dart';
 import 'package:horyx/shared/storage/ignored_version_storage.dart';
 import 'package:horyx/shared/update/download_launcher.dart';
 import 'package:horyx/shared/update/update_service.dart';
@@ -9,6 +10,7 @@ import 'package:horyx/shared/widgets/update_available_dialog.dart';
 /// 自动检查更新：每次冷启动静默检查一次，仅「有新版本」时弹窗提示。
 /// 无频控；检查失败与已是最新版完全无感（不打扰、不提示），下次启动自动重试。
 /// 用户可在弹窗中选择「忽略此版本」，被忽略的版本不再弹窗（本地记录）。
+/// 用户可在设置中关闭自动检查（本地开关，默认开启），手动检查不受影响。
 /// Debug 构建直接短路，开发期不被弹窗打扰。
 class AutoUpdateChecker {
   AutoUpdateChecker({UpdateService? updateService})
@@ -27,6 +29,8 @@ class AutoUpdateChecker {
   Future<void> checkIfNeeded(BuildContext context) async {
     if (debugSkip) return;
     try {
+      // 用户关闭了自动检查：静默跳过，关于页的手动检查不受影响
+      if (!(await AutoUpdateStorage.load())) return;
       // 请求与弹窗都需要完整的组件树：等首帧完成后再进入延迟等待
       await WidgetsBinding.instance.endOfFrame;
       await Future<void>.delayed(const Duration(seconds: 3));

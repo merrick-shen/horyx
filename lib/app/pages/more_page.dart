@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/profile/profile_controller.dart';
+import 'package:horyx/shared/storage/auto_update_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
@@ -69,6 +70,8 @@ class MorePage extends StatelessWidget {
                       );
                     },
                   ),
+                  // 自动检查更新开关：控制启动时的静默检查（默认开启）
+                  const _AutoUpdateToggleTile(),
                 ],
               ),
               const SizedBox(height: 14),
@@ -129,6 +132,49 @@ class _SectionCard extends StatelessWidget {
           ),
           ...children,
         ],
+      ),
+    );
+  }
+}
+
+/// 自动检查更新开关行：右侧 Switch，点击整行或开关均可切换；
+/// 状态经 AutoUpdateStorage 持久化（未设置默认开启）
+class _AutoUpdateToggleTile extends StatefulWidget {
+  const _AutoUpdateToggleTile();
+
+  @override
+  State<_AutoUpdateToggleTile> createState() => _AutoUpdateToggleTileState();
+}
+
+class _AutoUpdateToggleTileState extends State<_AutoUpdateToggleTile> {
+  /// 当前开关状态；null = 尚未从存储加载完成（UI 先按默认开启渲染）
+  bool? _enabled;
+
+  @override
+  void initState() {
+    super.initState();
+    AutoUpdateStorage.load().then((enabled) {
+      if (mounted) setState(() => _enabled = enabled);
+    });
+  }
+
+  Future<void> _toggle() async {
+    final next = !(_enabled ?? true);
+    setState(() => _enabled = next);
+    await AutoUpdateStorage.save(next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = _enabled ?? true;
+    return SettingTile(
+      icon: Icons.sync_rounded,
+      title: '自动检查更新',
+      subtitle: '应用启动时检测新版本',
+      onTap: _toggle,
+      trailing: Switch(
+        value: enabled,
+        onChanged: _enabled == null ? null : (_) => _toggle(),
       ),
     );
   }
