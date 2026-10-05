@@ -65,7 +65,7 @@ void main() {
 
       final byId = await TankStorage.instance.loadById(id);
       expect(byId!.state.savedAt, state.savedAt);
-      expect(byId.state.summary, state.summary);
+      expect(byId.state.savedAt, state.savedAt);
     });
 
     test('传入已有 id 覆盖：条目数不变、进度刷新', () async {

@@ -24,10 +24,6 @@ class WordPkGameState implements GameArchiveSummary {
   @override
   final DateTime savedAt;
 
-  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
-  @override
-  String get summary =>
-      '$playerCount 人对局 · 已验证 ${entries.length} 个单词';
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;

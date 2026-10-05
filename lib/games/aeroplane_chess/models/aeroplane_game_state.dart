@@ -177,24 +177,6 @@ class AeroplaneGameState implements GameArchiveSummary {
   @override
   final DateTime savedAt;
 
-  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
-  /// 进行中展示进度领先者（到达数最多，并列取轮转靠前）与当前行动方，
-  /// 如「红 2/4 到达，轮到蓝方」；终局展示获胜方
-  @override
-  String get summary {
-    if (gameOver) {
-      return '${winner!.label}方胜利';
-    }
-    var leader = players.first;
-    for (final p in players.skip(1)) {
-      if (arrivedCount(p.color) > arrivedCount(leader.color)) {
-        leader = p;
-      }
-    }
-    return '${leader.color.label} ${arrivedCount(leader.color)}/4 到达，'
-        '轮到${currentPlayer.label}方';
-  }
-
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;
 

@@ -106,7 +106,6 @@ class _ScoreboardSetupViewState extends State<ScoreboardSetupView> {
         if (saved != null) ...[
           ResumeCard(
             title: '继续上次计分',
-            summary: saved.summary,
             onTap: widget.onResume,
           ),
           const SizedBox(height: 16),

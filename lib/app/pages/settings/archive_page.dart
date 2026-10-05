@@ -49,7 +49,6 @@ class _ArchivePageState extends State<ArchivePage> {
       entries.add(_ArchiveEntry(
         name: game.name,
         icon: game.icon,
-        summary: item.summary,
         savedAt: item.savedAt,
         start: () => _openGame(game, item.id),
         remove: () => archive.remove(item.id),
@@ -209,14 +208,6 @@ class _ArchiveTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  entry.summary,
-                  style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 12.5,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
                   '保存于 $timeText',
                   style: TextStyle(
                     color: palette.textSecondary,
@@ -291,7 +282,6 @@ class _ArchiveEntry {
   const _ArchiveEntry({
     required this.name,
     required this.icon,
-    required this.summary,
     required this.savedAt,
     required this.start,
     required this.remove,
@@ -302,9 +292,6 @@ class _ArchiveEntry {
 
   /// 游戏图标（与 GameRegistry 一致）
   final IconData icon;
-
-  /// 进度摘要（与各游戏恢复卡片文案一致）
-  final String summary;
 
   /// 存档时间
   final DateTime savedAt;

@@ -48,7 +48,6 @@ class _TankSetupViewState extends State<TankSetupView> {
         if (saved != null) ...[
           ResumeCard(
             title: '继续上次对战',
-            summary: saved.summary,
             onTap: widget.onResume,
           ),
           const SizedBox(height: 24),

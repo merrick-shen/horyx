@@ -5,11 +5,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:horyx/shared/storage/archive_storage.dart';
 
-/// 测试用存档状态（实现展示契约）
+/// 测试用存档状态（实现展示契约；summary 为测试自有的档位标识字段）
 class _FakeState implements GameArchiveSummary {
   const _FakeState(this.summary, this.savedAt);
 
-  @override
   final String summary;
 
   @override
@@ -99,7 +98,7 @@ void main() {
       expect(summaries.map((e) => e.id), containsAll([id1, id2]));
     });
 
-    test('传入已有 id 覆盖：条目数不变，摘要与保存时间刷新', () async {
+    test('传入已有 id 覆盖：条目数不变，保存时间刷新', () async {
       final id = await storage.saveArchive(stateAt(DateTime(2026, 9, 28, 10)));
       final newSavedAt = DateTime(2026, 9, 28, 15);
       await storage.saveArchive(
@@ -110,7 +109,6 @@ void main() {
       final summaries = await storage.loadSummaries();
       expect(summaries, hasLength(1));
       expect(summaries.single.id, id);
-      expect(summaries.single.summary, '推进后进度');
       expect(summaries.single.savedAt, newSavedAt);
 
       final record = await storage.loadById(id);
@@ -157,7 +155,7 @@ void main() {
       final all = await ArchiveStorage.loadAllSummaries();
       expect(all, hasLength(3));
       // 倒序：时间最新的在最前
-      expect(all.map((e) => e.summary).toList(), ['B1', 'A2', 'A1']);
+      expect(all.map((e) => e.savedAt.hour).toList(), [12, 11, 10]);
     });
 
     test('loadLatest 不受其他游戏存档影响', () async {

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - 五子棋对局页边距与其他游戏统一
 - 象棋棋盘圆角与其他游戏统一
+- 存档管理条目与恢复入口不再显示对局进度详情
 
 ### Fixed
 

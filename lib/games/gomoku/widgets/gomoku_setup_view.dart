@@ -65,7 +65,6 @@ class _GomokuSetupViewState extends State<GomokuSetupView> {
         // 存在未完成对局时展示恢复入口
         if (saved != null) ...[
           ResumeCard(
-            summary: saved.summary,
             onTap: widget.onResume,
           ),
           const SizedBox(height: 16),

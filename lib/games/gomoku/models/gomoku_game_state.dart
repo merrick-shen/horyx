@@ -19,10 +19,6 @@ class GomokuGameState implements GameArchiveSummary {
   @override
   final DateTime savedAt;
 
-  /// 存档进度摘要（设置页恢复卡片与存档管理页共用的单一文案来源）
-  @override
-  String get summary =>
-      '$boardSize×$boardSize 对局 · 已落子 ${moves.length} 手';
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;

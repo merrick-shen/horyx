@@ -15,7 +15,6 @@ class _FakeState implements GameArchiveSummary {
     );
   }
 
-  @override
   final String summary;
   @override
   final DateTime savedAt;
@@ -126,7 +125,7 @@ void main() {
     expect(id, state.resumedArchiveId);
     final summaries = await storage.loadSummaries();
     expect(summaries, hasLength(1));
-    expect(summaries.single.summary, '新进度');
+    expect(summaries.single.savedAt, DateTime(2026, 9, 2));
     expect(summaries.single.id, id);
   });
 
@@ -157,7 +156,7 @@ void main() {
     expect(secondId, firstId);
     final summaries = await storage.loadSummaries();
     expect(summaries, hasLength(1));
-    expect(summaries.single.summary, '第二次保存');
+    expect(summaries.single.savedAt, DateTime(2026, 9, 2));
   });
 
   testWidgets('takeResumeEntry 返回存档并关闭入口', (tester) async {
@@ -189,8 +188,8 @@ void main() {
     final summaries = await storage.loadSummaries();
     expect(summaries, hasLength(2));
     expect(
-      summaries.firstWhere((e) => e.id == targetId).summary,
-      '推进',
+      summaries.firstWhere((e) => e.id == targetId).savedAt,
+      DateTime(2026, 9, 3),
     );
   });
 

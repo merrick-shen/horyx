@@ -3,24 +3,19 @@ import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 各游戏存档模型的基础契约：存档管理页展示（摘要/保存时间）所需的最小接口
+/// 各游戏存档模型的基础契约：存档管理页展示（保存时间）所需的最小接口
 /// （GameInfo.archive 适配经此免转型读取展示数据）
 abstract interface class GameArchiveSummary {
-  /// 存档进度摘要：与各游戏设置页「继续上次对局」卡片文案同源，
-  /// 单点维护于各存档模型
-  String get summary;
-
   /// 存档时间
   DateTime get savedAt;
 }
 
-/// 多存档索引条目：单条存档的展示元数据（id、归属游戏、摘要、保存时间）。
+/// 多存档索引条目：单条存档的展示元数据（id、归属游戏、保存时间）。
 /// 索引键集中缓存这些字段，存档管理页列出全部存档时无需逐条解析数据键
 class ArchiveIndexEntry {
   const ArchiveIndexEntry({
     required this.id,
     required this.gameId,
-    required this.summary,
     required this.savedAt,
   });
 
@@ -30,25 +25,21 @@ class ArchiveIndexEntry {
   /// 归属游戏标识（与 GameRegistry 登记名一致）
   final String gameId;
 
-  /// 进度摘要（保存时取自存档模型，展示用冗余副本）
-  final String summary;
-
   /// 存档时间（保存时取自存档模型，展示用冗余副本）
   final DateTime savedAt;
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'gameId': gameId,
-        'summary': summary,
         'savedAt': savedAt.toIso8601String(),
       };
 
   /// 反序列化；字段缺失或类型不符时抛出异常，由索引读取侧按条跳过
+  /// （旧索引残留的 summary 等冗余键被忽略）
   factory ArchiveIndexEntry.fromJson(Map<String, dynamic> json) {
     return ArchiveIndexEntry(
       id: json['id'] as String,
       gameId: json['gameId'] as String,
-      summary: json['summary'] as String,
       savedAt: DateTime.parse(json['savedAt'] as String),
     );
   }
@@ -100,7 +91,7 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
   // ---------------------------------------------------------------------------
 
   /// 保存一条存档：[id] 为空时新建并生成标识；传入已有 id 则覆盖更新该条
-  /// （索引中的摘要与保存时间同步刷新）。返回存档 id
+  /// （索引中的保存时间同步刷新）。返回存档 id
   Future<String> saveArchive(T state, {String? id}) async {
     final archiveId = id ?? _generateId();
     final prefs = await SharedPreferences.getInstance();
@@ -113,7 +104,6 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
     final entry = ArchiveIndexEntry(
       id: archiveId,
       gameId: gameId,
-      summary: state.summary,
       savedAt: state.savedAt,
     );
     await _writeIndex(

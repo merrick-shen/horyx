@@ -477,58 +477,6 @@ void main() {
     });
   });
 
-  group('summary 摘要', () {
-    test('进行中对局：进度领先者 + 当前行动方', () {
-      final state = buildState(
-        planes: {
-          AeroplaneColor.green: allInHangar()[AeroplaneColor.green]!,
-          AeroplaneColor.red: [
-            PlanePosition(zone: PlaneZone.goal, index: 0),
-            PlanePosition(zone: PlaneZone.goal, index: 0),
-            PlanePosition(zone: PlaneZone.ring, index: 10),
-            PlanePosition(zone: PlaneZone.hangar, index: 3),
-          ],
-          AeroplaneColor.blue: allInHangar()[AeroplaneColor.blue]!,
-          AeroplaneColor.yellow: allInHangar()[AeroplaneColor.yellow]!,
-        },
-        currentPlayer: AeroplaneColor.blue,
-      );
-      expect(state.summary, '红 2/4 到达，轮到蓝方');
-    });
-
-    test('开局状态：首位玩家 0/4', () {
-      expect(buildState().summary, '绿 0/4 到达，轮到绿方');
-    });
-
-    test('终局状态：展示获胜方', () {
-      final state = buildState(gameOver: true, winner: AeroplaneColor.red);
-      expect(state.summary, '红方胜利');
-    });
-
-    test('进度并列取轮转靠前者', () {
-      final state = buildState(
-        planes: {
-          AeroplaneColor.green: [
-            PlanePosition(zone: PlaneZone.goal, index: 0),
-            PlanePosition(zone: PlaneZone.hangar, index: 1),
-            PlanePosition(zone: PlaneZone.hangar, index: 2),
-            PlanePosition(zone: PlaneZone.hangar, index: 3),
-          ],
-          AeroplaneColor.red: [
-            PlanePosition(zone: PlaneZone.goal, index: 0),
-            PlanePosition(zone: PlaneZone.hangar, index: 1),
-            PlanePosition(zone: PlaneZone.hangar, index: 2),
-            PlanePosition(zone: PlaneZone.hangar, index: 3),
-          ],
-          AeroplaneColor.blue: allInHangar()[AeroplaneColor.blue]!,
-          AeroplaneColor.yellow: allInHangar()[AeroplaneColor.yellow]!,
-        },
-        currentPlayer: AeroplaneColor.yellow,
-      );
-      expect(state.summary, '绿 1/4 到达，轮到黄方');
-    });
-  });
-
   group('开局构建', () {
     test('默认颜色分配：2 人对角、3 人连续、4 人全色', () {
       expect(

@@ -57,11 +57,11 @@ void main() {
       expect(latest.state.currentPlayer, AeroplaneColor.red);
       expect(latest.state.consecutiveSixes, 1);
       expect(latest.state.lastMoved, (AeroplaneColor.green, 0));
-      expect(latest.state.summary, state.summary);
+      expect(latest.state.savedAt, state.savedAt);
 
       final byId = await AeroplaneStorage.instance.loadById(id);
       expect(byId!.state.savedAt, state.savedAt);
-      expect(byId.state.summary, state.summary);
+      expect(byId.state.savedAt, state.savedAt);
     });
 
     test('传入已有 id 覆盖：条目数不变、进度刷新', () async {
@@ -92,7 +92,7 @@ void main() {
       final record = await AeroplaneStorage.instance.loadById(id);
       expect(record!.state.consecutiveSixes, 0);
       expect(record.state.currentPlayer, AeroplaneColor.green);
-      expect(record.state.summary, updated.summary);
+      expect(record.state.savedAt, updated.savedAt);
     });
 
     test('remove 后恢复入口数据清空', () async {
