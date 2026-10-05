@@ -11,6 +11,7 @@ class SettingTile extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.subtitle,
+    this.trailing,
   });
 
   /// 左侧图标
@@ -21,6 +22,9 @@ class SettingTile extends StatelessWidget {
 
   /// 可选副标题（补充说明）
   final String? subtitle;
+
+  /// 右侧自定义组件（如操作进行中的转圈指示）；null 时显示默认箭头
+  final Widget? trailing;
 
   /// 点击回调
   final VoidCallback onTap;
@@ -74,10 +78,12 @@ class SettingTile extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: palette.textSecondary,
-              ),
+              // 右侧：自定义组件优先，否则显示导航箭头
+              trailing ??
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: palette.textSecondary,
+                  ),
             ],
           ),
         ),

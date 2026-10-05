@@ -7,6 +7,9 @@ import 'package:horyx/shared/update/download_launcher.dart';
 import 'package:horyx/shared/update/update_service.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
+import 'package:horyx/shared/widgets/page_content.dart';
+import 'package:horyx/shared/widgets/panel_card.dart';
+import 'package:horyx/shared/widgets/setting_tile.dart';
 import 'package:horyx/shared/widgets/update_available_dialog.dart';
 import 'package:horyx/app/pages/settings/changelog_page.dart';
 import 'package:horyx/app/pages/settings/oss_licenses_page.dart';
@@ -81,203 +84,122 @@ class _AboutPageState extends State<AboutPage> {
     return AppPageScaffold(
       title: '关于',
       showBack: true,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+      child: SingleChildScrollView(
+        child: PageContent(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 应用标识：主题色 Logo
+              // 应用标识区：主题色 Logo + 名称 + 简介 + 版本徽章
               // （SVG 源文件为黑色填充，经 colorFilter 重着色，
               //   颜色实时跟随用户选择的主题色）
-              SvgPicture.asset(
-                'assets/icon/logo.svg',
-                width: 90,
-                height: 90,
-                colorFilter: ColorFilter.mode(
-                  palette.primary,
-                  BlendMode.srcIn,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Horyx',
-                style: TextStyle(
-                  color: palette.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '游戏合集，随时开局的掌上游戏厅',
-                style: TextStyle(
-                  color: palette.textSecondary,
-                  fontSize: 13.5,
-                ),
-              ),
-              if (_version.isNotEmpty) ...[
-                const SizedBox(height: 22),
-                Text(
-                  'v$_version 开发版',
-                  style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
-              // 检查更新与更新日志两个入口同宽：IntrinsicWidth 取两行
-              // 最宽者，stretch 拉伸使两按钮等宽对齐
-              IntrinsicWidth(
+              const SizedBox(height: 24),
+              Center(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // 检查更新入口：检查中转圈并禁点
-                    InkWell(
-                      borderRadius: BorderRadius.circular(Radii.chip),
-                      onTap: _checking ? null : _checkUpdate,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: palette.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(Radii.chip),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (_checking)
-                              SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: palette.primary,
-                                ),
-                              )
-                            else
-                              Icon(
-                                Icons.system_update_rounded,
-                                size: 18,
-                                color: palette.primary,
-                              ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _checking ? '检查中…' : '检查更新',
-                              style: TextStyle(
-                                color: palette.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
+                    SvgPicture.asset(
+                      'assets/icon/logo.svg',
+                      width: 88,
+                      height: 88,
+                      colorFilter: ColorFilter.mode(
+                        palette.primary,
+                        BlendMode.srcIn,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Horyx',
+                      style: TextStyle(
+                        color: palette.textPrimary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '游戏合集，随时开局的掌上游戏厅',
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 13.5,
+                      ),
+                    ),
+                    if (_version.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      // 版本徽章：主题色淡底胶囊，读取自 pubspec 自动同步
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: palette.primary.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(Radii.chip),
+                        ),
+                        child: Text(
+                          'v$_version 开发版',
+                          style: TextStyle(
+                            color: palette.primary,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 28),
+              // 功能入口卡片：与「更多」页一致的设置行语言
+              PanelCard(
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    // 检查更新入口：检查中右侧转圈并禁点（无导航箭头）
+                    SettingTile(
+                      icon: Icons.system_update_rounded,
+                      title: '检查更新',
+                      subtitle: '检测并获取最新版本',
+                      onTap: _checking ? () {} : _checkUpdate,
+                      trailing: _checking
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: palette.primary,
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                     // 更新日志入口：内容较长，跳转独立页滚动浏览
                     // （内容读取自打包的 CHANGELOG.md，与仓库文件一致）
-                    InkWell(
-                      borderRadius: BorderRadius.circular(Radii.chip),
+                    SettingTile(
+                      icon: Icons.article_outlined,
+                      title: '更新日志',
+                      subtitle: '版本历史与功能变更',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const ChangelogPage(),
                         ),
                       ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: palette.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(Radii.chip),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.article_outlined,
-                              size: 18,
-                              color: palette.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '更新日志',
-                              style: TextStyle(
-                                color: palette.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 18,
-                              color: palette.primary,
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 12),
                     // 开源许可入口：展示应用所用全部开源库的许可证（合规声明）
-                    InkWell(
-                      borderRadius: BorderRadius.circular(Radii.chip),
+                    SettingTile(
+                      icon: Icons.balance_outlined,
+                      title: '开源许可',
+                      subtitle: '应用所用开源库声明',
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (_) => const OssLicensesPage(),
-                        ),
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: palette.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(Radii.chip),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.balance_outlined,
-                              size: 18,
-                              color: palette.primary,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '开源许可',
-                              style: TextStyle(
-                                color: palette.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 18,
-                              color: palette.primary,
-                            ),
-                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               Text(
                 '开发者：Merrick Shen',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: palette.textSecondary,
                   fontSize: 12,
