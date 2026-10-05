@@ -17,6 +17,7 @@ class ArchiveIndexEntry {
     required this.id,
     required this.gameId,
     required this.savedAt,
+    this.customName,
   });
 
   /// 存档唯一标识（全局唯一，微秒时间戳 + 随机后缀）
@@ -28,19 +29,26 @@ class ArchiveIndexEntry {
   /// 存档时间（保存时取自存档模型，展示用冗余副本）
   final DateTime savedAt;
 
+  /// 自定义存档名称（存档管理页重命名入口设置；null 或空串表示
+  /// 显示默认游戏名）
+  final String? customName;
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'gameId': gameId,
+        if (customName != null) 'customName': customName,
         'savedAt': savedAt.toIso8601String(),
       };
 
   /// 反序列化；字段缺失或类型不符时抛出异常，由索引读取侧按条跳过
-  /// （旧索引残留的 summary 等冗余键被忽略）
+  /// （旧索引残留的 summary 等冗余键被忽略，缺失 customName 视为默认名）
   factory ArchiveIndexEntry.fromJson(Map<String, dynamic> json) {
+    final customName = json['customName'];
     return ArchiveIndexEntry(
       id: json['id'] as String,
       gameId: json['gameId'] as String,
       savedAt: DateTime.parse(json['savedAt'] as String),
+      customName: customName is String ? customName : null,
     );
   }
 }
@@ -101,10 +109,16 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
       jsonEncode({'gameId': gameId, 'state': toJson(state)}),
     );
     final entries = await _loadIndex(prefs);
+    // 覆盖保存沿用已有自定义名（进度保存不丢重命名结果）
+    String? previousCustomName;
+    for (final e in entries) {
+      if (e.id == archiveId) previousCustomName = e.customName;
+    }
     final entry = ArchiveIndexEntry(
       id: archiveId,
       gameId: gameId,
       savedAt: state.savedAt,
+      customName: previousCustomName,
     );
     await _writeIndex(
       prefs,
@@ -156,6 +170,27 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
   Future<void> remove(String id) async {
     final prefs = await SharedPreferences.getInstance();
     await _pruneArchive(prefs, id);
+  }
+
+  /// 重命名存档：仅更新索引条目的自定义名称（[customName] 为 null 或空串
+  /// 表示恢复默认游戏名），存档时间与数据键不变；
+  /// 条目不存在时无副作用并返回 false
+  Future<bool> renameArchive(String id, String? customName) async {
+    final prefs = await SharedPreferences.getInstance();
+    final entries = await _loadIndex(prefs);
+    if (!entries.any((e) => e.id == id)) return false;
+    await _writeIndex(prefs, [
+      for (final e in entries)
+        e.id == id
+            ? ArchiveIndexEntry(
+                id: e.id,
+                gameId: e.gameId,
+                savedAt: e.savedAt,
+                customName: customName,
+              )
+            : e,
+    ]);
+    return true;
   }
 
   // ---------------------------------------------------------------------------

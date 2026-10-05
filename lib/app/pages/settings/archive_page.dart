@@ -5,17 +5,22 @@ import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
+import 'package:horyx/shared/widgets/app_text_field.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/dialog_action_button.dart';
+import 'package:horyx/shared/widgets/dialog_shell.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/panel_card.dart';
 
 /// 存档管理页
 /// 平铺混排展示所有游戏的全部未完成对局存档（不按游戏分类），
-/// 按保存时间倒序排列，支持逐条开始（定点恢复该档进入对局）与删除
-/// 删除前弹确认弹窗，确认后清除对应存档并刷新列表。
+/// 按保存时间倒序排列，支持逐条开始（定点恢复该档进入对局）、重命名
+/// （自定义显示名，留空恢复默认游戏名）与删除；删除前弹确认弹窗，
+/// 确认后清除对应存档并刷新列表。
 /// 条目数据由 ArchiveStorage.loadAllSummaries 统一读出（一次读索引即可，
-/// 摘要/时间为冗余副本无需解析数据键），游戏名称/图标经 gameId 关联
-/// GameRegistry 取得，删除经各游戏登记的 GameArchiveInfo.remove 执行
+/// 时间/自定义名为冗余副本无需解析数据键），游戏名称/图标经 gameId 关联
+/// GameRegistry 取得，删除与重命名经各游戏登记的 GameArchiveInfo.remove
+/// 与 ArchiveStorage.renameArchive 执行
 class ArchivePage extends StatefulWidget {
   const ArchivePage({super.key});
 
@@ -47,10 +52,14 @@ class _ArchivePageState extends State<ArchivePage> {
       final archive = game?.archive;
       if (game == null || archive == null) continue;
       entries.add(_ArchiveEntry(
-        name: game.name,
+        name: (item.customName?.isNotEmpty ?? false)
+            ? item.customName!
+            : game.name,
         icon: game.icon,
         savedAt: item.savedAt,
+        customName: item.customName,
         start: () => _openGame(game, item.id),
+        rename: (customName) => archive.renameArchive(item.id, customName),
         remove: () => archive.remove(item.id),
       ));
     }
@@ -80,6 +89,24 @@ class _ArchivePageState extends State<ArchivePage> {
             game.pageBuilder(context, resumeArchiveId: archiveId),
       ),
     );
+    if (mounted) await _loadArchives();
+  }
+
+  /// 重命名确认：弹输入对话框，确认后更新存档自定义名称
+  /// （留空恢复默认游戏名）；失败不阻断流程，刷新后条目仍在可重试，
+  /// 与删除失败的容错风格对齐
+  Future<void> _confirmRename(_ArchiveEntry entry) async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => _RenameDialog(initialName: entry.customName ?? ''),
+    );
+    if (!mounted || name == null) return;
+    final trimmed = name.trim();
+    try {
+      await entry.rename(trimmed.isEmpty ? null : trimmed);
+    } catch (e) {
+      debugPrint('存档重命名失败: $e');
+    }
     if (mounted) await _loadArchives();
   }
 
@@ -137,6 +164,7 @@ class _ArchivePageState extends State<ArchivePage> {
                     entry: entry,
                     timeText: _formatTime(entry.savedAt),
                     onStart: entry.start,
+                    onRename: () => _confirmRename(entry),
                     onDelete: () => _confirmRemove(entry),
                   ),
                   const SizedBox(height: 12),
@@ -155,12 +183,13 @@ class _ArchivePageState extends State<ArchivePage> {
   }
 }
 
-/// 单个存档条目：游戏图标 + 名称/摘要 + 保存时间 + 开始/删除按钮
+/// 单个存档条目：游戏图标 + 名称 + 保存时间 + 开始/编辑/删除按钮
 class _ArchiveTile extends StatelessWidget {
   const _ArchiveTile({
     required this.entry,
     required this.timeText,
     required this.onStart,
+    required this.onRename,
     required this.onDelete,
   });
 
@@ -171,6 +200,9 @@ class _ArchiveTile extends StatelessWidget {
 
   /// 点击开始按钮回调（由页面跳入对应游戏定点恢复该条存档）
   final VoidCallback onStart;
+
+  /// 点击编辑按钮回调（由页面弹重命名对话框后执行改名）
+  final VoidCallback onRename;
 
   /// 点击删除按钮回调（由页面弹确认弹窗后执行删除）
   final VoidCallback onDelete;
@@ -226,6 +258,15 @@ class _ArchiveTile extends StatelessWidget {
               size: 26,
             ),
             onPressed: onStart,
+          ),
+          // 编辑按钮：点击后弹重命名对话框（留空恢复默认游戏名）
+          IconButton(
+            icon: Icon(
+              Icons.edit_outlined,
+              color: palette.textSecondary,
+              size: 22,
+            ),
+            onPressed: onRename,
           ),
           // 删除按钮：点击后由页面弹确认弹窗
           IconButton(
@@ -283,11 +324,13 @@ class _ArchiveEntry {
     required this.name,
     required this.icon,
     required this.savedAt,
+    required this.customName,
     required this.start,
+    required this.rename,
     required this.remove,
   });
 
-  /// 游戏名（与主页卡片一致）
+  /// 显示名（自定义存档名，未设置时为默认游戏名）
   final String name;
 
   /// 游戏图标（与 GameRegistry 一致）
@@ -296,9 +339,100 @@ class _ArchiveEntry {
   /// 存档时间
   final DateTime savedAt;
 
+  /// 自定义存档名（未设置时为 null；重命名对话框预填与恢复默认用）
+  final String? customName;
+
   /// 定点开始该存档（跳入对应游戏并恢复该档）
   final VoidCallback start;
 
+  /// 重命名该存档（null 表示恢复默认游戏名）
+  final Future<void> Function(String? customName) rename;
+
   /// 删除该存档条目（按 id 精确移除）
   final Future<void> Function() remove;
+}
+
+/// 重命名对话框：输入新名称，确认返回文本（留空由调用方恢复默认名），
+/// 取消或点击遮罩关闭返回 null
+class _RenameDialog extends StatefulWidget {
+  const _RenameDialog({required this.initialName});
+
+  /// 输入框预填名（当前自定义名，未自定义时为空）
+  final String initialName;
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final _controller = TextEditingController(text: widget.initialName);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return DialogShell(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '重命名存档',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.textPrimary,
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '留空则恢复默认游戏名',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.textSecondary,
+              fontSize: 13.5,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _controller,
+            autofocus: true,
+            style: TextStyle(color: palette.textPrimary, fontSize: 14),
+            decoration: buildAppTextFieldDecoration(
+              palette,
+              hintText: '输入存档名称',
+              fillColor: palette.scaffoldBg,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: DialogActionButton(
+                  label: '取消',
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DialogActionButton(
+                  label: '保存',
+                  filled: true,
+                  onPressed: () => Navigator.of(context).pop(_controller.text),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

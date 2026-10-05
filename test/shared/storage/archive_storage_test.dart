@@ -193,6 +193,55 @@ void main() {
     });
   });
 
+  group('renameArchive', () {
+    test('重命名后索引条目更新自定义名，存档时间不变', () async {
+      final savedAt = DateTime(2026, 9, 28, 12);
+      final id = await storage.saveArchive(stateAt(savedAt));
+
+      final ok = await storage.renameArchive(id, '我的存档');
+      expect(ok, isTrue);
+
+      final summaries = await storage.loadSummaries();
+      expect(summaries.single.customName, '我的存档');
+      expect(summaries.single.savedAt, savedAt);
+      // 数据键不受影响，存档本体仍可读取
+      final record = await storage.loadById(id);
+      expect(record, isNotNull);
+    });
+
+    test('传 null 恢复默认：customName 清空，索引 JSON 不含该键', () async {
+      final id = await storage.saveArchive(stateAt(DateTime(2026, 9, 28)));
+      await storage.renameArchive(id, '临时名');
+      await storage.renameArchive(id, null);
+
+      final summaries = await storage.loadSummaries();
+      expect(summaries.single.customName, isNull);
+
+      final prefs = await SharedPreferences.getInstance();
+      final raw = jsonDecode(prefs.getString(indexKey)!) as List;
+      expect((raw.single as Map).containsKey('customName'), isFalse);
+    });
+
+    test('重命名后覆盖保存保留自定义名', () async {
+      final id = await storage.saveArchive(stateAt(DateTime(2026, 9, 28, 10)));
+      await storage.renameArchive(id, '保留名');
+      await storage.saveArchive(
+        stateAt(DateTime(2026, 9, 28, 15), '推进后进度'),
+        id: id,
+      );
+
+      final summaries = await storage.loadSummaries();
+      expect(summaries, hasLength(1));
+      expect(summaries.single.customName, '保留名');
+    });
+
+    test('不存在的 id 无副作用并返回 false', () async {
+      await storage.saveArchive(stateAt(DateTime(2026, 9, 28)));
+      expect(await storage.renameArchive('not-exist', 'x'), isFalse);
+      expect(await storage.loadSummaries(), hasLength(1));
+    });
+  });
+
   group('容错', () {
     test('索引整体损坏视为空索引', () async {
       final prefs = await SharedPreferences.getInstance();

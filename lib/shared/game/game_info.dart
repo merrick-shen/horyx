@@ -4,13 +4,17 @@ import 'package:horyx/shared/network/room_client.dart';
 
 /// 存档管理页的接入适配（GameRegistry 登记时挂接；null 表示不参与存档管理）。
 /// 条目列表由 ArchiveStorage.loadAllSummaries 统一读出（gameId 关联
-/// GameRegistry 取名称/图标），本类只承载删除入口：
-/// 按存档 id 经归属游戏的存档服务精确移除
+/// GameRegistry 取名称/图标），本类承载删除与重命名入口：
+/// 按存档 id 经归属游戏的存档服务精确操作
 class GameArchiveInfo {
-  const GameArchiveInfo({required this.remove});
+  const GameArchiveInfo({required this.remove, required this.renameArchive});
 
   /// 按 id 删除该游戏指定存档（存档管理页删除按钮用）
   final Future<void> Function(String id) remove;
+
+  /// 按 id 重命名该游戏指定存档（存档管理页编辑按钮用；
+  /// customName 为 null 表示恢复默认游戏名）
+  final Future<bool> Function(String id, String? customName) renameArchive;
 }
 
 /// 游戏页构建器：常规入口（首页卡片等）不传 [resumeArchiveId]；

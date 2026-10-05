@@ -35,7 +35,10 @@ abstract final class GameRegistry {
         WordPkPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         WordPkOnlinePage.client(client: client),
-    archive: GameArchiveInfo(remove: WordPkStorage.instance.remove),
+    archive: GameArchiveInfo(
+      remove: WordPkStorage.instance.remove,
+      renameArchive: WordPkStorage.instance.renameArchive,
+    ),
   );
 
   /// 五子棋
@@ -47,7 +50,10 @@ abstract final class GameRegistry {
         GomokuPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         GomokuOnlinePage.client(client: client),
-    archive: GameArchiveInfo(remove: GomokuStorage.instance.remove),
+    archive: GameArchiveInfo(
+      remove: GomokuStorage.instance.remove,
+      renameArchive: GomokuStorage.instance.renameArchive,
+    ),
   );
 
   /// 坦克动荡
@@ -62,7 +68,10 @@ abstract final class GameRegistry {
         TankPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         TankOnlinePage.client(client: client),
-    archive: GameArchiveInfo(remove: TankStorage.instance.remove),
+    archive: GameArchiveInfo(
+      remove: TankStorage.instance.remove,
+      renameArchive: TankStorage.instance.renameArchive,
+    ),
   );
 
   /// 中国象棋
@@ -76,7 +85,10 @@ abstract final class GameRegistry {
         ChessPage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         ChessOnlinePage.client(client: client),
-    archive: GameArchiveInfo(remove: ChessStorage.instance.remove),
+    archive: GameArchiveInfo(
+      remove: ChessStorage.instance.remove,
+      renameArchive: ChessStorage.instance.renameArchive,
+    ),
   );
 
   /// 飞行棋
@@ -90,7 +102,10 @@ abstract final class GameRegistry {
         AeroplanePage(resumeArchiveId: resumeArchiveId),
     onlineClientBuilder: (context, client) =>
         AeroplaneOnlinePage.client(client: client),
-    archive: GameArchiveInfo(remove: AeroplaneStorage.instance.remove),
+    archive: GameArchiveInfo(
+      remove: AeroplaneStorage.instance.remove,
+      renameArchive: AeroplaneStorage.instance.renameArchive,
+    ),
   );
 
   /// 计分器（纯本地工具，无联机对局页）
@@ -100,7 +115,10 @@ abstract final class GameRegistry {
     icon: ScoreboardPage.gameIcon,
     pageBuilder: (context, {resumeArchiveId}) =>
         ScoreboardPage(resumeArchiveId: resumeArchiveId),
-    archive: GameArchiveInfo(remove: ScoreboardStorage.instance.remove),
+    archive: GameArchiveInfo(
+      remove: ScoreboardStorage.instance.remove,
+      renameArchive: ScoreboardStorage.instance.renameArchive,
+    ),
   );
 
   /// 首页游戏列表（全部已上架游戏）
