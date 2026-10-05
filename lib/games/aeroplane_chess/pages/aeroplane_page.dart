@@ -102,14 +102,6 @@ class _AeroplanePageState
 
   Timer? _rollTimer;
 
-  /// 各人数的默认颜色分配：2 人取对角两色（绿+蓝）、
-  /// 3 人取连续三方（绿→红→蓝）、4 人全色（枚举顺序即行动顺序）
-  static const Map<int, List<AeroplaneColor>> _defaultColors = {
-    2: [AeroplaneColor.green, AeroplaneColor.blue],
-    3: [AeroplaneColor.green, AeroplaneColor.red, AeroplaneColor.blue],
-    4: AeroplaneColor.values,
-  };
-
   @override
   ArchiveStorage<AeroplaneGameState> get archiveStorage =>
       AeroplaneStorage.instance;
@@ -311,7 +303,7 @@ class _AeroplanePageState
   /// 再来一局：同配置重开新对局
   void _restartMatch() {
     setState(() {
-      _state = _initialState(_state!.players);
+      _state = AeroplaneGameState.initial(_state!.players);
       _resetRound();
       _restoredPlanes = null;
     });
@@ -571,35 +563,18 @@ class _AeroplanePageState
     final players = [
       for (var i = 0; i < playerCount; i++)
         AeroplanePlayer(
-          color: _defaultColors[playerCount]![i],
+          color: AeroplaneGameState.defaultColors[playerCount]![i],
           name: '玩家${i + 1}',
         ),
     ];
     setState(() {
-      _state = _initialState(players);
+      _state = AeroplaneGameState.initial(players);
       _started = true;
       _resetRound();
       _restoredPlanes = null;
       discardResumeEntry();
     });
   }
-
-  AeroplaneGameState _initialState(List<AeroplanePlayer> players) =>
-      AeroplaneGameState(
-        players: players,
-        planes: {
-          for (final player in players)
-            player.color: [
-              for (var i = 0; i < 4; i++)
-                PlanePosition(zone: PlaneZone.hangar, index: i),
-            ],
-        },
-        currentPlayer: players.first.color,
-        consecutiveSixes: 0,
-        gameOver: false,
-        winner: null,
-        savedAt: DateTime.now(),
-      );
 
   /// 清空回合内临时状态（掷骰/选子/动画/提示），回到等待掷骰
   void _resetRound() {

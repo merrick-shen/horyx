@@ -528,4 +528,41 @@ void main() {
       expect(state.summary, '绿 1/4 到达，轮到黄方');
     });
   });
+
+  group('开局构建', () {
+    test('默认颜色分配：2 人对角、3 人连续、4 人全色', () {
+      expect(
+        AeroplaneGameState.defaultColors[2],
+        [AeroplaneColor.green, AeroplaneColor.blue],
+      );
+      expect(
+        AeroplaneGameState.defaultColors[3],
+        [AeroplaneColor.green, AeroplaneColor.red, AeroplaneColor.blue],
+      );
+      expect(AeroplaneGameState.defaultColors[4], AeroplaneColor.values);
+    });
+
+    test('initial：全部棋子在停机坪、首位先手、无连 6 与终局', () {
+      final players = [
+        for (var i = 0; i < 2; i++)
+          AeroplanePlayer(
+            color: AeroplaneGameState.defaultColors[2]![i],
+            name: '玩家${i + 1}',
+          ),
+      ];
+      final state = AeroplaneGameState.initial(players);
+      expect(state.players, players);
+      expect(state.currentPlayer, AeroplaneColor.green);
+      expect(state.consecutiveSixes, 0);
+      expect(state.gameOver, isFalse);
+      expect(state.winner, isNull);
+      expect(state.lastMoved, isNull);
+      for (final color in AeroplaneGameState.defaultColors[2]!) {
+        expect(state.planesOf(color), [
+          for (var i = 0; i < 4; i++)
+            PlanePosition(zone: PlaneZone.hangar, index: i),
+        ]);
+      }
+    });
+  });
 }

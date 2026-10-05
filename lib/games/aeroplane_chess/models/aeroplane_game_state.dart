@@ -198,6 +198,33 @@ class AeroplaneGameState implements GameArchiveSummary {
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;
 
+  /// 各人数的默认颜色分配（本地与联机开局共用）：
+  /// 2 人取对角两色（绿+蓝）、3 人取连续三方（绿→红→蓝）、4 人全色；
+  /// 列表顺序即座位/行动顺序（枚举顺序 绿→红→蓝→黄）
+  static const Map<int, List<AeroplaneColor>> defaultColors = {
+    2: [AeroplaneColor.green, AeroplaneColor.blue],
+    3: [AeroplaneColor.green, AeroplaneColor.red, AeroplaneColor.blue],
+    4: AeroplaneColor.values,
+  };
+
+  /// 开局状态：全部棋子在停机坪，列表首位先手（绿方先掷）
+  factory AeroplaneGameState.initial(List<AeroplanePlayer> players) =>
+      AeroplaneGameState(
+        players: players,
+        planes: {
+          for (final player in players)
+            player.color: [
+              for (var i = 0; i < 4; i++)
+                PlanePosition(zone: PlaneZone.hangar, index: i),
+            ],
+        },
+        currentPlayer: players.first.color,
+        consecutiveSixes: 0,
+        gameOver: false,
+        winner: null,
+        savedAt: DateTime.now(),
+      );
+
   /// 指定颜色的棋子位置列表（恒 4 枚）
   List<PlanePosition> planesOf(AeroplaneColor color) => planes[color]!;
 
