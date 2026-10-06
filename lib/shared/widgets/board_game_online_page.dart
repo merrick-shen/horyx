@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/network/board_game_online_controller.dart';
 import 'package:horyx/shared/network/undo_resign_negotiation.dart';
-import 'package:horyx/shared/utils/hint_bar.dart';
+import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 

@@ -8,7 +8,7 @@ import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
-import 'package:horyx/shared/utils/hint_bar.dart';
+import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';

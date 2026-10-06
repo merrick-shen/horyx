@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 /// 退出页面前清理覆盖层的统一工具
 ///
 /// 「先弹掉页面之上的弹窗覆盖层、再退出页面」的约定单点收敛于此。
-/// 提示类 UI 已统一走模态 showAlertDialog，SnackBar 提示机制已移除。
 
 /// 清理残留覆盖层并退出当前页面
 ///

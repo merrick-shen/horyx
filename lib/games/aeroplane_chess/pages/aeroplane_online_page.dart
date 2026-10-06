@@ -13,7 +13,7 @@ import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dar
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
-import 'package:horyx/shared/utils/hint_bar.dart';
+import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/board_game_online_page.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
 import 'package:horyx/shared/widgets/flash_hint.dart';
