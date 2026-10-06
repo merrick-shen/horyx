@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/games/gomoku/services/gomoku_audio.dart';
 import 'package:horyx/games/gomoku/services/gomoku_online_controller.dart';
 import 'package:horyx/games/gomoku/widgets/gomoku_game_layout.dart';
 import 'package:horyx/shared/network/room_client.dart';
@@ -46,6 +47,13 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage>
     with BoardGameOnlinePageMixin<GomokuOnlinePage> {
   /// 预选落子位置；null 表示无预选（与本地对局一致的落子交互）
   (int, int)? _pending;
+
+  @override
+  void initState() {
+    super.initState();
+    // 后台预载音效（不 await、不阻塞首帧；未就绪期间的播放静默跳过）
+    GomokuAudio.preload();
+  }
 
   /// 对方请求悔棋的弹窗说明文案（撤销"上一手棋"）
   @override

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/gomoku/models/gomoku_game_state.dart';
+import 'package:horyx/games/gomoku/services/gomoku_audio.dart';
 import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
@@ -73,6 +74,8 @@ class _GomokuPageState
   @override
   void initState() {
     super.initState();
+    // 后台预载音效（不 await、不阻塞首帧；未就绪期间的播放静默跳过）
+    GomokuAudio.preload();
     loadSavedState();
     final resumeId = widget.resumeArchiveId;
     if (resumeId != null) {
@@ -102,6 +105,7 @@ class _GomokuPageState
       _occupied.add(selected);
       _pending = null;
     });
+    GomokuAudio.place();
 
     // 刚落子的一方：落子后序列长度奇偶判断（黑先）
     final blackMoved = _moves.length.isOdd;

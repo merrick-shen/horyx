@@ -4,6 +4,7 @@ import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/network/undo_resign_negotiation.dart';
+import 'package:horyx/games/gomoku/services/gomoku_audio.dart';
 import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 
 /// 五子棋联机对局控制器（房主权威模型）
@@ -197,6 +198,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
       // 刚落的子颜色 = 序列长度奇偶（1 手黑、2 手白……）
       winnerSeat = moves.length.isOdd ? 1 : 2;
     }
+    GomokuAudio.place();
     notifyListeners();
     host?.broadcast(
       NetMessage(
@@ -236,6 +238,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
         }
         moves.add((col, row));
         winnerSeat = msg.payload['winner'] as int?;
+        GomokuAudio.place();
         notifyListeners();
       case NetMessageType.stoneResult:
         // 拒绝才提示；通过无需处理（生效以 stoneApplied 广播为准）
