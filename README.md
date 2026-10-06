@@ -12,7 +12,7 @@
 - 持久化：SharedPreferences 多存档仓库（索引键 + 按档数据键的 JSON 原子写入，条目无上限，读取容错，模型带 version 字段备迁移）
 - SVG 渲染：flutter_svg（关于页 Logo 动态着色）
 - 版本信息：package_info_plus（关于页展示应用版本号，检查更新的版本比较源）
-- 检查更新：GitHub Releases API（dart:io HttpClient，零第三方网络依赖）查询最新版本 + url_launcher 跳转系统浏览器下载
+- 检查更新：GitHub Releases API（dart:io HttpClient，零第三方网络依赖）查询最新版本 + url_launcher 跳转系统浏览器下载；启动后自动检查（可关闭、可忽略指定版本），更新弹窗展示新版更新说明
 - 应用图标：flutter_launcher_icons（源图见 `assets/icon/`，配置位于 pubspec.yaml）
 - 应用 Logo 来源：`https://www.logosymbol.com/` 免费下载素材（网站标注 Royalty-Free，但截至 2026-09 未提供书面授权条款，本项目基于其免费商用声明善意使用并在此标注来源；如权利方提出异议，将更换图标并配合处理）
 
@@ -24,7 +24,7 @@
 lib/
 ├── main.dart               # 应用入口：恢复主题与用户名（含启动异常兜底）
 ├── app/                    # 应用层
-│   ├── app_shell.dart      # 底部导航壳（首页/联机/更多，PageView 保活；挂载时预热单词PK词表）
+│   ├── app_shell.dart      # 底部导航壳（首页/联机/更多，PageView 保活；挂载时预热单词PK词表、启动后自动检查更新）
 │   ├── game_registry.dart  # 游戏注册中心（游戏元数据、路由与存档登记的组合根）
 │   ├── pages/              # 应用级页面（主页、更多）
 │   │   └── settings/       # 设置页（个人资料/主题/存档管理/关于/开源许可/更新日志）
@@ -41,9 +41,9 @@ lib/
 │   ├── network/            # 联机层（NDJSON 协议分帧、TCP 会话、房主/客户端、对局控制器基类、棋类通用悔棋/认输协商状态机、房间码编解码）
 │   ├── pages/              # 联机通用页面（房间等待页、局域网加入房间页、扫码页）
 │   ├── profile/            # 用户资料（用户名控制器与全局作用域、联机前名字引导）
-│   ├── storage/            # 多存档仓库泛型基类（索引 + 按条存取/覆盖/删除）、游戏页存档状态基类（恢复入口仅最新档、恢复后覆盖保存）、主题与用户名持久化
+│   ├── storage/            # 多存档仓库泛型基类（索引 + 按条存取/覆盖/删除）、游戏页存档状态基类（恢复入口仅最新档、恢复后覆盖保存）、主题与用户名持久化、更新偏好（自动检查开关与忽略版本）
 │   ├── theme/              # 主题系统（调色板、圆角 token、控制器）
-│   ├── update/             # 应用内检查更新（GitHub Release 查询、版本比较与三态判定）
+│   ├── update/             # 应用内检查更新（GitHub Release 查询、版本比较与三态判定、启动自动检查、CHANGELOG 解析）
 │   ├── utils/              # 通用工具（页面退出清理、资产图片解码缓存、横屏沉浸式 mixin）
 │   └── widgets/            # 通用组件（顶栏、对话框、设置项、面板、续玩卡片等）
 test/                       # 单元与集成测试（按 games/、shared/ 与 lib 同构组织）
