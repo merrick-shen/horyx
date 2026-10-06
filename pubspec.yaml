@@ -93,6 +93,8 @@ flutter:
     - assets/tank/
     # 坦克动荡音效（提取自原版 APK 音频）
     - assets/tank/audio/
+    # 五子棋音效（落子提示音）
+    - assets/gomoku/audio/
     # 单词PK音效（提交通过/被拒提示音）
     - assets/word_pk/audio/
     # 单词PK 本地词表（约 37 万英文词）
