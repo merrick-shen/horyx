@@ -4,6 +4,7 @@
 词汇量与词汇面的正面较量。支持本地 2～8 人同屏轮流与局域网 2～8 人联机
 （房主权威 + 回合广播）。词表为内置英文本地词表（约 37 万词），校验在本地
 完成后台 isolate 加载。无时限、无计分——唯一终局路径是联机侧的无胜负终止。
+提交正误各配一条提示音，经共享音频门面 `GameAudio` 播放（见 `lib/shared/audio/`）。
 
 ## 文件结构
 
@@ -11,7 +12,7 @@
 | --- | --- |
 | `models/` | `word_pk_entry`（已验证单词条目，word 统一小写存储便于忽略大小写去重）、`word_pk_game_state`（未完成对局存档模型：单词列表与当前回合，`version = 1`） |
 | `pages/` | `word_pk_page` 本地游戏页（提交校验、退出确认、存档与恢复；含 `gameName`/`gameIcon` 注册常量）、`word_pk_online_page` 联机对局页（满员开局后接管连接，骨架复用 `OnlineGamePageShell`，本页只提供对局视图） |
-| `services/` | `word_pk_validator`（词表加载与校验：格式/重复/真实性校验链的唯一来源，后台 isolate 构建 O(1) 查询集）、`word_pk_online_controller`（联机控制器：房主全量重做校验、回执拒绝原因、回合广播）、`word_pk_storage`（存档服务，`gameId = '单词PK'`） |
+| `services/` | `word_pk_validator`（词表加载与校验：格式/重复/真实性校验链的唯一来源，后台 isolate 构建 O(1) 查询集）、`word_pk_online_controller`（联机控制器：房主全量重做校验、回执拒绝原因、回合广播）、`word_pk_storage`（存档服务，`gameId = '单词PK'`）、`word_pk_audio`（提交音效：通过/拒绝两条，播放委托共享门面 `GameAudio`） |
 | `widgets/` | `word_pk_play_view`（对局视图，本地与联机共用；联机经 `inputEnabled`/`selfSeat`/`seatNames` 控制非本人回合禁输与名字展示）、`word_pk_setup_view`（恢复入口卡、本地/局域网选择、人数输入 2–8） |
 
 ## 核心流程
@@ -19,9 +20,10 @@
 1. **设置**：选本地/局域网模式与人数（2–8，默认 2）；存在未完成存档时展示
    恢复入口（设置页恢复卡 + 存档管理页「开始」定点恢复双链路）。
 2. **输入提交**：校验链依次为——格式（非空 + 纯英文字母）→ 重复（与已生效
-   列表忽略大小写比对）→ 真实性（查本地词表）。失败弹窗提示、输入保留。
+   列表忽略大小写比对）→ 真实性（查本地词表）。失败弹窗提示并播放拒绝音、
+   输入保留。
 3. **生效与轮换**：通过后 trim + 小写归一化插入列表头部（最新置顶），回合
-   轮换到下一玩家。
+   轮换到下一玩家，并播放通过音。
 4. **词表加载**：AppShell 挂载时预热；资产读取后在**后台 isolate** 解析构建
    小写 Set（37 万行的 CPU 密集操作，避免撞启动首帧掉帧）；未加载完成时
    所有词判无效（校验不可用远好于整体不可用）。
@@ -44,6 +46,10 @@
 | `wordApplied` | 房主广播全员 | `word` + `player`（生效座位）+ `nextPlayer`（下一回合座位） |
 | `turnChanged` | 房主广播（轮到者离席时） | `player`（新的当前回合座位） |
 
+**音效**：`wordApplied` 生效全端播通过音；`wordResult` 拒绝时提交者端播拒绝音
+（本地预检/房主校验的各拒绝路径同响一条拒绝音，经控制器 `_reject` 统一出口），
+与本地对局共用 `WordPkAudio`。
+
 **座位与角色**：房主固定 1 号位，客户端分配最小未占用座位；满员自动开局，
 **开局后不放新人**（拒绝原因 `gameStarted`），中途空出的座位不补；座位名在
 控制器构造时快照定格，对局中改名不影响。客户端开局跳转间隙收到的对局消息
@@ -63,6 +69,7 @@
 | 存档格式版本 | 1 | `WordPkGameState.version` |
 | 协议版本 | 2（双端不符房主拒绝连接） | `NetMessage.protocolVersion` |
 | 客户端暂存消息上限 | 100 条 | `RoomClient` 暂存队列 |
+| 提交音效 | `assets/word_pk/audio/`（`accept.ogg` / `reject.ogg`，Kenney CC0） | `WordPkAudio.files` |
 
 ## 注意事项（重要坑点）
 
@@ -78,3 +85,6 @@
    不弹提示直接不受理。
 6. **输入框 `autocorrect: false` + `enableSuggestions: false`**：英文单词场景
    输入法联想无意义且干扰；提交后保持焦点便于下一位直接输入。
+7. **音效静默降级**：播放经共享门面 `GameAudio`（全项目唯一 SoLoud 触达点），
+   引擎初始化失败或素材未就绪时静默跳过、绝不影响对局；音效在对局页
+   initState 后台预载，进页后极短窗口内提交可能无声属预期行为。

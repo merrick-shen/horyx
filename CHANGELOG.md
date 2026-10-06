@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 存档管理页条目支持自定义重命名，留空恢复默认游戏名
 - 关于页新增GitHub仓库入口
 - 新增「自动检查更新」开关，默认开启，关闭后应用启动时不再自动检测新版本
+- 单词PK新增通过与拒绝提示音
 
 ### Changed
 

@@ -3,6 +3,7 @@ import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/games/word_pk/services/word_pk_audio.dart';
 import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 
 /// 单词PK 联机对局控制器（房主权威模型）
@@ -78,11 +79,19 @@ class WordPkOnlineController extends OnlineGameControllerBase
     // 词法规则（空串/纯字母）统一走 WordPkValidator，与本地对局同源
     final formatError = WordPkValidator.validateFormat(raw);
     if (formatError != null) {
-      onHint?.call(formatError);
+      _reject(formatError);
       return false;
     }
     final word = raw.trim().toLowerCase();
     return host != null ? _submitAsHost(word) : _submitAsClient(word);
+  }
+
+  /// 提交被拒统一出口：拒绝音 + 提示文案
+  /// （本地预检、还没轮到你、房主校验与联机回执的各拒绝路径共用，
+  /// 保证提示与音效不脱节）
+  void _reject(String message) {
+    WordPkAudio.reject();
+    onHint?.call(message);
   }
 
   /// 房主提交：本地完成全部校验（重复/词表），通过即生效并广播
@@ -90,12 +99,12 @@ class WordPkOnlineController extends OnlineGameControllerBase
   /// [word] 已由 submitWord 归一化，重复传入不影响结果）
   bool _submitAsHost(String word) {
     if (!isMyTurn) {
-      onHint?.call('还没轮到你');
+      _reject('还没轮到你');
       return false;
     }
     final error = WordPkValidator.validateWord(word, entries);
     if (error != null) {
-      onHint?.call(error);
+      _reject(error);
       return false;
     }
     _applyWord(word, mySeat);
@@ -108,12 +117,12 @@ class WordPkOnlineController extends OnlineGameControllerBase
   /// 房主仍全量重做校验，兜底预检后状态变化的竞态与词表异常）
   bool _submitAsClient(String word) {
     if (!isMyTurn) {
-      onHint?.call('还没轮到你');
+      _reject('还没轮到你');
       return false;
     }
     final error = WordPkValidator.validateWord(word, entries);
     if (error != null) {
-      onHint?.call(error);
+      _reject(error);
       return false;
     }
     client?.send(
@@ -159,6 +168,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
   void _applyWord(String word, int seat) {
     entries.insert(0, WordPkEntry(word: word, playerIndex: seat));
     currentPlayer = _nextActiveSeat(currentPlayer);
+    WordPkAudio.accept();
     notifyListeners();
     host?.broadcast(
       NetMessage(
@@ -217,11 +227,12 @@ class WordPkOnlineController extends OnlineGameControllerBase
         );
         currentPlayer =
             (message.payload['nextPlayer'] as int?) ?? currentPlayer;
+        WordPkAudio.accept();
         notifyListeners();
       case NetMessageType.wordResult:
         // 拒绝才提示；通过无需处理（生效以 wordApplied 广播为准）
         if (message.payload['ok'] != true) {
-          onHint?.call(reasonText(message.payload['reason']));
+          _reject(reasonText(message.payload['reason']));
         }
       case NetMessageType.turnChanged:
         currentPlayer = (message.payload['player'] as int?) ?? currentPlayer;

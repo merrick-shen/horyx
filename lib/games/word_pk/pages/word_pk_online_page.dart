@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:horyx/games/word_pk/services/word_pk_audio.dart';
 import 'package:horyx/games/word_pk/services/word_pk_online_controller.dart';
 import 'package:horyx/games/word_pk/widgets/word_pk_play_view.dart';
 import 'package:horyx/shared/network/room_client.dart';
@@ -12,11 +13,11 @@ import 'package:horyx/shared/widgets/online_game_page_shell.dart';
 /// [OnlineGamePageShell]，本页无额外交互状态，只提供对局视图。
 /// 提交统一经房主校验，全端随广播同步；
 /// 页面销毁即退出对局并关闭连接（联机对局不落本地存档）。
-class WordPkOnlinePage extends StatelessWidget {
-  const WordPkOnlinePage.host({super.key, required this.host})
+class WordPkOnlinePage extends StatefulWidget {
+  const WordPkOnlinePage.host({super.key, required RoomHost this.host})
       : client = null;
 
-  const WordPkOnlinePage.client({super.key, required this.client})
+  const WordPkOnlinePage.client({super.key, required RoomClient this.client})
       : host = null;
 
   /// 房主连接（房主模式；与本页生命周期绑定，dispose 时关闭即解散房间）
@@ -26,13 +27,25 @@ class WordPkOnlinePage extends StatelessWidget {
   final RoomClient? client;
 
   @override
+  State<WordPkOnlinePage> createState() => _WordPkOnlinePageState();
+}
+
+class _WordPkOnlinePageState extends State<WordPkOnlinePage> {
+  @override
+  void initState() {
+    super.initState();
+    // 后台预载音效（不 await、不阻塞首帧；未就绪期间的播放静默跳过）
+    WordPkAudio.preload();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return OnlineGamePageShell<WordPkOnlineController>(
       title: '单词PK · 联机',
       exitMessage: '退出后将断开与房间的连接，已提交的单词不会保存',
-      createController: () => host != null
-          ? WordPkOnlineController.host(host!)
-          : WordPkOnlineController.client(client!),
+      createController: () => widget.host != null
+          ? WordPkOnlineController.host(widget.host!)
+          : WordPkOnlineController.client(widget.client!),
       buildGameView: (context, controller, requestExit) => WordPkPlayView(
         playerCount: controller.playerCount,
         currentPlayer: controller.currentPlayer,

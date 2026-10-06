@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/word_pk/models/word_pk_entry.dart';
 import 'package:horyx/games/word_pk/models/word_pk_game_state.dart';
+import 'package:horyx/games/word_pk/services/word_pk_audio.dart';
 import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
 import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
@@ -67,6 +68,8 @@ class _WordPkPageState
   @override
   void initState() {
     super.initState();
+    // 后台预载音效（不 await、不阻塞首帧；未就绪期间的播放静默跳过）
+    WordPkAudio.preload();
     loadSavedState();
     final resumeId = widget.resumeArchiveId;
     if (resumeId != null) {
@@ -160,6 +163,7 @@ class _WordPkPageState
   bool _submitWord(String raw) {
     final error = WordPkValidator.validateWord(raw, _entries);
     if (error != null) {
+      WordPkAudio.reject();
       showAlertDialog(context, message: error);
       return false;
     }
@@ -170,6 +174,7 @@ class _WordPkPageState
       _entries.insert(0, WordPkEntry(word: word, playerIndex: _currentPlayer));
       _currentPlayer = _currentPlayer % _playerCount + 1;
     });
+    WordPkAudio.accept();
     return true;
   }
 
