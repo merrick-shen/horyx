@@ -47,7 +47,7 @@ class _GameCardState extends State<GameCard> {
                 borderRadius: BorderRadius.circular(Radii.card),
                 border: Border.all(
                   width: 1.2,
-                  // 悬停时描边切换为品牌主色，形成「点亮」效果
+                  // 悬停时描边切换为强调色，形成「点亮」效果
                   color: _hovered
                       ? palette.primary.withValues(alpha: 0.8)
                       : palette.stroke,
@@ -64,7 +64,7 @@ class _GameCardState extends State<GameCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 图标块：品牌主色，作为卡片视觉锚点
+                  // 图标块：强调色，作为卡片视觉锚点
                   Container(
                     width: 56,
                     height: 56,
@@ -106,7 +106,7 @@ class _GameCardState extends State<GameCard> {
                       height: 34,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        // 浅色主题下悬停白底对比不足，改用品牌淡底
+                        // 浅色主题下悬停白底对比不足，改用强调色淡底
                         color: _hovered
                             ? palette.primary.withValues(alpha: 0.18)
                             : palette.stroke,

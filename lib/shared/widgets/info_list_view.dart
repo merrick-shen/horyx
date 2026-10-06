@@ -16,7 +16,7 @@ class InfoListItem {
     this.heroTag,
   });
 
-  /// 主标题（品牌强调色、加粗）
+  /// 主标题（强调色、加粗）
   final String title;
 
   /// 标题行右侧的辅助信息（如发布日期；次要色小字号）

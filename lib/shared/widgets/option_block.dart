@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 通用选项块：设置项中的可选项方块（如人数、棋盘规格）
-/// 选中态品牌纯色实底白字，未选中描边底色
+/// 选中态强调色纯色实底白字，未选中描边底色
 class OptionBlock extends StatelessWidget {
   const OptionBlock({
     super.key,
@@ -44,7 +44,7 @@ class OptionBlock extends StatelessWidget {
           ? const BoxConstraints(minWidth: 56)
           : null,
       decoration: BoxDecoration(
-        // 选中态使用品牌纯色，未选中与页面底色区分
+        // 选中态使用强调色纯色，未选中与页面底色区分
         color: selected ? palette.primary : palette.scaffoldBg,
         borderRadius: BorderRadius.circular(Radii.control),
         border: Border.all(

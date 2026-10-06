@@ -55,7 +55,7 @@ class ScoreboardView extends StatelessWidget {
   /// 退出计分回到设置视图
   final VoidCallback onExit;
 
-  /// 红蓝为体育计分惯例固定色，不随主题/品牌强调色变化
+  /// 红蓝为体育计分惯例固定色，不随主题强调色变化
   static const Color redTeam = Color(0xFFE5484D);
   static const Color blueTeam = Color(0xFF3E63DD);
 

@@ -32,7 +32,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   /// 次要文字（描述、辅助信息）
   final Color textSecondary;
 
-  /// 品牌强调色（UI 统一使用纯色，不使用渐变；深浅主题共用同一强调色）
+  /// 强调色（UI 统一使用纯色，不使用渐变；深浅主题共用同一强调色）
   final Color primary;
 
   /// 默认蓝：未自定义主题色彩时的强调色
@@ -177,7 +177,7 @@ abstract final class AppTheme {
             final selected = states.contains(WidgetState.selected);
             return IconThemeData(
               size: 24,
-              // 选中用品牌紫，未选中用次要文字色
+              // 选中用强调色，未选中用次要文字色
               color: selected ? palette.primary : palette.textSecondary,
             );
           }),

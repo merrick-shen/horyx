@@ -36,7 +36,7 @@ class ThemeStorage {
     await prefs.setInt(_seedKey, color.toARGB32());
   }
 
-  /// 读取主题色彩；无记录时回退到默认品牌紫
+  /// 读取主题色彩；无记录时回退到默认强调色
   static Future<Color> loadSeedColor() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getInt(_seedKey);

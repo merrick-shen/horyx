@@ -188,7 +188,7 @@ class _ModeOption extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        // 选中态：品牌淡底 + 品牌描边；未选中：透明底 + 常规描边
+        // 选中态：强调色淡底 + 强调色描边；未选中：透明底 + 常规描边
         color: selected
             ? palette.primary.withValues(alpha: 0.12)
             : Colors.transparent,
@@ -214,7 +214,7 @@ class _ModeOption extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    // 选中态图标块用品牌实底反色，强化当前选择
+                    // 选中态图标块用强调色实底反色，强化当前选择
                     color: selected
                         ? palette.primary
                         : palette.primary.withValues(alpha: 0.15),
@@ -340,7 +340,7 @@ class _CustomColorTile extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 180),
       decoration: BoxDecoration(
-        // 与模式选项行一致：选中态品牌描边 + 淡底
+        // 与模式选项行一致：选中态强调色描边 + 淡底
         color: selected
             ? palette.primary.withValues(alpha: 0.12)
             : Colors.transparent,
@@ -366,7 +366,7 @@ class _CustomColorTile extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: BoxDecoration(
-                    // 调色板图标容器：淡品牌底承载当前颜色块，示意「可调色」
+                    // 调色板图标容器：淡强调色底承载当前颜色块，示意「可调色」
                     color: palette.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(Radii.chip),
                   ),

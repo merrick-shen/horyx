@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 
-/// 品牌主按钮
+/// 主按钮
 /// 全应用通用的强调操作按钮（如「开始 PK」「提交」）
 /// outlined 为 true 时呈描边样式（次要操作，如「取消」）
 /// onPressed 为 null 时呈禁用态（灰底、无阴影、不可点击）
@@ -38,7 +38,7 @@ class PrimaryButton extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        // 实底：品牌纯色（禁用降级灰底）；描边：页面底色 + 描边
+        // 实底：强调色纯色（禁用降级灰底）；描边：页面底色 + 描边
         color: !enabled
             ? palette.surfaceHover
             : outlined
@@ -72,7 +72,7 @@ class PrimaryButton extends StatelessWidget {
                   Icon(icon, color: contentColor, size: 18),
                   const SizedBox(width: 8),
                 ],
-                // 品牌紫底上白字，深浅主题下对比度一致
+                // 强调色底上白字，深浅主题下对比度一致
                 Text(
                   label,
                   style: TextStyle(
