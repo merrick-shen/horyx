@@ -87,8 +87,6 @@ flutter:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
   assets:
-    # 单词PK 本地词表（约 37 万英文词）
-    - assets/words/
     # 应用 Logo（关于页展示，颜色跟随主题色动态着色）
     - assets/icon/logo.svg
     # 坦克动荡游戏素材（提取自原版 APK 图集的白色模板，运行时按玩家色染色）
@@ -97,6 +95,8 @@ flutter:
     - assets/tank/audio/
     # 单词PK音效（提交通过/被拒提示音）
     - assets/word_pk/audio/
+    # 单词PK 本地词表（约 37 万英文词）
+    - assets/word_pk/words/
     # 更新日志（关于页内展示，内容与根目录 CHANGELOG.md 文件保持一致）
     - CHANGELOG.md
 

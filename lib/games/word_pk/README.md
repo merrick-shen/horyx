@@ -64,7 +64,7 @@
 | 参数 | 值 | 位置 |
 | --- | --- | --- |
 | 人数上下限 | 2 ～ 8（默认 2） | `WordPkSetupView.minPlayers` / `maxPlayers` |
-| 词表资产 | `assets/words/english_words.txt`（约 37 万词） | `WordPkValidator._assetPath` |
+| 词表资产 | `assets/word_pk/words/english_words.txt`（约 37 万词） | `WordPkValidator._assetPath` |
 | 单词格式 | 纯英文字母（`^[A-Za-z]+$`） | `WordPkValidator.validateFormat` |
 | 存档格式版本 | 1 | `WordPkGameState.version` |
 | 协议版本 | 2（双端不符房主拒绝连接） | `NetMessage.protocolVersion` |

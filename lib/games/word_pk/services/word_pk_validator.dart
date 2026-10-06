@@ -11,7 +11,7 @@ class WordPkValidator {
   WordPkValidator._();
 
   /// 词表资源路径
-  static const String _assetPath = 'assets/words/english_words.txt';
+  static const String _assetPath = 'assets/word_pk/words/english_words.txt';
 
   /// 词表 Set 缓存（小写存储，单次查询 O(1)）
   static Set<String>? _dictionary;
