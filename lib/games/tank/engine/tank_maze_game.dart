@@ -158,9 +158,6 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
   /// 战场冻结倒计时（秒）：计分完成后定格展示，到点开新一局
   double _freezeCountdown = 0;
 
-  /// 本轮是否已计过分（双杀时本轮无人得分）
-  bool _scored = false;
-
   /// 击毁后的结算等待（秒）：期间战场继续，残弹可继续反弹与命中（双杀可能发生）
   static const double _roundSettleDelay = 3.0;
 
@@ -417,7 +414,6 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
 
   /// 结算计分：存活方得一分；双方都阵亡（展示期内残弹双杀）则本轮无人得分
   void _settleScoring() {
-    if (_scored) return;
     final bothDead = _tanks.values.every((t) => t.destroyed);
     if (bothDead) return;
 
@@ -428,7 +424,6 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
       greenScore++;
     }
     onScored?.call(survivor);
-    _scored = true;
   }
 
   /// 开新一局：重新生成迷宫、坦克回出生点并复活、清空场上子弹（比分保留）
@@ -450,7 +445,6 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
     _clearBullets();
     _clearEffects();
     _remoteDriver?.resetState();
-    _scored = false;
     _roundOver = false;
     _settleCountdown = 0;
     _freezeCountdown = 0;
@@ -481,8 +475,8 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
 
   /// 远程模式：开火音效事件（房主即时广播）。
   /// 子弹本体的出现由快照承载，这里只负责声音的即时性；
-  /// player 为开火方（保留语义，当前双端音效一致）
-  void remoteFire(TankPlayer player) {
+  /// 双端音效一致，不区分开火方
+  void remoteFire() {
     TankAudio.shoot();
   }
 

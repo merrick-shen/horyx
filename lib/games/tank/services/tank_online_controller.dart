@@ -305,9 +305,9 @@ class TankOnlineController extends OnlineGameControllerBase {
         game.applySnapshot(snapshot);
         _syncScores(snapshot);
       case NetMessageType.tankFireEvent:
-        final owner = parseTankFireEvent(msg);
-        if (owner == null) return;
-        _game?.remoteFire(owner);
+        // 载荷校验：解析失败（非法载荷）丢弃，不播音效
+        if (parseTankFireEvent(msg) == null) return;
+        _game?.remoteFire();
       default:
         break;
     }
