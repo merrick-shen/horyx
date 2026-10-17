@@ -44,9 +44,6 @@ class TankOnlineController extends OnlineGameControllerBase {
 
   TankOnlineController._({super.host, super.client, required super.mySeat});
 
-  /// 双人房间：对方固定为座位 2（绿方）；座位 1 为房主本机（红方）
-  static const int _peerSeat = 2;
-
   /// 快照广播频率（30Hz）：局域网延迟下足够流畅，报文体积可控
   static const Duration _snapshotInterval = Duration(milliseconds: 33);
 
@@ -247,7 +244,7 @@ class TankOnlineController extends OnlineGameControllerBase {
   /// （客户端不可信：载荷由解码函数校验，非法一律丢弃）
   @override
   void onHostGameMessage(int seat, NetMessage msg) {
-    if (seat != _peerSeat) return;
+    if (seat != peerSeat) return;
     final game = _game;
     if (game == null || gameEndedText != null) return;
     switch (msg.type) {

@@ -34,7 +34,6 @@ class WordPkOnlineController extends OnlineGameControllerBase
       client: client,
       mySeat: client.mySeat ?? 2,
       playerCount: client.capacity,
-      activeSeats: {...client.seats},
       seatNames: Map<int, String>.of(client.seatNames),
     )..initialize();
   }
@@ -47,9 +46,9 @@ class WordPkOnlineController extends OnlineGameControllerBase
     super.client,
     required super.mySeat,
     required this.playerCount,
-    required Set<int> activeSeats,
+    Set<int>? activeSeats,
     this.seatNames = const {},
-  }) : _activeSeats = activeSeats; // ignore: prefer_initializing_formals
+  }) : _activeSeats = activeSeats ?? {};
 
   /// 本局总人数（构造参数注入：与挂接时机解耦，无 late 初始化时序约束）
   final int playerCount;
@@ -59,7 +58,8 @@ class WordPkOnlineController extends OnlineGameControllerBase
   final Map<int, String> seatNames;
 
   /// 仍在对局中的座位集合（中途退出即移除，回合轮换跳过空位；
-  /// 集合内容在 onSeatLeft 中修改，引用本身不可变）
+  /// 集合内容在 onSeatLeft 中修改，引用本身不可变）。
+  /// 仅房主路径使用（回合轮换/终局判定均为房主职责），客户端恒为空
   final Set<int> _activeSeats;
 
   /// 当前输入者座位号（房主权威，客户端随广播更新）
