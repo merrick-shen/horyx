@@ -131,6 +131,12 @@ abstract final class Radii {
 String colorToHex(Color color) =>
     '#${(color.toARGB32() & 0xFFFFFF).toRadixString(16).toUpperCase().padLeft(6, '0')}';
 
+/// 跨主题固定语义色：不随主题（深浅/自定义强调色）变化的功能色
+abstract final class FixedColors {
+  /// 警示红：超范围/非法输入提示，深浅主题下均醒目
+  static const Color danger = Color(0xFFE5484D);
+}
+
 /// 全局主题配置：深浅两套主题共用一套构建逻辑，仅调色板与亮度不同
 /// 强调色（primary）由用户选择的主题色彩决定，构建时动态注入
 abstract final class AppTheme {

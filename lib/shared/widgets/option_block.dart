@@ -145,7 +145,7 @@ class NumberOptionBlock extends StatefulWidget {
   final double height;
 
   /// 超范围提示色（固定红，深浅主题下均醒目，不随主题色变化）
-  static const Color _invalidColor = Color(0xFFE5484D);
+  static const Color _invalidColor = FixedColors.danger;
 
   @override
   State<NumberOptionBlock> createState() => _NumberOptionBlockState();
