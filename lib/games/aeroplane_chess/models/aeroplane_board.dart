@@ -44,9 +44,6 @@ abstract final class AeroplaneBoard {
   /// 每色停机坪机位数
   static const int hangarSlots = 4;
 
-  /// 画布中心（风车箭头装饰）坐标
-  static const Point<double> boardCenter = Point(0, 0);
-
   /// 各方终点格（己方跑道末格）中心坐标
   static Point<double> goalCellCenter(AeroplaneColor color) =>
       runwayCellCenter(color, runwaySize - 1);

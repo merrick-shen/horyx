@@ -4,6 +4,16 @@ import 'package:horyx/games/aeroplane_chess/models/aeroplane_board.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
 
+/// 走法类型（仅测试断言用）：由棋子当前区域推导（停机坪 → 起飞，其余 → 行进）
+enum AeroplaneMoveType { takeoff, advance }
+
+extension _AeroplaneMoveTypeX on AeroplaneMove {
+  AeroplaneMoveType typeOf(AeroplaneGameState state) =>
+      state.planesOf(color)[planeId].zone == PlaneZone.hangar
+          ? AeroplaneMoveType.takeoff
+          : AeroplaneMoveType.advance;
+}
+
 void main() {
   final savedAt = DateTime(2026, 10, 1, 12);
 

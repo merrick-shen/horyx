@@ -182,7 +182,6 @@ void main() {
       final blueSlot3 = AeroplaneBoard.hangarSlotCenter(AeroplaneColor.blue, 3);
       expect(blueSlot3.x, closeTo(2.85, 1e-9));
       expect(blueSlot3.y, closeTo(2.85, 1e-9));
-      expect(AeroplaneBoard.boardCenter, const Point(0, 0));
     });
 
     test('全部坐标落在画布范围内', () {

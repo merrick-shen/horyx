@@ -1,9 +1,6 @@
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_board.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 
-/// 走法类型
-enum AeroplaneMoveType { takeoff, advance }
-
 /// 一步走法：颜色 + 棋子编号（0..3）+ 是否执行加油站飞越
 /// 走法类型由棋子当前区域推导（停机坪 → 起飞，其余 → 行进）；
 /// 给定骰点后落点由拓扑与连锁规则唯一确定，[fly] 仅用于区分
@@ -22,11 +19,6 @@ class AeroplaneMove {
 
   /// 是否沿加油站虚线航线飞越
   final bool fly;
-
-  AeroplaneMoveType typeOf(AeroplaneGameState state) =>
-      state.planesOf(color)[planeId].zone == PlaneZone.hangar
-          ? AeroplaneMoveType.takeoff
-          : AeroplaneMoveType.advance;
 
   @override
   bool operator ==(Object other) =>
