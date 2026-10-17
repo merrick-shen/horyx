@@ -36,7 +36,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
 
   /// 以客户端身份接管房间（收到 gameStart 后由等待页调用）
   /// 棋盘规格从开局载荷读取（房主建房所选）；规格缺失或非法时
-  /// 直接终止对局——静默回退 15 路会导致双端棋盘不一致（B12），
+  /// 直接终止对局——静默回退 15 路会导致双端棋盘不一致，
   /// 正常同版本协议下不会发生，此处防御协议演进/载荷异常
   factory GomokuOnlineController.client(RoomClient client) {
     final raw = client.startPayload['boardSize'];

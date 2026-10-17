@@ -30,7 +30,7 @@ mixin BoardGameOnlinePageMixin<W extends StatefulWidget> on State<W> {
   /// 游戏事件钩子：悔棋请求弹窗；胜负终局弹胜利弹窗并标记终局
   /// （无胜负终止交回骨架通用弹窗）。
   /// 悔棋分支不再无条件短路终局判定：弹窗期间对局结束（如对方认输）
-  /// 时关闭悔棋弹窗、复位协商状态并继续终局判定（B11）
+  /// 时关闭悔棋弹窗、复位协商状态并继续终局判定
   bool handleGameEvent(
     BoardGameOnlineController controller, {
     required VoidCallback markEndShown,

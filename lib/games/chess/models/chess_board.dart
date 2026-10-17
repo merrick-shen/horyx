@@ -83,7 +83,7 @@ class ChessBoard {
   }
 
   /// 90 格紧凑编码：每格一个字符（红大写黑小写、空格 '.'），按 row 0 → row 9 顺序拼接
-  /// 该格式为存档序列化的底层约定（阶段 4 的存档模型直接复用），定稿后不再变动
+  /// 该格式为存档序列化的底层约定（存档模型直接复用），定稿后不再变动
   String encode() => _squares.map((p) => p?.code ?? _emptyChar).join();
 
   /// 从紧凑编码还原棋盘；编码不合法时抛 [FormatException]

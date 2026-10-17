@@ -34,7 +34,7 @@ class ChessOnlineController extends OnlineGameControllerBase
   }
 
   /// 以客户端身份接管房间（收到 gameStart 后由等待页调用）
-  /// 开局载荷为空对象（象棋无规格选项），无需校验（无 B12 类参数）
+  /// 开局载荷为空对象（象棋无规格选项），无需校验
   factory ChessOnlineController.client(RoomClient client) {
     return ChessOnlineController._(
       client: client,

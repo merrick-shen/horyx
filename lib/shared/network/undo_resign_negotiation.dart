@@ -72,14 +72,14 @@ mixin UndoResignNegotiationMixin on OnlineGameControllerBase {
   UndoState undoState = UndoState.idle;
 
   /// 同意悔棋后的目标手数（发起方"悔自己上一手"后的长度）
-  /// 发起时快照：协商期间对方若又走子，同意后一并回退到快照（B9）
+  /// 发起时快照：协商期间对方若又走子，同意后一并回退到快照
   int _undoTarget = 0;
 
   /// 对局是否已分胜负或异常终局（协商/认输入口守卫）
   bool get _isGameOver => winnerSeat != null || gameEndedText != null;
 
   /// 发起悔棋请求（悔自己上一手）：仅对方回合可发起——轮到自己时
-  /// 最后一手是对方的子，悔棋语义不成立（B9）。发起时快照手数，
+  /// 最后一手是对方的子，悔棋语义不成立。发起时快照手数，
   /// 同意后回退到快照（协商期间对方新走的子一并回退）。
   /// 房主直接进入协商（本地应答方是客户端），客户端发请求给房主
   void requestUndo() {

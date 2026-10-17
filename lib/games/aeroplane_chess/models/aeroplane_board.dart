@@ -24,7 +24,7 @@ class FlightRoute {
   final int crossedRunwayIndex;
 }
 
-/// 棋盘拓扑常量表（以 docs/image.png 实物图逐格核对定稿）
+/// 棋盘拓扑常量表（设计时经实物图逐格核对定稿）
 ///
 /// 外环 52 格，索引按行进方向（顺时针）递增；颜色序列为
 /// 红/蓝/黄/绿 四色循环（index % 4），同色格间隔恒 4。

@@ -11,7 +11,7 @@ import 'package:horyx/shared/network/net_session.dart';
 /// 职责：TCP 监听（端口占用自动顺延）、hello 握手与座位分配、
 /// 座位列表维护、玩家加入/离开广播、满员自动广播开局。
 /// 房主自己是玩家 1（本机，无网络会话），客户端依次占用玩家 2..N。
-/// 对局消息（单词校验与广播）由步骤 4 的游戏层接入，本类只管房间生命周期。
+/// 对局消息（单词校验与广播）由游戏层接入，本类只管房间生命周期。
 class RoomHost extends ChangeNotifier {
   RoomHost({
     required this.gameName,
@@ -258,7 +258,7 @@ class RoomHost extends ChangeNotifier {
     );
     _notifyChanged();
 
-    // 满员自动开局（重开场景由步骤 4 控制，此处只广播一次）
+    // 满员自动开局（重开场景由游戏层控制，此处只广播一次）
     if (isFull && !_gameStarted) _startGame();
     return seat;
   }

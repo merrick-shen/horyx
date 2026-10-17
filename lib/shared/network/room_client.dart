@@ -26,7 +26,7 @@ enum RoomClientPhase {
 
 /// 局域网房间 - 客户端服务
 /// 职责：连接房主、hello 握手、等待加入结果、维护座位快照（入座/离开/开局）。
-/// 对局消息（wordSubmit/wordApplied 等）由步骤 4 的游戏层接入。
+/// 对局消息（wordSubmit/wordApplied 等）由游戏层接入。
 class RoomClient extends ChangeNotifier {
   RoomClient({required this.host, required this.port, this.myName});
 
@@ -178,7 +178,7 @@ class RoomClient extends ChangeNotifier {
         phase = RoomClientPhase.joined;
         _notifyChanged();
       case NetMessageType.playerJoined:
-        // 座位号缺失/非数字的异常载荷直接忽略（B10）：
+        // 座位号缺失/非数字的异常载荷直接忽略：
         // 兜 -1 入集合会留脏数据且对应的 playerLeft 也清不掉它
         final joinedSeat = message.payload['seat'];
         if (joinedSeat is! int) return;

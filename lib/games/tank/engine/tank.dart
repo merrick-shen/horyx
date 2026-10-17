@@ -46,7 +46,7 @@ class Tank extends PositionComponent {
   /// 炮管厚的一半（素材像素；炮管碰撞矩形高取炮管厚）
   static const double _cannonBarrelHalfThickness = 12.5;
 
-  /// 炮塔缩放比：圆顶直径 ≈ 车宽 75%（原版截图实测，勿回退，见 README）
+  /// 炮塔缩放比：圆顶直径 ≈ 车宽 75%（原版截图实测，勿回退）
   static const double _turretScaleRatio = 0.75;
 
   Tank({
@@ -251,7 +251,7 @@ class Tank extends PositionComponent {
   }
 
   /// 当前朝向 current 到目标角 target 的最短角度差（-π..π）。
-  /// 坦克转向与远程快照的朝向平滑（tank_online）共用，
+  /// 坦克转向与远程快照的朝向平滑（RemoteBattleDriver.smoothTanks）共用，
   /// 保证「走最短方向」的语义两处一致
   static double angleDelta(double current, double target) {
     var diff = (target - current) % (2 * math.pi);
