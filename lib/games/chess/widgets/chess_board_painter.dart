@@ -223,8 +223,8 @@ class ChessBoardPainter extends CustomPainter {
     }
   }
 
-  /// 移动中的棋子：起点到终点按动画进度插值（easeOut 已由动画层施加），
-  /// 阴影偏移加大模拟"提起"悬浮感；其余样式与静止棋子完全一致
+  /// 移动中的棋子：起点到终点按动画进度插值（easeOut 已由动画层施加）；
+  /// 其余样式与静止棋子完全一致
   /// （等比绘制不缩放，任何画布尺寸下棋子都清晰不变形）。
   /// 被吃棋子在动画期间暂留绘制在终点位垫底
   void _paintMovingPiece(Canvas canvas) {
@@ -239,27 +239,18 @@ class ChessBoardPainter extends CustomPainter {
       canvas,
       board.pieceAt(move.to)!,
       Offset.lerp(geometry.posToOffset(move.from), to, animProgress)!,
-      lifted: true,
     );
   }
 
-  /// 绘制单枚棋子：阴影 + 米色圆面 + 色描边 + 内圈细线 + 居中汉字。
-  /// [lifted] 为 true 时阴影更大更淡（走子动画中的悬浮感）
+  /// 绘制单枚棋子：米色圆面 + 色描边 + 内圈细线 + 居中汉字
   void _drawPiece(
     Canvas canvas,
     ChessPiece piece,
-    Offset center, {
-    bool lifted = false,
-  }) {
+    Offset center,
+  ) {
     final radius = geometry.cell * 0.45;
     final color = piece.color == ChessColor.red ? _redPiece : _blackPiece;
 
-    // 轻微下移的阴影提升立体感（移动中的棋子阴影更大更淡）
-    canvas.drawCircle(
-      center + Offset(0, geometry.cell * (lifted ? 0.08 : 0.03)),
-      radius,
-      Paint()..color = lifted ? const Color(0x22000000) : const Color(0x33000000),
-    );
     canvas.drawCircle(center, radius, Paint()..color = _pieceFace);
     canvas.drawCircle(
       center,
