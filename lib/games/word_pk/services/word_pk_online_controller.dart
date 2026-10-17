@@ -32,7 +32,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
   factory WordPkOnlineController.client(RoomClient client) {
     return WordPkOnlineController._(
       client: client,
-      mySeat: client.mySeat ?? 1,
+      mySeat: client.mySeat ?? 2,
       playerCount: client.capacity,
       activeSeats: {...client.seats},
       seatNames: Map<int, String>.of(client.seatNames),
