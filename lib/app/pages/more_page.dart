@@ -9,7 +9,7 @@ import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/setting_tile.dart';
 import 'package:horyx/app/pages/settings/about_page.dart';
 import 'package:horyx/app/pages/settings/archive_page.dart';
-import 'package:horyx/app/pages/settings/profile_settings_page.dart';
+import 'package:horyx/shared/profile/profile_settings_page.dart';
 import 'package:horyx/app/pages/settings/theme_settings_page.dart';
 
 /// 更多页

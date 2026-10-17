@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:horyx/app/pages/settings/profile_settings_page.dart';
+import 'package:horyx/shared/profile/profile_settings_page.dart';
 import 'package:horyx/shared/storage/profile_storage.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 
