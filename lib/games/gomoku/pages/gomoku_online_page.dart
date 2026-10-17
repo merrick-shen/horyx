@@ -48,6 +48,9 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage>
   /// 预选落子位置；null 表示无预选（与本地对局一致的落子交互）
   (int, int)? _pending;
 
+  /// 上一次通知时的走子数（识别悔棋回退）
+  int _lastMoveCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -70,6 +73,15 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage>
       markEndShown: markEndShown,
       showWinDialog: () => _showWinDialog(controller),
     );
+  }
+
+  /// 控制器通知回调：悔棋回退（走子数减少）时清除本方预选——
+  /// 残留预选基于回退前局面，且颜色随落子数奇偶推导会翻转错乱
+  void _onControllerChanged(GomokuOnlineController controller) {
+    if (controller.moves.length == _lastMoveCount) return;
+    final reverted = controller.moves.length < _lastMoveCount;
+    _lastMoveCount = controller.moves.length;
+    if (reverted) _pending = null;
   }
 
   /// 胜利弹窗：区分五连获胜/认输；可留在棋盘查看棋型
@@ -126,6 +138,7 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage>
               boardSize: widget.boardSize,
             )
           : GomokuOnlineController.client(widget.client!),
+      onControllerChanged: _onControllerChanged,
       onGameEvent: _onGameEvent,
       buildGameView: (context, controller, requestExit) => _BoardView(
         boardSize: controller.boardSize,
