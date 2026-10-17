@@ -6,7 +6,7 @@ import 'package:horyx/shared/network/net_message.dart';
 
 /// 坦克动荡联机消息的编解码层（纯数据，不做任何模拟/渲染）
 ///
-/// 协议分工（房主权威模型，见 tank_online_plan.md）：
+/// 协议分工（房主权威模型）：
 /// - 房主本地跑完整模拟，30Hz 广播 [TankNetSnapshot] 状态快照；
 /// - 客户端只上报驾驶/开火输入，影子战场按快照驱动渲染；
 /// - 迷宫一致性靠 [TankNetRoundStart] 的随机种子：双端以

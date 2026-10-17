@@ -13,7 +13,7 @@ import 'package:horyx/shared/widgets/dialog_shell.dart';
 enum UpdateDialogChoice { later, ignore, download }
 
 /// 发现新版本弹窗（更新检测）
-/// 视觉规范复用通用确认弹窗（surfaceBg / 圆角 24 / 描边），配色随主题；
+/// 视觉规范复用通用确认弹窗（surfaceBg / 描边），配色随主题；
 /// Release 说明完整显示不截断，超长时滚动并提供可见的滚动指示
 ///
 /// [showIgnoreVersion] 为 true 时额外提供「忽略此版本」按钮

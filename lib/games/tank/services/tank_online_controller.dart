@@ -11,7 +11,7 @@ import 'package:horyx/shared/network/online_game_controller.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 
-/// 坦克动荡联机对局控制器（房主权威 + 状态快照广播，见 tank_online_plan.md）
+/// 坦克动荡联机对局控制器（房主权威 + 状态快照广播）
 ///
 /// 与回合制联机（提交—校验—广播）不同，坦克是实时游戏：
 /// - 房主端：本地跑完整模拟（[TankMazeGame] 本地模式，物理与回合

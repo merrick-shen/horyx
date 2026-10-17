@@ -50,7 +50,6 @@ abstract interface class RemoteBattleHost {
 /// 坦克朝按快照年龄外推的移动目标指数平滑逼近；远程子弹按快照 id
 /// 增量同步并沿飞行方向外推；比分/阶段由快照直接写入。
 /// 击毁/反弹等事件的音效特效按快照语义推断补播
-/// （联机架构见 tank_online_plan.md）
 class RemoteBattleDriver {
   RemoteBattleDriver(this._host);
 
