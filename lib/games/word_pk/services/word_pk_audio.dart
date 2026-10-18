@@ -14,9 +14,7 @@ abstract final class WordPkAudio {
 
   static Future<void> preload() => GameAudio.preload(files);
 
-  /// 提交通过
   static void accept() => GameAudio.play(_accept);
 
-  /// 提交被拒
   static void reject() => GameAudio.play(_reject);
 }

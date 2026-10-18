@@ -54,7 +54,7 @@ class WordPkOnlineController extends OnlineGameControllerBase
   final int playerCount;
 
   /// 座位 -> 名字快照（构造注入的不可变映射，开局时定格，对局中改名不影响）；
-  /// 空映射即本地对局语义，视图层全部回退「玩家 N」展示
+  /// 缺名字的座位由视图层回退「玩家 N」展示
   final Map<int, String> seatNames;
 
   /// 仍在对局中的座位集合（中途退出即移除，回合轮换跳过空位；

@@ -51,7 +51,7 @@ class _WordPkOnlinePageState extends State<WordPkOnlinePage> {
         currentPlayer: controller.currentPlayer,
         entries: controller.entries,
         onSubmit: controller.submitWord,
-        // isMyTurn 已含终局判断：终局后禁输（连接已断，提交无处可去）
+        // isMyTurn 已含终局判断：终局后禁用输入框（连接已断，提交无处可去）
         inputEnabled: controller.isMyTurn,
         selfSeat: controller.mySeat,
         seatNames: controller.seatNames,

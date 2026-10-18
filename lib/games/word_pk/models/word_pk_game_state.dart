@@ -38,7 +38,8 @@ class WordPkGameState implements GameArchiveSummary {
         'savedAt': savedAt.toIso8601String(),
       };
 
-  /// 反序列化；数据缺失或格式不符时抛出 [FormatException]，由上层容错处理
+  /// 反序列化；entries 缺失或非列表时抛出 [FormatException]，
+  /// 其余字段类型不符时抛出 TypeError，均由上层容错处理
   factory WordPkGameState.fromJson(Map<String, dynamic> json) {
     final entryList = json['entries'];
     if (entryList is! List) {
