@@ -4,7 +4,8 @@ import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/app/widgets/game_grid.dart';
 
 /// 主页：导航栏 + 游戏列表
-/// 状态栏样式与底部导航由外层 AppShell 统一管理
+/// 底部导航由外层 AppShell 统一管理；状态栏样式由 MaterialApp 的
+/// builder（main.dart）统一注入
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 

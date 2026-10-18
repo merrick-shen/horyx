@@ -53,7 +53,7 @@ class _AboutPageState extends State<AboutPage> {
         setState(() => _version = info.version);
       }
     } catch (e) {
-      // 极端平台异常：记录线索后保持空串，页面仅省略版本行（与注释约定一致）
+      // 极端平台异常：记录线索后保持空串，页面仅省略版本行
       debugPrint('读取版本信息失败: $e');
     }
   }

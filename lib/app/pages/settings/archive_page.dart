@@ -29,7 +29,7 @@ class ArchivePage extends StatefulWidget {
 }
 
 class _ArchivePageState extends State<ArchivePage> {
-  /// 存档条目列表（按 GameRegistry 登记顺序展示，与首页卡片一致）
+  /// 存档条目列表（按保存时间倒序混排展示，与类注释的排序口径一致）
   List<_ArchiveEntry> _entries = [];
 
   /// 数据加载完成标记：区分「加载中」与「无存档」两种空列表状态
