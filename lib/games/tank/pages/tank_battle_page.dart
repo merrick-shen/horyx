@@ -89,7 +89,6 @@ class _TankBattlePageState extends State<TankBattlePage>
   }
 
   void _onDrive(TankPlayer player, TankDriveInput? input) {
-    // 驾驶输入实时下发战场游戏，驱动对应坦克转向/前进
     _game.setDrive(player, input);
   }
 

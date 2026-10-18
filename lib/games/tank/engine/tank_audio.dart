@@ -27,16 +27,12 @@ abstract final class TankAudio {
   /// 音色随机源（复用实例：反弹是高频路径，避免每次播放新建 Random）
   static final Random _random = Random();
 
-  /// 开火
   static void shoot() => GameAudio.play(_shoot);
 
-  /// 子弹撞墙反弹（两种音色随机，避免重复感）
   static void wallBounce() =>
       GameAudio.play(_random.nextBool() ? _wallBounce0 : _wallBounce1);
 
-  /// 子弹到寿命消失
   static void bulletExpire() => GameAudio.play(_bulletExpire);
 
-  /// 坦克被击毁爆炸
   static void explosion() => GameAudio.play(_explosion);
 }

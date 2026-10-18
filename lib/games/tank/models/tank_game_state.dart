@@ -20,9 +20,7 @@ class TankGameState implements GameArchiveSummary {
   @override
   final DateTime savedAt;
 
-
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
-  /// （与其他游戏存档模型一致；旧存档缺失此字段时视为 1）
   static const int version = 1;
 
   Map<String, dynamic> toJson() => {

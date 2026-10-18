@@ -76,8 +76,8 @@ class _TankOnlinePageState extends State<TankOnlinePage>
   }
 
   /// 控制器工厂（shell initState 调用一次）：创建后立即挂接战场——
-  /// 战场在页面 initState 已就绪；客户端此刻应用挂接前暂存的
-  /// 回合/快照，战场挂接即显示正确内容
+  /// [_game] 为 late final，首次访问即在此完成战场构造；
+  /// 客户端此刻应用挂接前暂存的回合/快照，战场挂接即显示正确内容
   TankOnlineController _createController() {
     final controller = widget.host != null
         ? TankOnlineController.host(widget.host!)

@@ -24,7 +24,7 @@ class TankControlColumn extends StatelessWidget {
   final Widget? bottom;
 
   /// 摇杆列四周留白：圆钮推出底座时会越过摇杆区域约半个钮径
-  /// （最大约槽高 12%+，[_maxSlotHeight] 槽时约 34px），留白必须覆盖之——
+  /// （最大约槽高 25%，[_maxSlotHeight] 槽时约 34px），留白必须覆盖之——
   /// 否则圆钮会被后绘制的地图区盖住、下方会伸出屏幕外
   static const double _panelPadding = 40;
 

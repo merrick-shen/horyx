@@ -11,7 +11,7 @@ import 'package:horyx/games/tank/tint_filter.dart';
 /// 状态存于迷宫坐标系（[logicalPos] 单位=格，原点迷宫左上角），
 /// 与画布尺寸无关，渲染由战场按逻辑状态驱动。
 /// 与墙的碰撞为圆形 vs 墙矩形（最近点法）：命中即沿墙面法线反射，
-/// 子步进推进防穿薄墙；不做子弹间碰撞，命中坦克判定随回合系统接入。
+/// 子步进推进防穿薄墙；不做子弹间碰撞，命中坦克判定由战场逐帧扫描完成。
 /// 到期后仅标记 [expired]，移除由战场统一处理。
 /// 组件的 position/scale 仅作渲染用途，由战场按逻辑状态驱动。
 class Bullet extends PositionComponent {

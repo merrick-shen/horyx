@@ -49,7 +49,7 @@ class TankScoreView extends StatelessWidget {
   /// 调用方需自行包 IgnorePointer 避免拦截手势
   final Widget? numberOverlay;
 
-  /// 坦克图标高度（宽随素材 380:204 比例）
+  /// 坦克图标高度（宽随素材 380:210 比例）
   static const double _iconHeight = 36;
 
   @override

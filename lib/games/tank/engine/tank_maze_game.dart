@@ -344,9 +344,8 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
 
   /// 命中判定：任一存活子弹命中任一存活坦克（含自己反弹的子弹）
   /// → 子弹消失、坦克击毁、对方得分，进入下一局倒计时。
-  /// 先扫描收集命中、扫描结束后再统一结算：
-  /// 结算会清空子弹分组列表，绝不能在遍历列表的过程中进行
-  /// （清场与遍历同时发生会抛 concurrent modification 异常打断游戏循环）
+  /// 命中即结算：遍历用 toList 副本，命中时同步移除子弹并跳出扫描，
+  /// 每次扫描至多结算一名受害者
   void _checkBulletHits() {
     TankPlayer? victim;
     for (final entry in _bulletsByPlayer.entries.toList()) {
