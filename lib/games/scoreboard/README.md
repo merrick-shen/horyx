@@ -44,7 +44,7 @@
 | 每局胜利分范围 | 1 ～ 99 | `ScoreboardSetupView` |
 | 领先分差范围 | 0 ～ 9 | `ScoreboardSetupView` |
 | 红蓝队伍色 | 红 `0xFFE5484D` / 蓝 `0xFF3E63DD`（体育计分惯例固定色，不随主题） | `ScoreboardView` |
-| 存档格式版本 | 1（旧档缺失该字段视为 1） | `ScoreboardGameState.version` |
+| 存档格式版本 | 1 | `ScoreboardGameState.version` |
 
 ## 注意事项（重要坑点）
 
