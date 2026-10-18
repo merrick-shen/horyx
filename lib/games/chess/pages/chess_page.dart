@@ -18,8 +18,7 @@ import 'package:horyx/shared/widgets/confirm_dialog.dart';
 /// 中国象棋游戏页
 /// 持有对局状态（棋盘、行棋方、选中/预选走法、走子历史），统一负责：
 /// 选子与走子交互、行棋方轮换、将军提示、将死/困毙终局弹窗、
-/// 退出存档与恢复续玩、局域网建房入口
-/// 悔棋在后续阶段接入
+/// 退出存档与恢复续玩、局域网建房入口、悔棋确认
 class ChessPage extends StatefulWidget {
   const ChessPage({super.key, this.resumeArchiveId});
 

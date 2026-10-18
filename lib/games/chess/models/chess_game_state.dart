@@ -12,19 +12,19 @@ class ChessGameState implements GameArchiveSummary {
     required this.savedAt,
   });
 
-  /// 当前局面的 90 格紧凑编码（ChessBoard.encode 产出，恢复即还原全部子力）
+  /// 当前局面的 90 格紧凑编码（ChessBoard.encode 产出，恢复时与重放
+  /// 走子序列的终局面比对，校验存档一致性）
   final String boardCode;
 
   /// 当前轮次（红先黑后交替）
   final ChessColor turn;
 
-  /// 已走着法序列（本地悔棋回退与棋谱展示使用）
+  /// 已走着法序列（存档恢复时重放重建局面与悔棋历史）
   final List<ChessMove> moves;
 
   /// 存档时间
   @override
   final DateTime savedAt;
-
 
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;
