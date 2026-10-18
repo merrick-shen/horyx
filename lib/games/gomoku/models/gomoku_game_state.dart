@@ -19,7 +19,6 @@ class GomokuGameState implements GameArchiveSummary {
   @override
   final DateTime savedAt;
 
-
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;
 
@@ -33,7 +32,8 @@ class GomokuGameState implements GameArchiveSummary {
         'savedAt': savedAt.toIso8601String(),
       };
 
-  /// 反序列化；数据缺失或格式不符时抛出 [FormatException]，由上层容错处理
+  /// 反序列化；moves 缺失或非列表时抛出 [FormatException]，
+  /// 其余字段类型不符时抛出 TypeError，均由上层容错处理
   factory GomokuGameState.fromJson(Map<String, dynamic> json) {
     final moveList = json['moves'];
     if (moveList is! List) {

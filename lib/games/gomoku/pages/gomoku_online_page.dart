@@ -112,7 +112,6 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage>
     setState(() => _pending = (col, row));
   }
 
-  /// 取消预选：预选棋子消失
   void _cancelMove() {
     setState(() => _pending = null);
   }
