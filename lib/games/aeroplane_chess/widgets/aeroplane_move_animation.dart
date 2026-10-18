@@ -48,7 +48,7 @@ List<Point<double>> buildMovePath({
   final newPos = newState.planesOf(color)[move.planeId];
   final points = <Point<double>>[planeCoord(state, color, move.planeId)];
   if (old.zone == PlaneZone.hangar) {
-    // 起飞直达起飞格（起飞落点不触发连锁）
+    // 起飞直达准备区（不踏上跑道，不触发连锁）
     points.add(planeCoord(newState, color, move.planeId));
     return points;
   }

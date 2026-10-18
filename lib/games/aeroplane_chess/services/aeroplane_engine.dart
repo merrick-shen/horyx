@@ -229,8 +229,8 @@ abstract final class AeroplaneEngine {
     );
   }
 
-  /// 棋子当前累计步数（仅接受外环/跑道位置；停机坪与准备区棋子无步数，
-  /// 终点棋子不可动，不参与计算）
+  /// 棋子当前累计步数：外环/跑道位置按拓扑累加；终点棋子返回总步数
+  /// （供动画终点推导）；停机坪与准备区棋子无步数，抛 ArgumentError
   static int journeySteps(AeroplaneColor color, PlanePosition pos) {
     switch (pos.zone) {
       case PlaneZone.ring:
@@ -400,7 +400,7 @@ abstract final class AeroplaneEngine {
   }
 
   /// 为已完成的飞机分配基地机位：避开停机坪棋子与其他已完成棋子
-  /// 占用的机位，取最低空闲位（完成的飞机回基地后以待飞位展示勾标识）
+  /// 占用的机位，取最低空闲位（完成的飞机回基地机位展示勾标识）
   static int _allocGoalSlot(List<PlanePosition> list, int planeId) {
     final used = <int>{
       for (var i = 0; i < list.length; i++)

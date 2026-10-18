@@ -182,7 +182,7 @@ abstract final class AeroplaneBoard {
   }
 
   /// 停机坪机位中心坐标（2×2 布局，slot 0 靠外角，间距 0.85 格；
-  /// base ±3.7 使机位外缘 3.7+0.55 与外环格外缘 ±4.25 平齐）
+  /// base ±3.7 使机位圆盘（半径 0.28 格）外缘 ±3.98，与外环格外缘 ±4.25 间留空隙）
   static Point<double> hangarSlotCenter(AeroplaneColor color, int slot) {
     if (slot < 0 || slot >= hangarSlots) {
       throw ArgumentError('机位索引越界: $slot');

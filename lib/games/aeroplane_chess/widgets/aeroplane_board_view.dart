@@ -24,7 +24,7 @@ List<Point<double>> _rotN(List<Point<double>> pts, int times) {
 /// 格子层按拓扑坐标表纯静态绘制（CustomPainter）：八角外环（顶/底行为
 /// 半格竖条、转角列为半格横条、转角大三角与对角分割格衔接）、中央四色
 /// 跑道（半格小格）与末端风车箭头、四角停机坪空机位、加油站短虚线箭头；
-/// 棋子层按对局状态定位四区域（停机坪/外环/跑道/终点），同格多子横向
+/// 棋子层按对局状态定位五区域（停机坪/准备区/外环/跑道/终点），同格多子横向
 /// 错开；四色取自 [AeroplaneColors]，绘制层不写死色值；棋盘卡片圆角
 /// 描边与其他游戏棋盘统一（Radii.card + 主题描边色）
 class AeroplaneBoardView extends StatelessWidget {
@@ -88,7 +88,7 @@ class AeroplaneBoardView extends StatelessWidget {
   // 棋子层
   // ---------------------------------------------------------------------------
 
-  /// 棋子直径占画布比例（0.42 格 / 画布 8.5 格，与机位圆盘比例一致）
+  /// 棋子直径占画布比例（0.42 格 / 画布 8.5 格；机位圆盘直径 0.56 格，棋子略小于盘）
   static const double _pieceRatio = 0.42 / (AeroplaneBoard.canvasExtent * 2);
 
   List<Widget> _buildPieces(double size) {
