@@ -40,7 +40,7 @@ class ThemeStorage {
   static Future<Color> loadSeedColor() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getInt(_seedKey);
-    // 负数（alpha=FF 的 ARGB）与正数均合法，仅判断是否缺失
+    // 仅判断是否缺失
     return raw == null ? AppPalette.brandPrimary : Color(raw);
   }
 }

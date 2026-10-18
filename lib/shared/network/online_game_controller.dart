@@ -154,10 +154,10 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
 /// 子类实现无语义的占位回执成员；现在按需混入，基类只保留
 /// 连接/终局/生命周期公共骨架。
 /// 混入方需提供：
-/// - [resultMessageType]：提交回执的消息类型（stoneResult / wordResult）
+/// - [resultMessageType]：提交回执的消息类型（如 stoneResult、wordResult）
 /// - [reasonText]：拒绝原因 -> 用户可读文案
 mixin SubmissionReceiptMixin {
-  /// 提交回执的消息类型（混入方提供：stoneResult / wordResult）
+  /// 提交回执的消息类型（混入方提供，如 stoneResult、wordResult）
   @protected
   NetMessageType get resultMessageType;
 

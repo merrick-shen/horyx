@@ -5,7 +5,7 @@ import 'package:horyx/shared/widgets/option_panel.dart';
 
 /// 对局模式选择面板：本地对战 / 局域网对战二选一
 ///
-/// 五子棋、单词PK与坦克动荡设置页共用。选中状态由调用方持有并传入：
+/// 五子棋、象棋、飞行棋、坦克与单词PK设置页共用。选中状态由调用方持有并传入：
 /// 底部主按钮（开始对局/创建房间）同样依赖该状态，若面板自持状态
 /// 会形成两份需同步的数据源
 class LanModePanel extends StatelessWidget {

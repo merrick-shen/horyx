@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 
 /// 通用页面骨架：顶栏 + 内容区
-/// 统一「AppTopBar 自吸收状态栏 + 内容区 SafeArea 避让左右/底部
+/// 统一「AppTopBar 自吸收状态栏 + 内容区 SafeArea 仅避让左右
 /// + Expanded 内容」的纵向结构，页面只需提供标题与内容区
 class AppPageScaffold extends StatelessWidget {
   const AppPageScaffold({

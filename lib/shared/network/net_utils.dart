@@ -48,7 +48,7 @@ class NetUtils {
   }
 
   /// IPv4 格式校验：四段 0-255 的数字
-  /// 与加入页手输校验同规则；接入扫码入口时可收敛为共用本实现
+  /// 与加入页手输校验同规则；room_join_page.dart 内有逐行等价实现，收敛共用待做
   static bool _isValidIpv4(String value) {
     final segments = value.split('.');
     if (segments.length != 4) return false;

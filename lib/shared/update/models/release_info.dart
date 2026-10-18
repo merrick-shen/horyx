@@ -25,7 +25,7 @@ class ReleaseInfo {
   final String downloadUrl;
 
   /// 解析 API 响应；字段缺失或类型不符时置空串，保证解析不抛异常
-  /// （空 tag 后续版本比较会自然判为无新版本，无需在此校验）
+  /// （空 tag 会使版本比较判为 invalid → 检查失败，由调用方按失败处理）
   factory ReleaseInfo.fromJson(Map<String, dynamic> json) {
     String asString(dynamic value) => value is String ? value : '';
 

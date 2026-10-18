@@ -17,7 +17,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 /// 局域网房间等待页（所有游戏通用）
 /// 房主模式：由各游戏的设置页创建，实时显示入座情况与加入地址；
-/// 客户端模式：由联机页输入房主地址加入后进入，负责连接与加入流程展示。
+/// 客户端模式：由联机页输入房主地址或扫码加入后进入，负责连接与加入流程展示。
 /// 满员开局时通过 [hostGameBuilder] 跳转到对应游戏的联机对局页，并把房间
 /// 连接的所有权移交过去（由对局页负责关闭）；客户端侧因加入前不知道游戏名，
 /// 开局时按握手应答中的游戏名现场解析对局页构建器。
@@ -649,7 +649,6 @@ class _RoomPageState extends State<RoomPage> {
                   ),
                 ),
               ),
-              // 人数计数徽标
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -725,7 +724,6 @@ class _SeatTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // 座位号圆标
           Container(
             width: 30,
             height: 30,
@@ -760,7 +758,6 @@ class _SeatTile extends StatelessWidget {
               ),
             ),
           ),
-          // 自己座位的「你」徽标
           if (isMe)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),

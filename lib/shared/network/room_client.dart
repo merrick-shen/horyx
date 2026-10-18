@@ -155,7 +155,7 @@ class RoomClient extends ChangeNotifier {
         }
         mySeat = message.payload['seat'] as int?;
         capacity = (message.payload['capacity'] as int?) ?? 0;
-        // 旧版本房主不携带 gameName，缺省时等待页保持「游戏房间」兜底展示
+        // 防御载荷缺 gameName：缺省时等待页保持「游戏房间」兜底展示
         final gameName = message.payload['gameName'];
         if (gameName is String) this.gameName = gameName;
         final players = message.payload['players'];
