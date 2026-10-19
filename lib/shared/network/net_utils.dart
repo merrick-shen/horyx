@@ -38,7 +38,7 @@ class NetUtils {
       final host = uri.queryParameters['host'];
       final portValue = uri.queryParameters['port'];
       final port = portValue == null ? null : int.tryParse(portValue);
-      if (host == null || port == null || !_isValidIpv4(host)) return null;
+      if (host == null || port == null || !isValidIpv4(host)) return null;
       if (port < 1 || port > 65535) return null;
       return (host: host, port: port);
     } on FormatException {
@@ -48,8 +48,8 @@ class NetUtils {
   }
 
   /// IPv4 格式校验：四段 0-255 的数字
-  /// 与加入页手输校验同规则；room_join_page.dart 内有逐行等价实现，收敛共用待做
-  static bool _isValidIpv4(String value) {
+  /// 加入页「IP:端口」手输校验与房间码解析共用本实现
+  static bool isValidIpv4(String value) {
     final segments = value.split('.');
     if (segments.length != 4) return false;
     for (final segment in segments) {

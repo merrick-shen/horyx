@@ -103,25 +103,13 @@ class _RoomJoinPageState extends State<RoomJoinPage> {
     final parts = input.split(':');
     if (parts.length != 2) return null;
     final portValue = int.tryParse(parts[1]);
-    if (!_isValidIpv4(parts[0]) ||
+    if (!NetUtils.isValidIpv4(parts[0]) ||
         portValue == null ||
         portValue < 1 ||
         portValue > 65535) {
       return null;
     }
     return (host: parts[0], port: portValue);
-  }
-
-  /// IPv4 格式校验：四段 0-255 的数字
-  bool _isValidIpv4(String value) {
-    final segments = value.split('.');
-    if (segments.length != 4) return false;
-    for (final segment in segments) {
-      if (segment.isEmpty || segment.length > 3) return false;
-      final number = int.tryParse(segment);
-      if (number == null || number < 0 || number > 255) return false;
-    }
-    return true;
   }
 
   @override
