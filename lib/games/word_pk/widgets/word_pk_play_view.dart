@@ -8,6 +8,13 @@ import 'package:horyx/shared/widgets/panel_card.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
 
+/// 座位展示名：快照缺失、无该座位或名字为空串时回退「玩家 N」
+/// （本地与联机共用同一回退口径）
+String _seatLabel(Map<int, String>? seatNames, int seat) {
+  final name = seatNames?[seat];
+  return (name == null || name.isEmpty) ? '玩家 $seat' : name;
+}
+
 /// 单词PK - 对局视图
 /// 受控组件：对局状态（当前输入者、单词列表）由父级持有，
 /// 本组件负责展示与输入，提交经 [onSubmit] 交由父级校验处理
@@ -44,12 +51,6 @@ class WordPkPlayView extends StatefulWidget {
 
   /// 座位 -> 名字快照（联机对局传入；null 即本地对局，全部回退「玩家 N」）
   final Map<int, String>? seatNames;
-
-  /// 座位的展示名：快照缺失或名字为空时回退「玩家 N」
-  String _seatLabel(int seat) {
-    final name = seatNames?[seat];
-    return (name == null || name.isEmpty) ? '玩家 $seat' : name;
-  }
 
   /// 禁输态输入框占位：联机且知道输入者名字时以「」突出；
   /// 本地对局（无快照）或名字缺失保持原占位文案
@@ -100,7 +101,7 @@ class _WordPkPlayViewState extends State<WordPkPlayView> {
               subtitle: '当前输入者',
               title: widget.currentPlayer == widget.selfSeat
                   ? '你'
-                  : widget._seatLabel(widget.currentPlayer),
+                  : _seatLabel(widget.seatNames, widget.currentPlayer),
               titleKey: ValueKey(widget.currentPlayer),
             ),
             const SizedBox(height: 16),
@@ -219,7 +220,7 @@ class _VerifiedWordsCard extends StatelessWidget {
                     itemBuilder: (context, index) => _WordChip(
                       word: entries[index].word,
                       playerIndex: entries[index].playerIndex,
-                      ownerName: seatNames?[entries[index].playerIndex],
+                      seatNames: seatNames,
                     ),
                   ),
           ),
@@ -242,12 +243,6 @@ class _PlayerSequence extends StatelessWidget {
 
   /// 座位 -> 名字快照（null 即本地对局，chip 回退「玩家 N」）
   final Map<int, String>? seatNames;
-
-  /// 座位的展示名：快照缺失或名字为空时回退「玩家 N」
-  String _label(int seat) {
-    final name = seatNames?[seat];
-    return (name == null || name.isEmpty) ? '玩家 $seat' : name;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -272,7 +267,7 @@ class _PlayerSequence extends StatelessWidget {
               ),
             ),
             child: Text(
-              _label(i),
+              _seatLabel(seatNames, i),
               style: TextStyle(
                 color: i == currentIndex
                     ? palette.primary
@@ -324,21 +319,19 @@ class _WordChip extends StatelessWidget {
   const _WordChip({
     required this.word,
     required this.playerIndex,
-    this.ownerName,
+    this.seatNames,
   });
 
   final String word;
   final int playerIndex;
 
-  /// 归属玩家名字（快照缺失或空串时回退「玩家 N」展示）
-  final String? ownerName;
+  /// 归属玩家的座位 -> 名字快照（null 即本地对局，归属回退「玩家 N」）
+  final Map<int, String>? seatNames;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final owner = (ownerName == null || ownerName!.isEmpty)
-        ? '玩家 $playerIndex'
-        : ownerName!;
+    final owner = _seatLabel(seatNames, playerIndex);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
