@@ -10,6 +10,7 @@ import 'package:horyx/games/scoreboard/services/scoreboard_storage.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/landscape_immersive_mixin.dart';
+import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/scoreboard/widgets/scoreboard_view.dart';
@@ -320,7 +321,7 @@ class _ScoreboardPageState
   /// 退出整页回主页：还原竖屏后关闭页面（与其他游戏保存/不保存退出一致）
   void _exitToHome() {
     restorePortrait();
-    Navigator.of(context).pop();
+    exitPageClean(context);
   }
 
   /// 恢复未完成计分：还原配置、比分与撤销栈

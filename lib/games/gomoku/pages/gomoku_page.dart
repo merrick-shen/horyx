@@ -9,6 +9,7 @@ import 'package:horyx/games/gomoku/services/gomoku_rules.dart';
 import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
+import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/gomoku/widgets/gomoku_board_view.dart';
@@ -266,7 +267,7 @@ class _GomokuPageState
         ),
       ),
       onBackToSetup: _resetForSetup,
-      exitPage: () => Navigator.of(context).pop(),
+      exitPage: () => exitPageClean(context),
     );
   }
 

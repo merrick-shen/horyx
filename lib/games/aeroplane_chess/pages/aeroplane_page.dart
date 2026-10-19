@@ -17,6 +17,7 @@ import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 
@@ -448,7 +449,7 @@ class _AeroplanePageState
         await saveCurrent(_copyWithSavedAt(state, DateTime.now()));
       },
       onBackToSetup: _resetForSetup,
-      exitPage: () => Navigator.of(context).pop(),
+      exitPage: () => exitPageClean(context),
     );
   }
 
