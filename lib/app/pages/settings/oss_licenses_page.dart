@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
+import 'package:horyx/shared/utils/fade_slide_up_route.dart';
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
 import 'package:horyx/shared/widgets/info_list_view.dart';
 
@@ -158,38 +159,10 @@ class _OssLicensesPageState extends State<OssLicensesPage> {
       subtitle: _extractCopyrightLine(fullText),
       // 与详情页大标题建立 Hero 共享元素过渡
       heroTag: 'oss-license-${license.package}',
-      onTap: () => Navigator.of(context).push(_OssLicenseDetailRoute(license)),
+      onTap: () => Navigator.of(context)
+          .push(fadeSlideUpRoute(_OssLicenseDetailPage(license: license))),
     );
   }
-}
-
-/// 许可详情页路由：淡入 + 轻微上滑的平滑过渡
-/// 时长与曲线与更新日志详情页一致（300ms easeOutCubic），保持全局动效统一
-class _OssLicenseDetailRoute extends PageRouteBuilder<void> {
-  _OssLicenseDetailRoute(_OssLicense license)
-      : super(
-          transitionDuration: const Duration(milliseconds: 300),
-          reverseTransitionDuration: const Duration(milliseconds: 250),
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              _OssLicenseDetailPage(license: license),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            final curved = CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeOutCubic,
-              reverseCurve: Curves.easeInCubic,
-            );
-            return FadeTransition(
-              opacity: curved,
-              child: SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(0, 0.04),
-                  end: Offset.zero,
-                ).animate(curved),
-                child: child,
-              ),
-            );
-          },
-        );
 }
 
 /// 许可详情页：包名大标题（Hero 目标）+ 类型标签 + 许可证全文
