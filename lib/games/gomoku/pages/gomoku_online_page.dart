@@ -144,7 +144,7 @@ class _GomokuOnlinePageState extends State<GomokuOnlinePage>
         moves: controller.moves,
         pending: _pending,
         isMyTurn: controller.isMyTurn,
-        winnerSeat: controller.winnerSeat,
+        winnerText: controller.winnerText,
         ended: controller.gameEndedText != null,
         undoState: controller.undoState,
         hasMoves: controller.moves.isNotEmpty,
@@ -169,7 +169,7 @@ class _BoardView extends StatelessWidget {
     required this.moves,
     required this.pending,
     required this.isMyTurn,
-    required this.winnerSeat,
+    required this.winnerText,
     required this.ended,
     required this.undoState,
     required this.hasMoves,
@@ -193,8 +193,8 @@ class _BoardView extends StatelessWidget {
   /// 是否轮到自己落子（false 时棋盘不响应预选）
   final bool isMyTurn;
 
-  /// 胜方座位号；null 表示对局进行中
-  final int? winnerSeat;
+  /// 胜方文案（'黑方'/'白方'，来自控制器）；null 表示对局进行中
+  final String? winnerText;
 
   /// 对局是否无胜负终止（断线/解散/对方离开）
   final bool ended;
@@ -226,7 +226,6 @@ class _BoardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 落子确认按钮仅在棋盘上有预选棋子时出现（终局后无预选），由布局组件处理
-    final winner = winnerSeat == null ? null : (winnerSeat == 1 ? '黑方' : '白方');
 
     // 布局骨架（执子卡 + 棋盘 + 确认行）与本地对局共用 [GomokuGameLayout]，
     // 仅执子卡副标题（联机提示等待对象）与底部按钮集（协商制操作组）不同
@@ -234,13 +233,13 @@ class _BoardView extends StatelessWidget {
       boardSize: boardSize,
       moves: moves,
       pending: pending,
-      winner: winner,
+      winner: winnerText,
       turnSubtitle: isMyTurn ? '轮到你落子' : '等待对方落子',
       onCellTap: onCellTap,
       onCancelMove: onCancelMove,
       onConfirmMove: onConfirmMove,
       actions: BoardGameActionBar(
-        showExit: winner != null || ended,
+        showExit: winnerText != null || ended,
         undoState: undoState,
         hasMoves: hasMoves,
         isMyTurn: isMyTurn,
