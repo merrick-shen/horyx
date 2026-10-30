@@ -18,6 +18,17 @@ enum ConfirmResult {
   cancel,
 }
 
+/// 悔棋确认弹窗（棋类本地对局页共用）：返回是否确认撤回
+Future<bool> confirmUndo(BuildContext context) async {
+  final result = await showConfirmDialog(
+    context,
+    title: '悔棋',
+    message: '确定撤回上一步棋吗？',
+    confirmLabel: '悔棋',
+  );
+  return result == ConfirmResult.confirm;
+}
+
 /// 「保存并退出」三选项公共流程（各游戏对局页共用）
 /// 弹出确认弹窗并分发动作：
 /// - 保存并退出：先 [onSave] 持久化，完成后 [onExit]；保存失败时弹窗告知，

@@ -183,13 +183,8 @@ class _GomokuPageState
   /// 悔棋：确认后撤回最后一颗确认棋子，执子方回退
   Future<void> _undo() async {
     if (_moves.isEmpty) return;
-    final result = await showConfirmDialog(
-      context,
-      title: '悔棋',
-      message: '确定撤回上一步棋吗？',
-      confirmLabel: '悔棋',
-    );
-    if (!mounted || result != ConfirmResult.confirm) return;
+    final confirmed = await confirmUndo(context);
+    if (!mounted || !confirmed) return;
     setState(() {
       // removeLast 返回被移除的元素，同步清出占位集合
       _occupied.remove(_moves.removeLast());

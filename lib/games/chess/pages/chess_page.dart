@@ -214,13 +214,8 @@ class _ChessPageState
   Future<void> _undo() async {
     final board = _board;
     if (board == null || _history.isEmpty) return;
-    final result = await showConfirmDialog(
-      context,
-      title: '悔棋',
-      message: '确定撤回上一步棋吗？',
-      confirmLabel: '悔棋',
-    );
-    if (!mounted || result != ConfirmResult.confirm) return;
+    final confirmed = await confirmUndo(context);
+    if (!mounted || !confirmed) return;
     setState(() {
       final (move, captured) = _history.removeLast();
       board.revertMove(move, captured);
