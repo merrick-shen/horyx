@@ -4,10 +4,14 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// 各游戏存档模型的基础契约：存档管理页展示（保存时间）所需的最小接口
-/// （GameInfo.archive 适配经此免转型读取展示数据）
+/// （GameInfo.archive 适配经此免转型读取展示数据）。
+/// 约束 [ArchiveStorage.toJson] 的统一转发：模型自行实现序列化
 abstract interface class GameArchiveSummary {
   /// 存档时间
   DateTime get savedAt;
+
+  /// 序列化为 JSON（模型类型各异，ArchiveStorage 统一转发）
+  Map<String, dynamic> toJson();
 }
 
 /// 多存档索引条目：单条存档的展示元数据（id、归属游戏、保存时间）。
@@ -88,11 +92,12 @@ abstract class ArchiveStorage<T extends GameArchiveSummary> {
   /// 多存档归属游戏标识（与 GameRegistry 登记名一致）
   String get gameId;
 
-  /// 模型反序列化（各游戏模型类型不同）
+  /// 模型反序列化（各游戏模型类型不同，静态构造无法经泛型约束，
+  /// 由子类转发模型 factory）
   T fromJson(Map<String, dynamic> json);
 
-  /// 模型序列化（Dart 泛型无法约束结构化类型，故由子类转发 toJson）
-  Map<String, dynamic> toJson(T state);
+  /// 模型序列化（统一转发模型自身的 toJson，子类无需覆写）
+  Map<String, dynamic> toJson(T state) => state.toJson();
 
   // ---------------------------------------------------------------------------
   // 多存档 API

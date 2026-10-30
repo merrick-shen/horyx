@@ -214,6 +214,7 @@ class AeroplaneGameState implements GameArchiveSummary {
   int arrivedCount(AeroplaneColor color) =>
       planesOf(color).where((p) => p.zone == PlaneZone.goal).length;
 
+  @override
   Map<String, dynamic> toJson() => {
         'version': version,
         'players': [

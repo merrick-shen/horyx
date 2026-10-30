@@ -14,7 +14,4 @@ class GomokuStorage extends ArchiveStorage<GomokuGameState> {
   @override
   GomokuGameState fromJson(Map<String, dynamic> json) =>
       GomokuGameState.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(GomokuGameState state) => state.toJson();
 }

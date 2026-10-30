@@ -14,7 +14,4 @@ class WordPkStorage extends ArchiveStorage<WordPkGameState> {
   @override
   WordPkGameState fromJson(Map<String, dynamic> json) =>
       WordPkGameState.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(WordPkGameState state) => state.toJson();
 }

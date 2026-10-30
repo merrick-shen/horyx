@@ -14,7 +14,4 @@ class TankStorage extends ArchiveStorage<TankGameState> {
   @override
   TankGameState fromJson(Map<String, dynamic> json) =>
       TankGameState.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(TankGameState state) => state.toJson();
 }

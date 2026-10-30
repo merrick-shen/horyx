@@ -19,6 +19,7 @@ class _FakeState implements GameArchiveSummary {
   @override
   final DateTime savedAt;
 
+  @override
   Map<String, dynamic> toJson() => {
         'summary': summary,
         'savedAt': savedAt.toIso8601String(),

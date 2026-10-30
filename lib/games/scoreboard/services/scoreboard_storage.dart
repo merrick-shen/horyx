@@ -14,7 +14,4 @@ class ScoreboardStorage extends ArchiveStorage<ScoreboardGameState> {
   @override
   ScoreboardGameState fromJson(Map<String, dynamic> json) =>
       ScoreboardGameState.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(ScoreboardGameState state) => state.toJson();
 }

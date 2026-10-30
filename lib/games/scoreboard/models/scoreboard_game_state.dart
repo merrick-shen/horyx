@@ -51,6 +51,7 @@ class ScoreboardGameState implements GameArchiveSummary {
   /// 数据格式版本号：字段结构变更时递增，便于后续读取旧档时迁移
   static const int version = 1;
 
+  @override
   Map<String, dynamic> toJson() => {
         'version': version,
         'bestOf': bestOf,

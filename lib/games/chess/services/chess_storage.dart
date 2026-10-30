@@ -14,7 +14,4 @@ class ChessStorage extends ArchiveStorage<ChessGameState> {
   @override
   ChessGameState fromJson(Map<String, dynamic> json) =>
       ChessGameState.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(ChessGameState state) => state.toJson();
 }

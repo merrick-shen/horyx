@@ -14,7 +14,4 @@ class AeroplaneStorage extends ArchiveStorage<AeroplaneGameState> {
   @override
   AeroplaneGameState fromJson(Map<String, dynamic> json) =>
       AeroplaneGameState.fromJson(json);
-
-  @override
-  Map<String, dynamic> toJson(AeroplaneGameState state) => state.toJson();
 }
