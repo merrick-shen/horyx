@@ -36,6 +36,9 @@ class WordPkValidator {
       // 保留失败痕迹（release 下自动静音），便于排查「单词全判无效」类问题
       debugPrint('WordPkValidator: 词表加载失败，降级为空词表 —— $e');
       _dictionary = const <String>{};
+      // 清除已完成的失败任务，下次进入应用时可重试加载（否则失败被
+      // 永久缓存，本次会话所有单词判无效）
+      _loading = null;
     }
   }
 
