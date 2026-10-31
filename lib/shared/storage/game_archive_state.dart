@@ -29,14 +29,20 @@ abstract class GameArchiveStateBase<W extends StatefulWidget,
   bool get isInSetupPhase;
 
   /// 检测该游戏最新一条存档，存在则刷新恢复入口并绑定覆盖目标
-  /// （initState 调用；计分器退出计分回到设置视图后也会重新调用刷新）
+  /// （initState 调用；计分器退出计分回到设置视图后也会重新调用刷新）。
+  /// 平台异常（SharedPreferences 插件异常等）降级为无存档，与 main.dart
+  /// 启动读取侧的兜底口径一致，不让未捕获异步异常中断页面初始化
   Future<void> loadSavedState() async {
-    final record = await archiveStorage.loadLatest();
-    if (record != null && mounted && isInSetupPhase) {
-      setState(() {
-        savedState = record.state;
-        resumedArchiveId = record.id;
-      });
+    try {
+      final record = await archiveStorage.loadLatest();
+      if (record != null && mounted && isInSetupPhase) {
+        setState(() {
+          savedState = record.state;
+          resumedArchiveId = record.id;
+        });
+      }
+    } catch (_) {
+      // 降级为无存档：页面正常展示（无恢复入口）
     }
   }
 
@@ -66,13 +72,15 @@ abstract class GameArchiveStateBase<W extends StatefulWidget,
   /// 定点恢复指定存档（存档管理页条目「开始」按钮跳转用）：
   /// 加载该档并绑定覆盖目标（此后保存覆盖该档），成功后回调
   /// [onResumed]（各页面据此切入对局视图）；
-  /// 存档不存在或已损坏时无动作，页面停留设置视图走常规恢复入口
+  /// 存档不存在或已损坏时无动作，页面停留设置视图走常规恢复入口。
+  /// 与 [loadSavedState] 同款双重防护：加载完成前已离开设置阶段
+  /// （用户恰在其间点了"开始对局"）则丢弃结果，避免覆盖进行中对局
   Future<void> resumeArchiveById(
     String id,
     void Function(T state) onResumed,
   ) async {
     final record = await archiveStorage.loadById(id);
-    if (record == null || !mounted) return;
+    if (record == null || !mounted || !isInSetupPhase) return;
     resumedArchiveId = record.id;
     onResumed(record.state);
   }
