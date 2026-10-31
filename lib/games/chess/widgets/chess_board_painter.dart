@@ -338,6 +338,10 @@ class ChessBoardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ChessBoardPainter oldDelegate) =>
+      // board 为可变对象（本地对局 applyMove/revertMove 原地改同一实例），
+      // 身份比较恒 false——必须以编码内容比较兜底，局面变化才不依赖
+      // geometry 等其他字段的"必然不相等"而漏绘
+      oldDelegate.board.encode() != board.encode() ||
       oldDelegate.board != board ||
       oldDelegate.geometry != geometry ||
       oldDelegate.surfaceColor != surfaceColor ||
