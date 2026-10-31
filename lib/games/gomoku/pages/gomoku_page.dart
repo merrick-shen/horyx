@@ -238,6 +238,10 @@ class _GomokuPageState
       _occupied
         ..clear()
         ..addAll(saved.moves);
+      // 与象棋对应路径一致：残留终局/预选一并清除，复用本方法时
+      // 不受此前对局状态污染
+      _winner = null;
+      _pending = null;
       _started = true;
       _restoredMoves = List.of(saved.moves);
     });
