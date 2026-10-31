@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/update/download_launcher.dart';
@@ -60,18 +59,11 @@ class _AboutPageState extends State<AboutPage> {
 
   /// 打开项目仓库：外部浏览器接管，无可处理链接的应用等异常时提示
   Future<void> _openRepository() async {
-    try {
-      final launched = await launchUrl(
-        Uri.parse(AboutPage.repositoryUrl),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!mounted) return;
-      if (!launched) await showAlertDialog(context, message: '无法打开链接');
-    } catch (_) {
-      if (mounted) {
-        await showAlertDialog(context, message: '无法打开链接');
-      }
-    }
+    await launchExternal(
+      context,
+      AboutPage.repositoryUrl,
+      failMessage: '无法打开链接',
+    );
   }
 
   /// 检查更新：三态反馈——有新版弹窗（可跳转下载）、版本相同与失败走提示条
