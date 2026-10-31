@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/chess/models/chess_board.dart';
@@ -143,7 +145,11 @@ class _ChessPageState
     } catch (_) {
       // 存档损坏（局面编码非法/历史矛盾）：删除该档（恢复目标已绑定），
       // 与 ArchiveStorage 读侧「损坏数据视为无存档」的容错风格一致
-      clearCurrentArchive();
+      unawaited(
+        clearCurrentArchive().onError((e, stackTrace) {
+          debugPrint('存档损坏清档失败: $e');
+        }),
+      );
     }
   }
 
@@ -244,8 +250,14 @@ class _ChessPageState
     final endReason = ChessRules.judgeEnd(board, _turn);
     if (endReason != null) {
       // 终局：对局已分胜负，立即清除存档（避免重进恢复出已结束的局面），
-      // 随后锁定棋盘并弹出胜负弹窗（将死/困毙）
-      clearCurrentArchive();
+      // 随后锁定棋盘并弹出胜负弹窗（将死/困毙）。
+      // 清档 fire-and-forget：无需等待写入；失败仅留调试线索（残留存档
+      // 无害——下次进入提示恢复已终局对局，开新局即覆盖）
+      unawaited(
+        clearCurrentArchive().onError((e, stackTrace) {
+          debugPrint('终局清档失败: $e');
+        }),
+      );
       setState(() => _gameOver = true);
       _showEndDialog(endReason);
       return;
