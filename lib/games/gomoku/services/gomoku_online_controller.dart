@@ -237,7 +237,9 @@ class GomokuOnlineController extends OnlineGameControllerBase
           return;
         }
         moves.add((col, row));
-        winnerSeat = msg.payload['winner'] as int?;
+        // 载荷类型判别：异常载荷（协议演进/损坏）按无胜方降级而非抛 TypeError
+        final winner = msg.payload['winner'];
+        winnerSeat = winner is int ? winner : null;
         GomokuAudio.place();
         notifyListeners();
       case NetMessageType.stoneResult:
@@ -246,7 +248,8 @@ class GomokuOnlineController extends OnlineGameControllerBase
           onHint?.call(reasonText(msg.payload['reason']));
         }
       case NetMessageType.gameOver:
-        winnerSeat = msg.payload['winner'] as int?;
+        final winner = msg.payload['winner'];
+        winnerSeat = winner is int ? winner : null;
         wonByResign = msg.payload['reason'] == 'resign';
         notifyListeners();
       case NetMessageType.undoRequest ||

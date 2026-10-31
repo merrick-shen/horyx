@@ -218,15 +218,18 @@ class WordPkOnlineController extends OnlineGameControllerBase
   void onClientGameMessage(NetMessage message) {
     switch (message.type) {
       case NetMessageType.wordApplied:
+        // 载荷类型判别：异常载荷（协议演进/损坏）按默认值降级而非抛 TypeError
+        final word = message.payload['word'];
+        final player = message.payload['player'];
+        final nextPlayer = message.payload['nextPlayer'];
         entries.insert(
           0,
           WordPkEntry(
-            word: (message.payload['word'] as String?) ?? '',
-            playerIndex: (message.payload['player'] as int?) ?? 0,
+            word: word is String ? word : '',
+            playerIndex: player is int ? player : 0,
           ),
         );
-        currentPlayer =
-            (message.payload['nextPlayer'] as int?) ?? currentPlayer;
+        if (nextPlayer is int) currentPlayer = nextPlayer;
         WordPkAudio.accept();
         notifyListeners();
       case NetMessageType.wordResult:
@@ -235,7 +238,8 @@ class WordPkOnlineController extends OnlineGameControllerBase
           _reject(reasonText(message.payload['reason']));
         }
       case NetMessageType.turnChanged:
-        currentPlayer = (message.payload['player'] as int?) ?? currentPlayer;
+        final player = message.payload['player'];
+        if (player is int) currentPlayer = player;
         notifyListeners();
       default:
         break;

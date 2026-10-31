@@ -264,7 +264,9 @@ class ChessOnlineController extends OnlineGameControllerBase
         }
         lastCapturedPiece = board.applyMove(move);
         moves.add(move);
-        winnerSeat = msg.payload['winner'] as int?;
+        // 载荷类型判别：异常载荷（协议演进/损坏）按无胜方降级而非抛 TypeError
+        final winner = msg.payload['winner'];
+        winnerSeat = winner is int ? winner : null;
         final reasonName = msg.payload['reason'];
         winReason =
             reasonName is String ? ChessEndReason.values.asNameMap()[reasonName] : null;
@@ -275,7 +277,8 @@ class ChessOnlineController extends OnlineGameControllerBase
           onHint?.call(reasonText(msg.payload['reason']));
         }
       case NetMessageType.gameOver:
-        winnerSeat = msg.payload['winner'] as int?;
+        final winner = msg.payload['winner'];
+        winnerSeat = winner is int ? winner : null;
         winReason = msg.payload['reason'] == 'resign'
             ? ChessEndReason.resign
             : null;
