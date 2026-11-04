@@ -12,6 +12,7 @@ import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/local_win_dialog.dart';
 import 'package:horyx/games/gomoku/widgets/gomoku_board_view.dart';
 import 'package:horyx/games/gomoku/widgets/gomoku_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
@@ -124,29 +125,16 @@ class _GomokuPageState
     }
   }
 
-  /// 胜利弹窗：再来一局 / 返回设置 / 查看棋盘
   Future<void> _showWinDialog() async {
     final winner = _winner;
     if (winner == null) return;
-
-    final result = await showConfirmDialog(
+    await showLocalWinDialog(
       context,
-      title: '$winner胜利！',
+      winner: winner,
       message: '五子连珠，$winner赢得本局',
-      confirmLabel: '再来一局',
-      neutralLabel: '返回设置',
+      onRestart: _restartMatch,
+      onBackToSetup: _backToSetup,
     );
-    if (!mounted) return;
-
-    switch (result) {
-      case ConfirmResult.confirm:
-        _restartMatch();
-      case ConfirmResult.neutral:
-        _backToSetup();
-      case ConfirmResult.cancel:
-        // 留在终局棋盘查看棋型
-        break;
-    }
   }
 
   /// 再来一局：清盘并回到黑方执子（保持当前棋盘规格）

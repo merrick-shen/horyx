@@ -20,6 +20,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/local_win_dialog.dart';
 
 /// 飞行棋游戏页
 /// 持有对局状态与回合流转（掷骰翻动 -> 选子 -> 走子逐格动画 -> 结算
@@ -259,23 +260,13 @@ class _AeroplanePageState
       }),
     );
     final winner = _state!.winner!;
-    final result = await showConfirmDialog(
+    await showLocalWinDialog(
       context,
-      title: '${winner.label}方胜利！',
+      winner: '${winner.label}方',
       message: '4 架飞机全部抵达终点',
-      confirmLabel: '再来一局',
-      neutralLabel: '返回设置',
+      onRestart: _restartMatch,
+      onBackToSetup: _backToSetup,
     );
-    if (!mounted) return;
-    switch (result) {
-      case ConfirmResult.confirm:
-        _restartMatch();
-      case ConfirmResult.neutral:
-        _backToSetup();
-      case ConfirmResult.cancel:
-        // 留在终局棋盘查看局面
-        break;
-    }
   }
 
   /// 再来一局：同配置重开新对局

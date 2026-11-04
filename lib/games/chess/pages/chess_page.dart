@@ -17,6 +17,7 @@ import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/local_win_dialog.dart';
 
 /// 中国象棋游戏页
 /// 持有对局状态（棋盘、行棋方、选中/预选走法、走子历史），统一负责：
@@ -268,8 +269,7 @@ class _ChessPageState
     }
   }
 
-  /// 终局胜负弹窗：再来一局 / 返回设置 / 留在终局棋盘查看
-  /// [_turn] 此刻即无路可走的一方，胜方为对方
+  /// 终局胜负弹窗：[_turn] 此刻即无路可走的一方，胜方为对方
   Future<void> _showEndDialog(ChessEndReason reason) async {
     final winner = _turn == ChessColor.red ? '黑方' : '红方';
     final message = switch (reason) {
@@ -277,23 +277,13 @@ class _ChessPageState
       ChessEndReason.stalemate => '对方无子可动（困毙），$winner获胜',
       ChessEndReason.resign => '$winner获胜', // 认输首版不实现，本地无该入口
     };
-    final result = await showConfirmDialog(
+    await showLocalWinDialog(
       context,
-      title: '$winner胜利！',
+      winner: winner,
       message: message,
-      confirmLabel: '再来一局',
-      neutralLabel: '返回设置',
+      onRestart: _restartMatch,
+      onBackToSetup: _backToSetup,
     );
-    if (!mounted) return;
-    switch (result) {
-      case ConfirmResult.confirm:
-        _restartMatch();
-      case ConfirmResult.neutral:
-        _backToSetup();
-      case ConfirmResult.cancel:
-        // 留在终局棋盘查看棋型
-        break;
-    }
   }
 
   /// 再来一局：重开新对局（红先）
