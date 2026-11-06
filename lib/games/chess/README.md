@@ -11,7 +11,7 @@
 | `models/` | `chess_piece`（棋子纯数据模型：类型/颜色/繁体字与素材色；编码沿用 Xiangqi FEN 惯例 KABNRCP，红大写黑小写）、`chess_board`（可变棋盘容器：开局局面、applyMove/revertMove、90 格紧凑编码）、`chess_game_state`（存档模型：盘面编码 + 轮次 + 走子序列，`version = 1`） |
 | `services/` | `chess_rules`（规则引擎：纯静态逻辑，本地页与联机控制器共用同源判定）、`chess_online_controller`（联机控制器：走子校验广播 + 悔棋/认输协商钩子）、`chess_storage`（存档服务，`gameId = '中国象棋'`） |
 | `pages/` | `chess_page` 本地对局页（选子走子、将军提示、终局弹窗、退出存档与恢复、建房入口）、`chess_online_page` 联机对局页（选子预选、胜负文案组装，骨架与协商委托共享层） |
-| `widgets/` | `chess_board_canvas`（棋盘画布：本地与联机共用，等比缩放 + 点击命中 + 走子滑动动画）、`chess_board_geometry`（逻辑格坐标 ↔ 屏幕像素换算，绘制与手势共用，支持整盘 180° 翻转）、`chess_board_painter`（底板/线路/河界/九宫/炮兵位标记/棋子/高亮绘制）、`chess_board_view`（本地对局视图组装）、`chess_setup_view`（模式设置与恢复入口） |
+| `widgets/` | `chess_board_canvas`（棋盘画布：本地与联机共用，等比缩放 + 点击命中 + 走子滑动动画）、`chess_board_geometry`（逻辑格坐标 ↔ 屏幕像素换算，绘制与手势共用，支持整盘 180° 翻转）、`chess_board_painter`（底板/线路/河界/九宫/炮兵位标记/棋子/高亮绘制）、`chess_board_view`（本地对局视图组装）、`chess_game_layout`（对局布局骨架：本地与联机共用，行棋卡 + 棋盘 + 确认行 + 将军闪屏，文案/翻转/底部按钮参数化）、`chess_setup_view`（模式设置与恢复入口） |
 
 ## 核心流程
 
@@ -72,7 +72,7 @@
 | 棋盘留白比 | 0.55（总宽 9.1×cell、总高 10.1×cell） | `ChessBoardGeometry._marginRatio` |
 | 棋子面/红/黑素材色 | 米 `0xFFF3E9D2` / 红 `0xFFB03A2E` / 黑 `0xFF2F3A4A` | `ChessPieceColors` |
 | 存档格式版本 | 1 | `ChessGameState.version` |
-| 将军闪屏 | fontSize 64、letterSpacing 10 | `chess_board_view` |
+| 将军闪屏 | fontSize 64、letterSpacing 10 | `ChessGameLayout` |
 | 协议版本 | 2 | `NetMessage.protocolVersion` |
 
 ## 注意事项（重要坑点）

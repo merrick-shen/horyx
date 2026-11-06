@@ -4,15 +4,11 @@ import 'package:horyx/games/chess/models/chess_board.dart';
 import 'package:horyx/games/chess/models/chess_piece.dart';
 import 'package:horyx/games/chess/services/chess_online_controller.dart';
 import 'package:horyx/games/chess/services/chess_rules.dart';
-import 'package:horyx/games/chess/widgets/chess_board_canvas.dart';
+import 'package:horyx/games/chess/widgets/chess_game_layout.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/widgets/board_game_online_page.dart';
-import 'package:horyx/shared/widgets/confirm_move_row.dart';
-import 'package:horyx/shared/widgets/flash_hint.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';
-import 'package:horyx/shared/widgets/page_content.dart';
-import 'package:horyx/shared/widgets/turn_card.dart';
 
 /// 中国象棋联机对局页
 /// 由房间等待页满员开局后接管房间连接（房主/客户端所有权移入本页）。
@@ -303,71 +299,32 @@ class _BoardView extends StatelessWidget {
       turnSubtitle = controller.isMyTurn ? '轮到你走子' : '等待对方走子';
     }
 
-    return SizedBox.expand(
-      child: Stack(
-        children: [
-          PageContent(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 行棋提示卡：图标颜色跟随行棋方棋子色（红/黑）
-                TurnCard(
-                  icon: Icons.circle_rounded,
-                  iconColor: turnColor == ChessColor.red
-                      ? ChessPieceColors.red
-                      : ChessPieceColors.black,
-                  subtitle: turnSubtitle,
-                  title: turnTitle,
-                  titleKey: ValueKey(turnTitle),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ChessBoardCanvas(
-                    board: controller.board,
-                    selected: selected,
-                    legalTargets: legalTargets,
-                    pendingMove: pendingMove,
-                    onCellTap: onCellTap,
-                    lastMove: lastMove,
-                    capturedPiece: capturedPiece,
-                    lastMoveSeq: lastMoveSeq,
-                    // 执黑方整盘旋转 180°：自己的棋子显示在屏幕下方，
-                    // 棋子相对位置与真实对面视角一致（文字朝向不变）
-                    flipped: controller.myColor == ChessColor.black,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ConfirmMoveRow(
-                  visible: pendingMove != null,
-                  onCancelMove: onCancelMove,
-                  onConfirmMove: onConfirmMove,
-                ),
-                const SizedBox(height: 12),
-                BoardGameActionBar(
-                  showExit: isOver || ended,
-                  undoState: controller.undoState,
-                  hasMoves: controller.moves.isNotEmpty,
-                  isMyTurn: controller.isMyTurn,
-                  onRequestUndo: onRequestUndo,
-                  onResign: onResign,
-                  onExit: onExit,
-                ),
-              ],
-            ),
-          ),
-          // 「将军」提示覆盖层：不拦截触摸，仅做视觉提醒
-          IgnorePointer(
-            child: Center(
-              child: FlashHint(
-                trigger: checkFlashTrigger,
-                text: '將軍',
-                accentColor: ChessPieceColors.red,
-                fontSize: 64,
-                letterSpacing: 10,
-              ),
-            ),
-          ),
-        ],
+    return ChessGameLayout(
+      board: controller.board,
+      turn: turnColor,
+      turnTitle: turnTitle,
+      turnSubtitle: turnSubtitle,
+      selected: selected,
+      legalTargets: legalTargets,
+      pendingMove: pendingMove,
+      checkFlashTrigger: checkFlashTrigger,
+      onCellTap: onCellTap,
+      onCancelMove: onCancelMove,
+      onConfirmMove: onConfirmMove,
+      // 执黑方整盘旋转 180°：自己的棋子显示在屏幕下方，
+      // 棋子相对位置与真实对面视角一致（文字朝向不变）
+      flipped: controller.myColor == ChessColor.black,
+      lastMove: lastMove,
+      capturedPiece: capturedPiece,
+      lastMoveSeq: lastMoveSeq,
+      actions: BoardGameActionBar(
+        showExit: isOver || ended,
+        undoState: controller.undoState,
+        hasMoves: controller.moves.isNotEmpty,
+        isMyTurn: controller.isMyTurn,
+        onRequestUndo: onRequestUndo,
+        onResign: onResign,
+        onExit: onExit,
       ),
     );
   }
