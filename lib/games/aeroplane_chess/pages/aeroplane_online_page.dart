@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -77,9 +76,14 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
 
   bool _rolling = false;
 
-  Timer? _rollTimer;
-
-  final Random _random = Random();
+  /// 骰面翻动动画器（广播骰点定格，定格时复位 _rolling）
+  late final AeroplaneDiceRollAnimator _diceRoller = AeroplaneDiceRollAnimator(
+    onTick: (face) => setState(() => _dice = face),
+    onSettled: (result) => setState(() {
+      _rolling = false;
+      _dice = result;
+    }),
+  );
 
   late final AeroplaneMoveAnimator _animator = AeroplaneMoveAnimator(
     vsync: this,
@@ -99,7 +103,7 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
 
   @override
   void dispose() {
-    _rollTimer?.cancel();
+    _diceRoller.cancel();
     _animator.dispose();
     super.dispose();
   }
@@ -282,24 +286,7 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
       _rolling = true;
       _selected = null;
     });
-    var ticks = 0;
-    _rollTimer?.cancel();
-    _rollTimer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      ticks++;
-      if (ticks < 10) {
-        setState(() => _dice = _random.nextInt(6) + 1);
-        return;
-      }
-      timer.cancel();
-      setState(() {
-        _rolling = false;
-        _dice = result;
-      });
-    });
+    _diceRoller.start(result: result);
   }
 
   /// 点击可动棋子：选中（确认行显示「取消/下棋」）

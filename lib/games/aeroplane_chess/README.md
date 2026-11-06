@@ -85,7 +85,7 @@ CustomPainter/自绘组件，无图片素材、无音效。
 | 画布半宽（格） | 4.25（画布 8.5×8.5 格） | `AeroplaneBoard.canvasExtent` |
 | 走子滑行每段时长 | 140ms（单段最短 300ms） | `AeroplaneMoveAnimator.start` |
 | 被撞飞回时长 | 300ms（主棋子走完后再启动） | `AeroplaneMoveAnimator.start` |
-| 骰面翻动 | 80ms × 10 帧后定格 | 对局页 `_startRollAnimation` |
+| 骰面翻动 | 80ms × 10 帧后定格 | `AeroplaneDiceRollAnimator.start` |
 | 存档格式版本 | 1 | `AeroplaneGameState.version` |
 
 ## 注意事项（重要坑点）

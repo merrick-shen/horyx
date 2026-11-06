@@ -9,6 +9,7 @@ import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/pages/aeroplane_online_page.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
+import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_game_view.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_setup_view.dart';
@@ -83,9 +84,14 @@ class _AeroplanePageState
   String _hintText = '';
   Color _hintColor = AeroplaneColors.red;
 
-  final Random _random = Random();
-
-  Timer? _rollTimer;
+  /// 骰面翻动动画器（本地 RNG 骰点，定格后进入骰点结算）
+  late final AeroplaneDiceRollAnimator _diceRoller = AeroplaneDiceRollAnimator(
+    onTick: (face) => setState(() => _dice = face),
+    onSettled: (result) {
+      setState(() => _dice = result);
+      _onDiceRolled(result);
+    },
+  );
 
   @override
   ArchiveStorage<AeroplaneGameState> get archiveStorage =>
@@ -107,7 +113,7 @@ class _AeroplanePageState
 
   @override
   void dispose() {
-    _rollTimer?.cancel();
+    _diceRoller.cancel();
     _animator.dispose();
     super.dispose();
   }
@@ -125,22 +131,7 @@ class _AeroplanePageState
       _selected = null;
       _moves = const [];
     });
-    var ticks = 0;
-    _rollTimer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      ticks++;
-      if (ticks < 10) {
-        setState(() => _dice = _random.nextInt(6) + 1);
-        return;
-      }
-      timer.cancel();
-      final result = _random.nextInt(6) + 1;
-      setState(() => _dice = result);
-      _onDiceRolled(result);
-    });
+    _diceRoller.start();
   }
 
   /// 骰点结算：三 6 惩罚（动画滑回停机坪）/ 无可动跳过 / 进入选子
@@ -374,7 +365,7 @@ class _AeroplanePageState
 
   /// 清空回合内临时状态（掷骰/选子/动画/提示），回到等待掷骰
   void _resetRound() {
-    _rollTimer?.cancel();
+    _diceRoller.cancel();
     _animator.reset();
     _phase = _TurnPhase.awaitingRoll;
     _dice = null;

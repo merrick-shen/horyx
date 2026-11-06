@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_colors.dart';
@@ -76,5 +79,48 @@ class AeroplaneDice extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// 骰面翻动动画器：80ms × 10 帧随机翻动后定格最终骰点，本地与联机
+/// 对局页共用。每帧经 [onTick] 上抛随机骰面、定格经 [onSettled] 上抛
+/// 最终点数（宿主自行 setState 更新展示）；翻动中再次 start 会先取消
+/// 上一轮。宿主须在 dispose 时 [cancel]，计时器随宿主生命周期终止
+class AeroplaneDiceRollAnimator {
+  AeroplaneDiceRollAnimator({
+    required this.onTick,
+    required this.onSettled,
+  });
+
+  /// 每帧上抛随机骰面
+  final void Function(int face) onTick;
+
+  /// 定格上抛最终点数
+  final void Function(int result) onSettled;
+
+  Timer? _timer;
+  final Random _random = Random();
+
+  /// 开始翻动；[result] 为定格骰点（联机广播值），缺省时翻动结束时
+  /// 随机生成（本地掷骰）
+  void start({int? result}) {
+    cancel();
+    var ticks = 0;
+    _timer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
+      ticks++;
+      if (ticks < 10) {
+        onTick(_random.nextInt(6) + 1);
+        return;
+      }
+      timer.cancel();
+      _timer = null;
+      onSettled(result ?? _random.nextInt(6) + 1);
+    });
+  }
+
+  /// 终止翻动（此后不再回调）
+  void cancel() {
+    _timer?.cancel();
+    _timer = null;
   }
 }
