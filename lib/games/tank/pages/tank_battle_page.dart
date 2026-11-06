@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
@@ -7,6 +5,7 @@ import 'package:horyx/games/tank/engine/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_game_state.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/widgets/tank_battle_layout.dart';
 import 'package:horyx/games/tank/widgets/tank_control_column.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
@@ -151,61 +150,45 @@ class _TankBattlePageState extends State<TankBattlePage>
       },
       child: Scaffold(
         backgroundColor: context.palette.scaffoldBg,
-        // 不用 SafeArea：横屏挖孔/刘海只在一侧产生 inset，
-        // 两侧取较大避让值才能保证左右操作区到屏幕边缘的距离完全对称
-        body: LayoutBuilder(
-          builder: (context, constraints) {
-            final insets = MediaQuery.of(context).padding;
-            final hCutout = math.max(insets.left, insets.right);
-            final slotHeight =
-                TankControlColumn.slotHeightFor(constraints.maxHeight);
-            return Padding(
-              padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
-              child: Row(
-                children: [
-                  // 左列（自上而下）：绿方开火钮 / 红方比分 / 红方摇杆（复刻原版交叉布局）
-                  TankControlColumn(
-                    slotHeight: slotHeight,
-                    top: TankFireButton(
-                      color: TankPlayer.green.color,
-                      onTap: () => _onFire(TankPlayer.green),
-                    ),
-                    middle: TankScoreView.smoke(
-                      player: TankPlayer.red,
-                      score: _redScore,
-                      smokeTick: _redSmokeTick,
-                    ),
-                    bottom: TankJoystick(
-                      color: TankPlayer.red.color,
-                      size: slotHeight,
-                      onDrive: (input) => _onDrive(TankPlayer.red, input),
-                    ),
-                  ),
-                  // 战场区域：Flame 画布渲染本局迷宫
-                  Expanded(child: GameWidget(game: _game)),
-                  // 右列（自上而下）：绿方摇杆 / 绿方比分 / 红方开火钮
-                  TankControlColumn(
-                    slotHeight: slotHeight,
-                    top: TankJoystick(
-                      color: TankPlayer.green.color,
-                      size: slotHeight,
-                      onDrive: (input) => _onDrive(TankPlayer.green, input),
-                    ),
-                    middle: TankScoreView.smoke(
-                      player: TankPlayer.green,
-                      score: _greenScore,
-                      smokeTick: _greenSmokeTick,
-                      mirrored: true,
-                    ),
-                    bottom: TankFireButton(
-                      color: TankPlayer.red.color,
-                      onTap: () => _onFire(TankPlayer.red),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+        body: TankBattleLayout(
+          battle: GameWidget(game: _game),
+          // 左列（自上而下）：绿方开火钮 / 红方比分 / 红方摇杆（复刻原版交叉布局）
+          leftColumn: (slotHeight) => TankControlColumn(
+            slotHeight: slotHeight,
+            top: TankFireButton(
+              color: TankPlayer.green.color,
+              onTap: () => _onFire(TankPlayer.green),
+            ),
+            middle: TankScoreView.smoke(
+              player: TankPlayer.red,
+              score: _redScore,
+              smokeTick: _redSmokeTick,
+            ),
+            bottom: TankJoystick(
+              color: TankPlayer.red.color,
+              size: slotHeight,
+              onDrive: (input) => _onDrive(TankPlayer.red, input),
+            ),
+          ),
+          // 右列（自上而下）：绿方摇杆 / 绿方比分 / 红方开火钮
+          rightColumn: (slotHeight) => TankControlColumn(
+            slotHeight: slotHeight,
+            top: TankJoystick(
+              color: TankPlayer.green.color,
+              size: slotHeight,
+              onDrive: (input) => _onDrive(TankPlayer.green, input),
+            ),
+            middle: TankScoreView.smoke(
+              player: TankPlayer.green,
+              score: _greenScore,
+              smokeTick: _greenSmokeTick,
+              mirrored: true,
+            ),
+            bottom: TankFireButton(
+              color: TankPlayer.red.color,
+              onTap: () => _onFire(TankPlayer.red),
+            ),
+          ),
         ),
       ),
     );

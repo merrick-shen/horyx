@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
@@ -7,6 +5,7 @@ import 'package:horyx/games/tank/engine/tank_maze_game.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_online_controller.dart';
+import 'package:horyx/games/tank/widgets/tank_battle_layout.dart';
 import 'package:horyx/games/tank/widgets/tank_control_column.dart';
 import 'package:horyx/games/tank/widgets/tank_fire_button.dart';
 import 'package:horyx/games/tank/widgets/tank_joystick.dart';
@@ -141,56 +140,40 @@ class _TankOnlinePageState extends State<TankOnlinePage>
       showTopBar: false,
       onBeforeExit: restorePortrait,
       buildGameView: (context, controller, requestExit) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // 挖孔/刘海在横屏下只产生单侧 inset，取较大值避让，
-            // 保证左右操作区到屏幕边缘的距离完全对称（同本地对局页）
-            final insets = MediaQuery.of(context).padding;
-            final hCutout = math.max(insets.left, insets.right);
-            final slotHeight =
-                TankControlColumn.slotHeightFor(constraints.maxHeight);
-            // 布局复刻本地对局页（两列三槽、比分原位）；联机双方各自正持
-            // 设备看同一方向战场，己方控件统一落位本地红方的操作位（左列
-            // 底部摇杆 + 右列底部开火钮），仅以颜色区分角色（房主红 / 客户端
-            // 绿），本地绿方控件的原位槽留空保位（null 空槽）：
-            // - 左列（自上而下）：空槽（本地绿方开火钮位）/ 红方比分 / 己方摇杆
-            // - 右列（自上而下）：空槽（本地绿方摇杆位）/ 绿方比分 / 己方开火钮
-            return Padding(
-              padding: EdgeInsets.fromLTRB(hCutout, 0, hCutout, 0),
-              child: Row(
-                children: [
-                  TankControlColumn(
-                    slotHeight: slotHeight,
-                    middle: TankScoreView.smoke(
-                      player: TankPlayer.red,
-                      score: _game.redScore,
-                      smokeTick: _redSmokeTick,
-                    ),
-                    bottom: TankJoystick(
-                      color: _myPlayer.color,
-                      size: slotHeight,
-                      onDrive: _onDrive,
-                    ),
-                  ),
-                  // 战场区域：Flame 画布渲染本局迷宫（房主模拟/影子战场）
-                  Expanded(child: GameWidget(game: _game)),
-                  TankControlColumn(
-                    slotHeight: slotHeight,
-                    middle: TankScoreView.smoke(
-                      player: TankPlayer.green,
-                      score: _game.greenScore,
-                      smokeTick: _greenSmokeTick,
-                      mirrored: true,
-                    ),
-                    bottom: TankFireButton(
-                      color: _myPlayer.color,
-                      onTap: _onFire,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
+        // 布局复刻本地对局页（两列三槽、比分原位）；联机双方各自正持
+        // 设备看同一方向战场，己方控件统一落位本地红方的操作位（左列
+        // 底部摇杆 + 右列底部开火钮），仅以颜色区分角色（房主红 / 客户端
+        // 绿），本地绿方控件的原位槽留空保位（null 空槽）：
+        // - 左列（自上而下）：空槽（本地绿方开火钮位）/ 红方比分 / 己方摇杆
+        // - 右列（自上而下）：空槽（本地绿方摇杆位）/ 绿方比分 / 己方开火钮
+        return TankBattleLayout(
+          battle: GameWidget(game: _game),
+          leftColumn: (slotHeight) => TankControlColumn(
+            slotHeight: slotHeight,
+            middle: TankScoreView.smoke(
+              player: TankPlayer.red,
+              score: _game.redScore,
+              smokeTick: _redSmokeTick,
+            ),
+            bottom: TankJoystick(
+              color: _myPlayer.color,
+              size: slotHeight,
+              onDrive: _onDrive,
+            ),
+          ),
+          rightColumn: (slotHeight) => TankControlColumn(
+            slotHeight: slotHeight,
+            middle: TankScoreView.smoke(
+              player: TankPlayer.green,
+              score: _game.greenScore,
+              smokeTick: _greenSmokeTick,
+              mirrored: true,
+            ),
+            bottom: TankFireButton(
+              color: _myPlayer.color,
+              onTap: _onFire,
+            ),
+          ),
         );
       },
     );
