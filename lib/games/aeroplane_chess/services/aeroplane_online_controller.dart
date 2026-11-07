@@ -278,7 +278,6 @@ class AeroplaneOnlineController extends OnlineGameControllerBase
         payload: {'reason': 'peerLeft'},
       ),
     );
-    notifyListeners();
   }
 
   // ---- 客户端侧实现 ----
@@ -307,7 +306,6 @@ class AeroplaneOnlineController extends OnlineGameControllerBase
       case NetMessageType.gameOver:
         // 其他玩家离开：房主广播的无胜负终局
         endGame(EndGameReason.peerLeft);
-        notifyListeners();
       default:
         break;
     }
@@ -319,7 +317,6 @@ class AeroplaneOnlineController extends OnlineGameControllerBase
   void _applyClientState(AeroplaneGameState next) {
     if (mySeat < 1 || mySeat > next.players.length) {
       endGame(EndGameReason.dataError);
-      notifyListeners();
       return;
     }
     state = next;

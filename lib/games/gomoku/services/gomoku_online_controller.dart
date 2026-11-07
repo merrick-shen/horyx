@@ -233,7 +233,6 @@ class GomokuOnlineController extends OnlineGameControllerBase
             row >= boardSize ||
             _occupied(col, row)) {
           endGame(EndGameReason.dataError);
-          notifyListeners();
           return;
         }
         moves.add((col, row));

@@ -79,10 +79,12 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
   EndGameReason? gameEndReason;
 
   /// 置为无胜负终局（各控制器统一的终局入口）：
-  /// 原因供终局弹窗展示文案与图标，文本同时写入 [gameEndedText] 作信号位
+  /// 原因供终局弹窗展示文案与图标，文本同时写入 [gameEndedText] 作信号位；
+  /// 置位后统一通知监听者，调用点无需再手动补 notify
   void endGame(EndGameReason reason) {
     gameEndReason = reason;
     gameEndedText = reason.text;
+    notifyListeners();
   }
 
   /// 统一挂接入口（模板方法）：按构造模式自动选择挂接路径
@@ -133,7 +135,6 @@ abstract class OnlineGameControllerBase extends ChangeNotifier {
             ? EndGameReason.hostDismissed
             : EndGameReason.disconnected,
       );
-      notifyListeners();
     }
   }
 

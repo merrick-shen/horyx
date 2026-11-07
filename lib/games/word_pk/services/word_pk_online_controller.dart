@@ -209,7 +209,6 @@ class WordPkOnlineController extends OnlineGameControllerBase
     // 除自己外全员离开：对局无法继续
     if (_activeSeats.length <= 1 && gameEndedText == null) {
       endGame(EndGameReason.peerLeft);
-      notifyListeners();
     }
   }
 

@@ -262,7 +262,6 @@ mixin UndoResignNegotiationMixin on OnlineGameControllerBase {
   void onSeatLeft(int seat) {
     if (gameEndedText != null || winnerSeat != null) return;
     endGame(EndGameReason.peerLeft);
-    notifyListeners();
   }
 }
 

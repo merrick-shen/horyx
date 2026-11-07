@@ -259,7 +259,6 @@ class ChessOnlineController extends OnlineGameControllerBase
         final piece = board.pieceAt(move.from);
         if (piece == null || piece.color != turnColor) {
           endGame(EndGameReason.dataError);
-          notifyListeners();
           return;
         }
         lastCapturedPiece = board.applyMove(move);

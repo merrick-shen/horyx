@@ -272,7 +272,6 @@ class TankOnlineController extends OnlineGameControllerBase {
     endGame(EndGameReason.peerLeft);
     _snapshotTimer?.cancel();
     _snapshotTimer = null;
-    notifyListeners();
   }
 
   // ============ 客户端实现 ============
