@@ -66,6 +66,10 @@ class GomokuOnlineController extends OnlineGameControllerBase
   /// 已生效落子序列（索引奇偶决定黑白：偶=黑=座位1，奇=白=座位2）
   final List<(int, int)> moves = [];
 
+  /// 已占位集合（与 [moves] 同步增删，占位判定 O(1)，与本地页同口径；
+  /// 落子/悔棋回退处必须同步维护，否则判定失真）
+  final Set<(int, int)> _occupied = {};
+
   /// 胜方座位号；null 表示对局进行中或异常终止（无胜负）
   @override
   int? winnerSeat;
@@ -98,7 +102,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
       onHint?.call('还没轮到你落子');
       return false;
     }
-    if (_occupied(col, row)) {
+    if (_occupied.contains((col, row))) {
       onHint?.call('此处已有棋子');
       return false;
     }
@@ -114,10 +118,6 @@ class GomokuOnlineController extends OnlineGameControllerBase
     );
     return true;
   }
-
-  /// 落点是否已有棋子
-  bool _occupied(int col, int row) =>
-      moves.any((m) => m.$1 == col && m.$2 == row);
 
   // ---- 悔棋/认输协商钩子实现（全流程见 UndoResignNegotiationMixin）----
 
@@ -136,6 +136,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
   @override
   void applyUndoRollback(int target) {
     if (target < moves.length) {
+      _occupied.removeAll(moves.sublist(target));
       moves.removeRange(target, moves.length);
     }
   }
@@ -177,7 +178,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
       host?.sendTo(seat, resultMessage(false, 'notYourTurn'));
       return;
     }
-    if (_occupied(col, row)) {
+    if (_occupied.contains((col, row))) {
       host?.sendTo(seat, resultMessage(false, 'occupied'));
       return;
     }
@@ -188,6 +189,7 @@ class GomokuOnlineController extends OnlineGameControllerBase
   /// 落子生效：入列 + 五连判定；房主侧同步广播（五连时携带胜方座位）
   void _applyStone(int col, int row) {
     moves.add((col, row));
+    _occupied.add((col, row));
     if (GomokuRules.hasFiveInRow(
       moves,
       boardSize,
@@ -231,11 +233,12 @@ class GomokuOnlineController extends OnlineGameControllerBase
             col >= boardSize ||
             row < 0 ||
             row >= boardSize ||
-            _occupied(col, row)) {
+            _occupied.contains((col, row))) {
           endGame(EndGameReason.dataError);
           return;
         }
         moves.add((col, row));
+        _occupied.add((col, row));
         // 载荷类型判别：异常载荷（协议演进/损坏）按无胜方降级而非抛 TypeError
         final winner = msg.payload['winner'];
         winnerSeat = winner is int ? winner : null;
