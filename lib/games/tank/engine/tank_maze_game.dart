@@ -9,11 +9,11 @@ import 'package:horyx/games/tank/engine/bullet.dart';
 import 'package:horyx/games/tank/engine/effects/bullet_expire_effect.dart';
 import 'package:horyx/games/tank/engine/effects/tank_explosion_effect.dart';
 import 'package:horyx/games/tank/engine/tank.dart';
-import 'package:horyx/games/tank/engine/tank_audio.dart';
 import 'package:horyx/games/tank/engine/tank_remote_driver.dart';
 import 'package:horyx/games/tank/models/tank_battle_phase.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/services/tank_audio.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
 import 'package:horyx/shared/utils/asset_image.dart';
 

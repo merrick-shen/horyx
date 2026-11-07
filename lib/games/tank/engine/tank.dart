@@ -4,8 +4,8 @@ import 'dart:typed_data';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
+import 'package:horyx/games/tank/engine/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
-import 'package:horyx/games/tank/tint_filter.dart';
 
 /// 墙体碰撞形状（迷宫单位）：轴对齐矩形 + 预计算的（中心, 半尺寸）。
 /// 中心/半尺寸供坦克 SAT 热路径直接复用（免每面墙每次测试新建 Vector2），
