@@ -156,5 +156,7 @@ CHANGELOG.md 面向**用户**，不是开发日志，写作时始终以"用户�
 2. `flutter test` — 全部通过才算通过；UI 文案/占位内容变化时先同步更新对应测试断言再跑。个别网络相关用例在全量并发时偶发超时（本地时序抖动，非代码问题）：重跑单组确认，仍不过再加大超时或串行执行。
 3. 部署（analyze + test 通过后**自动执行，无需询问用户**）：
    - 测试手机：`flutter run -d 192.168.124.3:<port>`
-   - 环境：小米 23113RKC6C（无线 adb）；端口**每次会话都可能变化**，连接失败先 `adb devices` 确认，仍失败请用户提供新端口；adb 路径 `D:\Software\MuMuPlayer\nx_main\adb.exe`。
+   - 环境：小米 23113RKC6C（无线 adb）；端口**每次会话都可能变化**，连接失败先 `adb devices` 确认，仍失败请用户提供新端口。
+   - **adb 统一使用 SDK 路径** `D:\Software\Android\android-sdk\platform-tools\adb.exe`（flutter 固定使用 SDK adb）；版本不同的其他 adb（如模拟器自带）与之混用会互相杀 server 导致无线连接丢失，不要使用。
+   - **`adb connect` 与 `flutter run` 必须放在同一命令调用内执行**：adb server 在调用之间可能被回收，server 一重启无线连接即丢失。`flutter run` 报 `No supported devices found` 而之前 `adb devices` 可见时，即此原因，重新 connect 并在同一调用内重跑。
 4. 部署后（用户明确指示）：执行 `flutter run` 之后**不做任何后续动作**——不轮询日志、不检查运行状态、不等待构建/安装结果；安装确认与真机验证完全由用户处理，直接转入任务汇报。后台部署会话的退出通知（含退出码）**无需响应或汇报**。
