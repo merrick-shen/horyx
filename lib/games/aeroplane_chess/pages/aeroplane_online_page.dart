@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_colors.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
+import 'package:horyx/games/aeroplane_chess/services/aeroplane_geometry.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_online_controller.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_game_view.dart';

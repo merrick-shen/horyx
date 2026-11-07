@@ -8,6 +8,7 @@ import 'package:horyx/games/aeroplane_chess/models/aeroplane_colors.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/pages/aeroplane_online_page.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
+import 'package:horyx/games/aeroplane_chess/services/aeroplane_geometry.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_game_view.dart';

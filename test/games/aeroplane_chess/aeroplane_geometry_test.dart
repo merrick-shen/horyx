@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_board.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
-import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
+import 'package:horyx/games/aeroplane_chess/services/aeroplane_geometry.dart';
 
 /// 走子动画路径与被撞飞回段构建测试（本地页与联机页共用的纯函数）
 /// 用引擎或手工状态构造真实迁移，断言路径停留点序列与规则动效一致：

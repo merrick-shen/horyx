@@ -11,9 +11,9 @@ CustomPainter/自绘组件，无图片素材、无音效。
 | 目录/文件 | 职责 |
 | --- | --- |
 | `models/` | 纯数据与拓扑：`aeroplane_game_state`（对局状态存档模型：棋子四区域位置、行动方、连 6 计数、胜负；含默认颜色分配与摘要文案）、`aeroplane_board`（棋盘拓扑常量表：外环 52 格颜色、各色起飞格/跑道入口/加油站航线、环格↔坐标换算）、`aeroplane_colors`（四色展示常量：棋盘格/棋子加深变体色/骰面点色） |
-| `services/` | `aeroplane_engine`（规则引擎：纯静态逻辑，走法枚举与连锁迁移单函数收敛，本地与联机同源判定）、`aeroplane_storage`（多存档仓库 `ArchiveStorage` 子类）、`aeroplane_online_controller`（联机对局控制器：房主掷骰/裁决广播、客户端请求上报、快照幂等应用）、`aeroplane_net_models`（联机协议编解码：纯数据模型，全字段类型校验） |
+| `services/` | `aeroplane_engine`（规则引擎：纯静态逻辑，走法枚举与连锁迁移单函数收敛，本地与联机同源判定）、`aeroplane_geometry`（对局坐标与动画路径推导：棋子格坐标、走法迁移的逐格/飞越路径与被撞飞回段，纯拓扑换算无 UI 依赖）、`aeroplane_storage`（多存档仓库 `ArchiveStorage` 子类）、`aeroplane_online_controller`（联机对局控制器：房主掷骰/裁决广播、客户端请求上报、快照幂等应用）、`aeroplane_net_models`（联机协议编解码：纯数据模型，全字段类型校验） |
 | `pages/` | `aeroplane_page` 本地对局页（设置/恢复/存档退出/回合流转与动画编排）、`aeroplane_online_page` 联机对局页（复用本地棋盘/棋子/回合组件与走子动画器，骰点与状态随房主广播同步） |
-| `widgets/` | `aeroplane_board_view`（棋盘：`CustomPainter` 格子层 + 棋子层 Stack 定位，叠子横向错开、动画棋子帧坐标覆盖渲染）、`aeroplane_move_animation`（走子动画器：路径逐段滑行 + 被撞飞回，本地与联机共用；含路径构建与被撞收集纯函数）、`aeroplane_dice`（图形化点阵骰面：点阵布局常量表驱动，含对局视图骰面展示槽）、`aeroplane_plane`（棋子：四色加深变体、可动高亮/选中描边、完成勾标识）、`aeroplane_game_view`（本地与联机对局视图组装，联机差异以参数注入）、`aeroplane_setup_view`（人数设置与恢复入口、本地/局域网模式选择）、`aeroplane_hint_state`（覆盖层提示三件套状态，本地/联机页共用） |
+| `widgets/` | `aeroplane_board_view`（棋盘：`CustomPainter` 格子层 + 棋子层 Stack 定位，叠子横向错开、动画棋子帧坐标覆盖渲染）、`aeroplane_move_animation`（走子动画器：路径逐段滑行 + 被撞飞回，本地与联机共用，路径由 services 几何纯函数构建）、`aeroplane_dice`（图形化点阵骰面：点阵布局常量表驱动，含对局视图骰面展示槽）、`aeroplane_plane`（棋子：四色加深变体、可动高亮/选中描边、完成勾标识）、`aeroplane_game_view`（本地与联机对局视图组装，联机差异以参数注入）、`aeroplane_setup_view`（人数设置与恢复入口、本地/局域网模式选择）、`aeroplane_hint_state`（覆盖层提示三件套状态，本地/联机页共用） |
 
 ## 规则与回合流程
 
