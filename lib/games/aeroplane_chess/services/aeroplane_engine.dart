@@ -77,7 +77,7 @@ class _MoveChain {
 ///   UI 以此识别再掷），同次迁移多触发只奖励一次；
 /// - 连 6 计数随掷骰累计、掷出非 6 即清零；连续第 3 个 6 须在走子前
 ///   以 [isThirdSixPenalty] 判定并经 [applyThirdSixPenalty] 惩罚换人，
-///   此时 [legalMoves] 直接抛错，防止把第 3 个 6 当普通走子执行；
+///   [legalMoves] 对惩罚回合返回空列表，不会把第 3 个 6 当普通走子执行；
 /// - 4 子全部抵达终点即终局，终局后不再产生走法。
 abstract final class AeroplaneEngine {
   /// 起飞所需骰点（已确认变体：2/4/6）
@@ -95,14 +95,11 @@ abstract final class AeroplaneEngine {
 
   /// 合法走法枚举：当前行动方每架可动棋子一条走法；
   /// 走法链落在己方加油站起点格时追加「飞越」变体。
-  /// 终局后返回空列表；掷出连续第 3 个 6 时抛错（须先走惩罚入口）
+  /// 终局与三 6 惩罚回合（[isThirdSixPenalty]）均返回空列表
   static List<AeroplaneMove> legalMoves(AeroplaneGameState state, int dice) {
     _checkDice(dice);
-    if (state.gameOver) {
+    if (state.gameOver || isThirdSixPenalty(state, dice)) {
       return const [];
-    }
-    if (isThirdSixPenalty(state, dice)) {
-      throw ArgumentError('连续第 3 个 6 触发惩罚，本回合不走子');
     }
     final color = state.currentPlayer;
     final moves = <AeroplaneMove>[];

@@ -881,7 +881,7 @@ void main() {
       expect(state.consecutiveSixes, 2);
     });
 
-    test('连续第 3 个 6：走法枚举抛错，惩罚后最后移动棋子回停机坪并换人', () {
+    test('连续第 3 个 6：走法枚举为空，惩罚后最后移动棋子回停机坪并换人', () {
       // 承接上例：绿0 行进 16 步（ring 7），已连掷两个 6
       final state = buildState(
         planes: {
@@ -897,7 +897,7 @@ void main() {
         lastMoved: (AeroplaneColor.green, 0),
       );
       expect(AeroplaneEngine.isThirdSixPenalty(state, 6), isTrue);
-      expect(() => AeroplaneEngine.legalMoves(state, 6), throwsArgumentError);
+      expect(AeroplaneEngine.legalMoves(state, 6), isEmpty);
       final penalized = AeroplaneEngine.applyThirdSixPenalty(state);
       expect(
         penalized.planesOf(AeroplaneColor.green)[0],

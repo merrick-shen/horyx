@@ -230,7 +230,6 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
   ) {
     final target = next.planesOf(planeKey.$1)[planeKey.$2];
     for (var dice = 1; dice <= 6; dice++) {
-      if (AeroplaneEngine.isThirdSixPenalty(prev, dice)) continue;
       for (final move in AeroplaneEngine.legalMoves(prev, dice)) {
         if (move.color != planeKey.$1 || move.planeId != planeKey.$2) continue;
         final applied = AeroplaneEngine.applyMove(prev, move, dice);
@@ -279,7 +278,6 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
     final state = controller.state;
     final dice = controller.pendingDice;
     if (selected == null || state == null || dice == null) return;
-    if (AeroplaneEngine.isThirdSixPenalty(state, dice)) return;
     final moves = AeroplaneEngine.legalMoves(state, dice)
         .where((m) => m.color == selected.$1 && m.planeId == selected.$2)
         .toList();
@@ -312,8 +310,6 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
         _animator.animating) {
       return const {};
     }
-    // 三 6 惩罚回合不走子（惩罚快照即将到达）
-    if (AeroplaneEngine.isThirdSixPenalty(state, dice)) return const {};
     return {
       for (final move in AeroplaneEngine.legalMoves(state, dice))
         (move.color, move.planeId),
