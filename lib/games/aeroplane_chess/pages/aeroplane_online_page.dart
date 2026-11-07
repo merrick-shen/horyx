@@ -8,6 +8,7 @@ import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_online_controller.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_board_view.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
+import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_hint_state.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
@@ -15,7 +16,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/board_game_online_page.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
-import 'package:horyx/shared/widgets/flash_hint.dart';
+import 'package:horyx/shared/widgets/hint_overlay.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
@@ -49,7 +50,7 @@ class AeroplaneOnlinePage extends StatefulWidget {
 }
 
 class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AeroplaneHintState<AeroplaneOnlinePage> {
   /// 联机控制器（shell 创建时存下；生命周期由 shell 统一管理，
   /// 页面不得重复 dispose）
   AeroplaneOnlineController? _controller;
@@ -88,11 +89,6 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
   late final AeroplaneMoveAnimator _animator = AeroplaneMoveAnimator(
     vsync: this,
   );
-
-  /// 覆盖层提示（触发序号递增播放，文本为空不显示）
-  int _hintTrigger = 0;
-  String _hintText = '';
-  Color _hintColor = AeroplaneColors.red;
 
   /// 胜负弹窗只弹一次（无胜负终止弹窗由骨架处理，各用各的标志）
   bool _winDialogShown = false;
@@ -155,24 +151,15 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
     final mover = prev.currentPlayer;
     (AeroplaneColor, int)? movedPlane;
     var penalty = false;
-    final capturedFlights =
-        <((AeroplaneColor, int), Point<double>, Point<double>)>[];
     for (final entry in prev.planes.entries) {
       final color = entry.key;
       final after = next.planesOf(color);
       for (var i = 0; i < entry.value.length; i++) {
-        final before = entry.value[i];
-        if (before == after[i]) continue;
+        if (entry.value[i] == after[i]) continue;
         if (color == mover) {
           movedPlane ??= (color, i);
           // 行动方棋子回停机坪只发生在三 6 惩罚
           if (after[i].zone == PlaneZone.hangar) penalty = true;
-        } else if (after[i].zone == PlaneZone.hangar) {
-          capturedFlights.add((
-            (color, i),
-            planeCoord(prev, color, i),
-            planeCoord(next, color, i),
-          ));
         }
       }
     }
@@ -182,7 +169,7 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
       // 换人且无棋子迁移：掷骰方跳过回合（无可动棋子，或三 6 惩罚
       // 无可罚棋子），观战端同样给出提示，文案与本地统一
       if (next.currentPlayer != prev.currentPlayer && !next.gameOver) {
-        _hint('无可动棋子，跳过回合', context.palette.textSecondary);
+        showHint('无可动棋子，跳过回合', context.palette.textSecondary);
       }
       return;
     }
@@ -213,7 +200,7 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
     _animator.start(
       plane: movedPlane,
       path: path,
-      capturedFlights: capturedFlights,
+      capturedFlights: capturedPlaneFlights(prev, next, mover: mover),
       onCompleted: () {
         if (!mounted) return;
         setState(() {
@@ -228,9 +215,9 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
           return;
         }
         if (penalty) {
-          _hint('连续三个 6！最后移动的飞机返回停机坪', AeroplaneColors.yellow);
+          showHint('连续三个 6！最后移动的飞机返回停机坪', AeroplaneColors.yellow);
         } else if (next.currentPlayer == mover) {
-          _hint('奖励再掷一次', context.palette.primary);
+          showHint('奖励再掷一次', context.palette.primary);
         }
       },
     );
@@ -256,15 +243,6 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
       }
     }
     return null;
-  }
-
-  /// 触发覆盖层提示
-  void _hint(String text, Color color) {
-    setState(() {
-      _hintTrigger++;
-      _hintText = text;
-      _hintColor = color;
-    });
   }
 
   // ---------------------------------------------------------------------------
@@ -452,18 +430,7 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 120,
-                  child: Center(
-                    child: AnimatedScale(
-                      duration: const Duration(milliseconds: 80),
-                      scale: _rolling ? 1.08 : 1.0,
-                      child: _dice == null
-                          ? const SizedBox.shrink()
-                          : AeroplaneDice(value: _dice!),
-                    ),
-                  ),
-                ),
+                AeroplaneDiceSlot(dice: _dice, rolling: _rolling),
                 const SizedBox(height: 12),
                 ConfirmMoveRow(
                   visible: _selected != null,
@@ -484,17 +451,12 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
             ),
           ),
           // 对局反馈提示覆盖层：不拦截触摸，仅做视觉提醒
-          if (_hintText.isNotEmpty)
-            IgnorePointer(
-              child: Center(
-                child: FlashHint(
-                  trigger: _hintTrigger,
-                  text: _hintText,
-                  accentColor: _hintColor,
-                  fontSize: 30,
-                ),
-              ),
-            ),
+          HintOverlay(
+            trigger: hintTrigger,
+            text: hintText,
+            accentColor: hintColor,
+            fontSize: 30,
+          ),
         ],
       ),
     );

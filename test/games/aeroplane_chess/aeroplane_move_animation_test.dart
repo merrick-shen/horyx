@@ -7,9 +7,10 @@ import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
 
-/// 走子动画路径构建测试（本地页与联机页共用的纯函数）
-/// 用引擎构造真实迁移，断言路径停留点序列与规则动效一致：
-/// 逐格推进、跳跃/回退后的收尾滑行、飞越的直线插值、终点飞回基地
+/// 走子动画路径与被撞飞回段构建测试（本地页与联机页共用的纯函数）
+/// 用引擎或手工状态构造真实迁移，断言路径停留点序列与规则动效一致：
+/// 逐格推进、跳跃/回退后的收尾滑行、飞越的直线插值、终点飞回基地，
+/// 被撞收集仅含非行动方的场上→停机坪棋子
 void main() {
   const players = [
     AeroplanePlayer(color: AeroplaneColor.green, name: '玩家1'),
@@ -161,5 +162,42 @@ void main() {
       ...interpolations,
       AeroplaneBoard.ringAnchor(36),
     ]);
+  });
+
+  test('被撞飞回段：非行动方场上→停机坪的棋子收集为飞回段', () {
+    final prev = allInHangar()
+      ..[AeroplaneColor.red]![0] = PlanePosition(zone: PlaneZone.ring, index: 4)
+      ..[AeroplaneColor.blue]![0] = PlanePosition(
+        zone: PlaneZone.ring,
+        index: 5,
+      );
+    final next = allInHangar()
+      ..[AeroplaneColor.red]![0] = PlanePosition(zone: PlaneZone.ring, index: 8);
+
+    final flights = capturedPlaneFlights(
+      state(prev, current: AeroplaneColor.red),
+      state(next, current: AeroplaneColor.red),
+      mover: AeroplaneColor.red,
+    );
+    expect(flights, [
+      (
+        (AeroplaneColor.blue, 0),
+        AeroplaneBoard.ringAnchor(5),
+        AeroplaneBoard.hangarSlotCenter(AeroplaneColor.blue, 0),
+      ),
+    ]);
+  });
+
+  test('被撞飞回段：行动方回停机坪（三 6 惩罚）不收集', () {
+    final prev = allInHangar()
+      ..[AeroplaneColor.red]![0] = PlanePosition(zone: PlaneZone.ring, index: 4);
+    final next = allInHangar();
+
+    final flights = capturedPlaneFlights(
+      state(prev, current: AeroplaneColor.red),
+      state(next, current: AeroplaneColor.red),
+      mover: AeroplaneColor.red,
+    );
+    expect(flights, isEmpty);
   });
 }

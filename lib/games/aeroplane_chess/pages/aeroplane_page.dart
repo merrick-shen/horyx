@@ -11,6 +11,7 @@ import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_storage.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_game_view.dart';
+import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_hint_state.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
@@ -49,7 +50,7 @@ enum _TurnPhase { awaitingRoll, rolling, choosing, moving }
 
 class _AeroplanePageState
     extends GameArchiveStateBase<AeroplanePage, AeroplaneGameState>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AeroplaneHintState<AeroplanePage> {
   /// 是否已开始对局（false = 对局模式设置阶段）
   bool _started = false;
 
@@ -78,11 +79,6 @@ class _AeroplanePageState
   /// 则视为未产生新进度，直接退出且不写档（磁盘存档保持原样）；
   /// 非恢复进入（新开局/重开）为 null
   List<PlanePosition>? _restoredPlanes;
-
-  /// 覆盖层提示（触发序号递增播放，文本为空不显示）
-  int _hintTrigger = 0;
-  String _hintText = '';
-  Color _hintColor = AeroplaneColors.red;
 
   /// 骰面翻动动画器（本地 RNG 骰点，定格后进入骰点结算）
   late final AeroplaneDiceRollAnimator _diceRoller = AeroplaneDiceRollAnimator(
@@ -151,14 +147,14 @@ class _AeroplanePageState
             planeCoord(state, target.$1, target.$2),
             planeCoord(newState, target.$1, target.$2),
           ],
-          onDone: () => _hint('连续三个 6！最后移动的飞机返回停机坪', AeroplaneColors.yellow),
+          onDone: () => showHint('连续三个 6！最后移动的飞机返回停机坪', AeroplaneColors.yellow),
         );
       } else {
         setState(() {
           _state = newState;
           _phase = _TurnPhase.awaitingRoll;
         });
-        _hint('无可动棋子，跳过回合', context.palette.textSecondary);
+        showHint('无可动棋子，跳过回合', context.palette.textSecondary);
       }
       return;
     }
@@ -169,7 +165,7 @@ class _AeroplanePageState
         _state = newState;
         _phase = _TurnPhase.awaitingRoll;
       });
-      _hint('无可动棋子，跳过回合', context.palette.textSecondary);
+      showHint('无可动棋子，跳过回合', context.palette.textSecondary);
       return;
     }
     setState(() {
@@ -203,31 +199,13 @@ class _AeroplanePageState
   void _executeMove(AeroplaneMove move) {
     final state = _state!;
     final newState = AeroplaneEngine.applyMove(state, move, _dice!);
-    // 被撞棋子：迁移后回到停机坪者（动画结束随新状态一并归位）
-    final captured = <(AeroplaneColor, int)>[];
-    for (final entry in state.planes.entries) {
-      for (var i = 0; i < entry.value.length; i++) {
-        if (entry.value[i].zone != PlaneZone.hangar &&
-            newState.planes[entry.key]![i].zone == PlaneZone.hangar) {
-          captured.add((entry.key, i));
-        }
-      }
-    }
-    // 被撞棋子动画期间从被撞格直线飞回停机坪机位
-    final capturedFlights = <((AeroplaneColor, int), Point<double>, Point<double>)>[
-      for (final (color, planeId) in captured)
-        (
-          (color, planeId),
-          planeCoord(state, color, planeId),
-          planeCoord(newState, color, planeId),
-        ),
-    ];
     _animateMove(
       to: newState,
       plane: (move.color, move.planeId),
       path: buildMovePath(state: state, move: move, dice: _dice!, newState: newState),
       onDone: () => _onMoveDone(newState, move.color),
-      capturedFlights: capturedFlights,
+      // 被撞棋子动画期间从被撞格直线飞回停机坪机位，结束随新状态归位
+      capturedFlights: capturedPlaneFlights(state, newState, mover: move.color),
     );
   }
 
@@ -240,7 +218,7 @@ class _AeroplanePageState
     if (newState.currentPlayer != mover) {
       return;
     }
-    _hint('奖励再掷一次', context.palette.primary);
+    showHint('奖励再掷一次', context.palette.primary);
   }
 
   /// 终局：清档（避免重进恢复出已终局对局）+ 结果弹窗
@@ -297,15 +275,6 @@ class _AeroplanePageState
         onDone();
       },
     );
-  }
-
-  /// 触发覆盖层提示
-  void _hint(String text, Color color) {
-    setState(() {
-      _hintTrigger++;
-      _hintText = text;
-      _hintColor = color;
-    });
   }
 
   // ---------------------------------------------------------------------------
@@ -371,8 +340,8 @@ class _AeroplanePageState
     _dice = null;
     _moves = const [];
     _selected = null;
-    _hintTrigger = 0;
-    _hintText = '';
+    hintTrigger = 0;
+    hintText = '';
   }
 
   /// 局域网模式：创建房间并进入等待页（容量 2..4，自己为玩家 1），
@@ -514,9 +483,9 @@ class _AeroplanePageState
       onCancelMove: () => setState(() => _selected = null),
       onConfirmMove: _confirmMove,
       onRestart: _restartMatch,
-      hintTrigger: _hintTrigger,
-      hintText: _hintText,
-      hintColor: _hintColor,
+      hintTrigger: hintTrigger,
+      hintText: hintText,
+      hintColor: hintColor,
     );
   }
 }

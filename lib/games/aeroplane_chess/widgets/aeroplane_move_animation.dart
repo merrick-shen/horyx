@@ -23,6 +23,28 @@ Point<double> planeCoord(
   };
 }
 
+/// 迁移前后状态逐枚比对，收集被撞棋子的飞回段（棋子, 起点, 终点坐标）：
+/// 非行动方棋子从场上（非停机坪）变为停机坪即视为被撞；行动方回停机坪
+/// 只发生在三 6 惩罚，其飞回走主路径动画。本地与联机对局页共用
+List<((AeroplaneColor, int), Point<double>, Point<double>)> capturedPlaneFlights(
+  AeroplaneGameState prev,
+  AeroplaneGameState next, {
+  required AeroplaneColor mover,
+}) {
+  return [
+    for (final entry in prev.planes.entries)
+      for (var i = 0; i < entry.value.length; i++)
+        if (entry.key != mover &&
+            entry.value[i].zone != PlaneZone.hangar &&
+            next.planesOf(entry.key)[i].zone == PlaneZone.hangar)
+          (
+            (entry.key, i),
+            planeCoord(prev, entry.key, i),
+            planeCoord(next, entry.key, i),
+          ),
+  ];
+}
+
 /// 累计步数 → 格子坐标（行进途中经停点）
 Point<double> stepsCoord(AeroplaneColor color, int steps) {
   final pos = AeroplaneEngine.positionAtSteps(color, steps);

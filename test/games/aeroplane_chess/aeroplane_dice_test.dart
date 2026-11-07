@@ -36,4 +36,13 @@ void main() {
     expect(() => AeroplaneDice(value: 0), throwsA(isA<AssertionError>()));
     expect(() => AeroplaneDice(value: 7), throwsA(isA<AssertionError>()));
   });
+
+  testWidgets('骰面展示槽：无骰点占位隐藏，有骰点展示对应骰面', (tester) async {
+    await tester.pumpWidget(wrap(const AeroplaneDiceSlot(dice: null, rolling: false)));
+    expect(find.byType(AeroplaneDice), findsNothing);
+
+    await tester.pumpWidget(wrap(const AeroplaneDiceSlot(dice: 5, rolling: false)));
+    expect(find.byType(AeroplaneDice), findsOneWidget);
+    expect(pipCount(tester), 5);
+  });
 }

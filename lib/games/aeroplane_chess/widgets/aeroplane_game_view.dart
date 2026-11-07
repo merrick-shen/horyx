@@ -7,7 +7,7 @@ import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_board_view.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
 import 'package:horyx/shared/widgets/confirm_move_row.dart';
-import 'package:horyx/shared/widgets/flash_hint.dart';
+import 'package:horyx/shared/widgets/hint_overlay.dart';
 import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
@@ -114,18 +114,7 @@ class AeroplaneGameView extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(
-                  height: 120,
-                  child: Center(
-                    child: AnimatedScale(
-                      duration: const Duration(milliseconds: 80),
-                      scale: rolling ? 1.08 : 1.0,
-                      child: dice == null
-                          ? const SizedBox.shrink()
-                          : AeroplaneDice(value: dice!),
-                    ),
-                  ),
-                ),
+                AeroplaneDiceSlot(dice: dice, rolling: rolling),
                 const SizedBox(height: 12),
                 ConfirmMoveRow(
                   visible: selected != null,
@@ -138,17 +127,12 @@ class AeroplaneGameView extends StatelessWidget {
             ),
           ),
           // 对局反馈提示覆盖层：不拦截触摸，仅做视觉提醒
-          if (hintText.isNotEmpty)
-            IgnorePointer(
-              child: Center(
-                child: FlashHint(
-                  trigger: hintTrigger,
-                  text: hintText,
-                  accentColor: hintColor,
-                  fontSize: 30,
-                ),
-              ),
-            ),
+          HintOverlay(
+            trigger: hintTrigger,
+            text: hintText,
+            accentColor: hintColor,
+            fontSize: 30,
+          ),
         ],
       ),
     );

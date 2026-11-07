@@ -5,7 +5,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 /// 全屏居中的渐现渐隐提示：[trigger] 每递增一次播放一遍动画
 /// （快速放大淡入 -> 短暂停留 -> 淡出），黑底胶囊 + 白色大字保证醒目，
 /// [accentColor] 作文字光晕呼应提示语义（如象棋「將軍」红光晕）
-/// 各游戏对局视图共用，覆盖层使用时外包 IgnorePointer 不拦截触摸
+/// 各游戏对局视图共用；覆盖层场景配合 [HintOverlay] 使用（不拦截触摸）
 class FlashHint extends StatefulWidget {
   const FlashHint({
     super.key,

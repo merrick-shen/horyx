@@ -82,6 +82,38 @@ class AeroplaneDice extends StatelessWidget {
   }
 }
 
+/// 对局视图的骰面展示槽（本地与联机对局页共用）：固定 120 高占位居中，
+/// 掷骰翻动时轻微放大，无骰点时占位隐藏
+class AeroplaneDiceSlot extends StatelessWidget {
+  const AeroplaneDiceSlot({
+    super.key,
+    required this.dice,
+    required this.rolling,
+  });
+
+  /// 展示中的骰点（null 占位隐藏）
+  final int? dice;
+
+  /// 骰面翻动中（轻微放大）
+  final bool rolling;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 120,
+      child: Center(
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 80),
+          scale: rolling ? 1.08 : 1.0,
+          child: dice == null
+              ? const SizedBox.shrink()
+              : AeroplaneDice(value: dice!),
+        ),
+      ),
+    );
+  }
+}
+
 /// 骰面翻动动画器：80ms × 10 帧随机翻动后定格最终骰点，本地与联机
 /// 对局页共用。每帧经 [onTick] 上抛随机骰面、定格经 [onSettled] 上抛
 /// 最终点数（宿主自行 setState 更新展示）；翻动中再次 start 会先取消
