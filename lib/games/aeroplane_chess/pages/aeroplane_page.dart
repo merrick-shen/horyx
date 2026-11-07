@@ -15,13 +15,12 @@ import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_hint_state.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
-import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/local_game_page_shell.dart';
 import 'package:horyx/shared/widgets/local_win_dialog.dart';
 
 /// 飞行棋游戏页
@@ -346,22 +345,13 @@ class _AeroplanePageState
 
   /// 局域网模式：创建房间并进入等待页（容量 2..4，自己为玩家 1），
   /// 满员后跳转联机对局页并移交房间连接
-  Future<void> _createRoom(int capacity) async {
-    if (!await ensureProfileForOnline(context)) return;
-    if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RoomPage.host(
-          gameName: AeroplanePage.gameName,
-          hostName: ProfileScope.of(context).name,
-          icon: AeroplanePage.gameIcon,
-          capacity: capacity,
-          hostGameBuilder: (context, host) =>
-              AeroplaneOnlinePage.host(host: host),
-        ),
-      ),
-    );
-  }
+  Future<void> _createRoom(int capacity) => RoomPage.pushHost(
+    context,
+    gameName: AeroplanePage.gameName,
+    icon: AeroplanePage.gameIcon,
+    capacity: capacity,
+    hostGameBuilder: (context, host) => AeroplaneOnlinePage.host(host: host),
+  );
 
   /// 返回设置视图并刷新存档检测（终局弹窗「返回设置」路径）
   void _backToSetup() {
@@ -419,35 +409,14 @@ class _AeroplanePageState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return LocalGamePageShell(
+      title: AeroplanePage.gameName,
+      started: _started,
       // 对局阶段拦截系统返回（回设置视图），设置阶段允许直接返回
       canPop: !_started,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _requestExit();
-      },
-      child: Scaffold(
-        body: SafeArea(
-          // 顶部由 AppTopBar 自行吸收状态栏（表面色整体延伸），此处不再避让
-          top: false,
-          bottom: false,
-          child: Column(
-            children: [
-              AppTopBar(
-                title: AeroplanePage.gameName,
-                showBack: true,
-                onBack: _requestExit,
-              ),
-              Expanded(
-                // 阶段切换动画：设置视图 <-> 对局视图
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: _started ? _buildGameView() : _buildSetupView(),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      onRequestExit: _requestExit,
+      setupBuilder: (context) => _buildSetupView(),
+      gameBuilder: (context) => _buildGameView(),
     );
   }
 

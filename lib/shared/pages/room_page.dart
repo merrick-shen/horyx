@@ -7,6 +7,7 @@ import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/shared/network/net_utils.dart';
 import 'package:horyx/shared/network/room_client.dart';
 import 'package:horyx/shared/network/room_host.dart';
+import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
@@ -92,6 +93,32 @@ class RoomPage extends StatefulWidget {
 
   /// 是否房主模式
   bool get isHost => address == null;
+
+  /// 建房入口统一路径（各游戏本地页「创建房间」共用）：先经联机名字
+  /// 引导（未设置名字则跳转设置，取消即中断建房），随后进入房主侧等待页
+  static Future<void> pushHost(
+    BuildContext context, {
+    required String gameName,
+    required IconData icon,
+    required int capacity,
+    Map<String, dynamic> gameStartPayload = const {},
+    required HostGameBuilder hostGameBuilder,
+  }) async {
+    if (!await ensureProfileForOnline(context)) return;
+    if (!context.mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => RoomPage.host(
+          gameName: gameName,
+          hostName: ProfileScope.of(context).name,
+          icon: icon,
+          capacity: capacity,
+          gameStartPayload: gameStartPayload,
+          hostGameBuilder: hostGameBuilder,
+        ),
+      ),
+    );
+  }
 
   @override
   State<RoomPage> createState() => _RoomPageState();

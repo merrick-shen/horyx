@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/gomoku/models/gomoku_game_state.dart';
-import 'package:horyx/shared/widgets/lan_mode_panel.dart';
+import 'package:horyx/shared/widgets/lan_mode_setup.dart';
 import 'package:horyx/shared/widgets/option_block.dart';
 import 'package:horyx/shared/widgets/option_panel.dart';
-import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/resume_card.dart';
 import 'package:horyx/shared/widgets/setup_scaffold.dart';
 
 /// 五子棋 - 规格设置视图
 /// 顶部展示未完成对局的恢复入口（存在存档时），
 /// 下方为对局模式选择（本地/局域网）、棋盘规格选择与开始/创建房间按钮
-class GomokuSetupView extends StatefulWidget {
+class GomokuSetupView extends StatelessWidget {
   const GomokuSetupView({
     super.key,
     required this.boardSize,
@@ -41,14 +40,6 @@ class GomokuSetupView extends StatefulWidget {
   /// 点击「继续上次对局」回调
   final VoidCallback? onResume;
 
-  @override
-  State<GomokuSetupView> createState() => _GomokuSetupViewState();
-}
-
-class _GomokuSetupViewState extends State<GomokuSetupView> {
-  /// 是否选择局域网模式；默认本地对战（双人对弈本就同屏即可）
-  bool _isLan = false;
-
   /// 可选规格：9 路小盘 / 15 路标准盘 / 19 路大盘
   static const List<(int, String)> _options = [
     (9, '9×9'),
@@ -58,52 +49,41 @@ class _GomokuSetupViewState extends State<GomokuSetupView> {
 
   @override
   Widget build(BuildContext context) {
-    final saved = widget.savedState;
+    final saved = savedState;
 
     return SetupScaffold(
       children: [
         // 存在未完成对局时展示恢复入口
         if (saved != null) ...[
           ResumeCard(
-            onTap: widget.onResume,
+            onTap: onResume,
           ),
           const SizedBox(height: 16),
         ],
-        // 对局模式选择面板
-        LanModePanel(
-          isLan: _isLan,
-          onChanged: (v) => setState(() => _isLan = v),
+        LanModeSetup(
           description:
               '本地同屏对弈；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
-        ),
-        const SizedBox(height: 16),
-        // 棋盘规格面板（本地与联机共用，联机建房沿用所选规格）
-        OptionPanel(
-          title: '棋盘规格',
-          description: '9 路小盘节奏极快适合入门，15 路标准盘节奏明快，19 路大盘空间更大、博弈更充分',
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final (size, label) in _options)
-                OptionBlock(
-                  label: label,
-                  selected: size == widget.boardSize,
-                  onTap: () => widget.onSelect(size),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        PrimaryButton(
-          // 局域网模式按钮变为「创建房间」，进入房间等待页（自己执黑）
-          label: _isLan ? '创建房间' : '开始对局',
-          icon: _isLan
-              ? Icons.wifi_tethering_rounded
-              : Icons.local_fire_department_rounded,
-          onPressed: _isLan
-              ? () => widget.onCreateRoom(widget.boardSize)
-              : widget.onStart,
+          onStart: onStart,
+          onCreateRoom: () => onCreateRoom(boardSize),
+          // 棋盘规格面板（本地与联机共用，联机建房沿用所选规格）
+          children: [
+            OptionPanel(
+              title: '棋盘规格',
+              description: '9 路小盘节奏极快适合入门，15 路标准盘节奏明快，19 路大盘空间更大、博弈更充分',
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final (size, label) in _options)
+                    OptionBlock(
+                      label: label,
+                      selected: size == boardSize,
+                      onTap: () => onSelect(size),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ],
     );

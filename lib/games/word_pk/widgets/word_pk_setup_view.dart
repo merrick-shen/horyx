@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/word_pk/models/word_pk_game_state.dart';
-import 'package:horyx/shared/widgets/lan_mode_panel.dart';
+import 'package:horyx/shared/widgets/lan_mode_setup.dart';
 import 'package:horyx/shared/widgets/option_block.dart';
 import 'package:horyx/shared/widgets/option_panel.dart';
-import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/resume_card.dart';
 import 'package:horyx/shared/widgets/setup_scaffold.dart';
 
@@ -56,10 +55,6 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
   /// 输入焦点（聚焦时主题色描边提示输入中）
   late final FocusNode _playersFocus;
 
-  /// 是否选择局域网模式；默认本地对战（与现有同屏玩法一致）
-  /// 联机人数可选 2-8 人：创建者固定为玩家 1，其余玩家通过加入房间依次入座
-  bool _isLan = false;
-
   @override
   void initState() {
     super.initState();
@@ -91,41 +86,31 @@ class _WordPkSetupViewState extends State<WordPkSetupView> {
           ),
           const SizedBox(height: 16),
         ],
-        // 对局模式选择面板
-        LanModePanel(
-          isLan: _isLan,
-          onChanged: (v) => setState(() => _isLan = v),
+        LanModeSetup(
           description:
               '本地同屏轮流输入；局域网需两台设备连接同一 Wi-Fi（或一方开热点）',
-        ),
-        const SizedBox(height: 16),
-        // 人数输入面板（与计分器比分设置同款数字输入块）
-        OptionPanel(
-          title: '参与人数',
-          description:
-              '输入参与 PK 的人数（${WordPkSetupView.minPlayers}-${WordPkSetupView.maxPlayers}），玩家将按顺序轮流输入单词',
-          child: NumberOptionBlock(
-            controller: _playersController,
-            focusNode: _playersFocus,
-            hintText: '${WordPkSetupView.minPlayers}-${WordPkSetupView.maxPlayers}',
-            min: WordPkSetupView.minPlayers,
-            max: WordPkSetupView.maxPlayers,
-            defaultValue: WordPkSetupView.minPlayers,
-            onValid: (v) => _selected = v,
-            // 清空输入回退默认人数（与计分器清空语义一致）
-            onCleared: () => _selected = WordPkSetupView.minPlayers,
-          ),
-        ),
-        const SizedBox(height: 24),
-        PrimaryButton(
-          // 局域网模式按钮变为「创建房间」，进入房间等待页（自己为玩家 1）
-          label: _isLan ? '创建房间' : '开始 PK',
-          icon: _isLan
-              ? Icons.wifi_tethering_rounded
-              : Icons.local_fire_department_rounded,
-          onPressed: _isLan
-              ? () => widget.onCreateRoom(_selected)
-              : () => widget.onStart(_selected),
+          startLabel: '开始 PK',
+          onStart: () => widget.onStart(_selected),
+          onCreateRoom: () => widget.onCreateRoom(_selected),
+          // 人数输入面板（与计分器比分设置同款数字输入块）
+          children: [
+            OptionPanel(
+              title: '参与人数',
+              description:
+                  '输入参与 PK 的人数（${WordPkSetupView.minPlayers}-${WordPkSetupView.maxPlayers}），玩家将按顺序轮流输入单词',
+              child: NumberOptionBlock(
+                controller: _playersController,
+                focusNode: _playersFocus,
+                hintText: '${WordPkSetupView.minPlayers}-${WordPkSetupView.maxPlayers}',
+                min: WordPkSetupView.minPlayers,
+                max: WordPkSetupView.maxPlayers,
+                defaultValue: WordPkSetupView.minPlayers,
+                onValid: (v) => _selected = v,
+                // 清空输入回退默认人数（与计分器清空语义一致）
+                onCleared: () => _selected = WordPkSetupView.minPlayers,
+              ),
+            ),
+          ],
         ),
       ],
     );

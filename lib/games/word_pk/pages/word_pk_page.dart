@@ -10,13 +10,12 @@ import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/alert_dialog.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/games/word_pk/widgets/word_pk_play_view.dart';
 import 'package:horyx/games/word_pk/widgets/word_pk_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
-import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
+import 'package:horyx/shared/widgets/local_game_page_shell.dart';
 
 /// 单词PK游戏页
 /// 持有对局状态（人数、当前输入者、单词列表），统一负责：
@@ -91,22 +90,13 @@ class _WordPkPageState
 
   /// 局域网模式：创建房间并进入等待页（自己为玩家 1，房主）
   /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）
-  Future<void> _createRoom(int count) async {
-    if (!await ensureProfileForOnline(context)) return;
-    if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RoomPage.host(
-          gameName: WordPkPage.gameName,
-          hostName: ProfileScope.of(context).name,
-          icon: WordPkPage.gameIcon,
-          capacity: count,
-          hostGameBuilder: (context, host) =>
-              WordPkOnlinePage.host(host: host),
-        ),
-      ),
-    );
-  }
+  Future<void> _createRoom(int count) => RoomPage.pushHost(
+    context,
+    gameName: WordPkPage.gameName,
+    icon: WordPkPage.gameIcon,
+    capacity: count,
+    hostGameBuilder: (context, host) => WordPkOnlinePage.host(host: host),
+  );
 
   /// 恢复未完成对局：从存档还原人数、回合进度与单词列表
   void _resumeSaved() {
@@ -180,54 +170,27 @@ class _WordPkPageState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return LocalGamePageShell(
+      title: WordPkPage.gameName,
+      started: _started,
       // 对局中拦截系统返回（走保存确认弹窗），设置阶段允许直接返回
       canPop: !_started,
-      onPopInvokedWithResult: (didPop, _) {
-        if (didPop) {
-          // 设置阶段 canPop：系统返回已直接弹出，无需再走退出确认
-          return;
-        }
-        _requestExit();
-      },
-      child: Scaffold(
-        body: SafeArea(
-          // 顶部由 AppTopBar 自行吸收状态栏（表面色整体延伸），此处不再避让
-          top: false,
-          bottom: false,
-          child: Column(
-            children: [
-              AppTopBar(
-                title: '单词PK',
-                showBack: true,
-                onBack: _requestExit,
-              ),
-              Expanded(
-                // 阶段切换动画：设置视图 <-> 对局视图淡入淡出
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: _started
-                      ? WordPkPlayView(
-                          key: const ValueKey('board'),
-                          playerCount: _playerCount,
-                          currentPlayer: _currentPlayer,
-                          entries: _entries,
-                          onSubmit: _submitWord,
-                        )
-                      : WordPkSetupView(
-                          key: const ValueKey('setup'),
-                          onStart: _onStart,
-                          onCreateRoom: _createRoom,
-                          // 从对局退回设置时保留当前生效人数（输入框预填一致）
-                          initialPlayers: _playerCount,
-                          savedState: savedState,
-                          onResume: _resumeSaved,
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      onRequestExit: _requestExit,
+      setupBuilder: (context) => WordPkSetupView(
+        key: const ValueKey('setup'),
+        onStart: _onStart,
+        onCreateRoom: _createRoom,
+        // 从对局退回设置时保留当前生效人数（输入框预填一致）
+        initialPlayers: _playerCount,
+        savedState: savedState,
+        onResume: _resumeSaved,
+      ),
+      gameBuilder: (context) => WordPkPlayView(
+        key: const ValueKey('board'),
+        playerCount: _playerCount,
+        currentPlayer: _currentPlayer,
+        entries: _entries,
+        onSubmit: _submitWord,
       ),
     );
   }

@@ -11,12 +11,11 @@ import 'package:horyx/games/chess/services/chess_storage.dart';
 import 'package:horyx/games/chess/widgets/chess_board_view.dart';
 import 'package:horyx/games/chess/widgets/chess_setup_view.dart';
 import 'package:horyx/shared/pages/room_page.dart';
-import 'package:horyx/shared/profile/profile_controller.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
-import 'package:horyx/shared/widgets/app_top_bar.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/widgets/local_game_page_shell.dart';
 import 'package:horyx/shared/widgets/local_win_dialog.dart';
 
 /// 中国象棋游戏页
@@ -305,21 +304,13 @@ class _ChessPageState
   /// 局域网模式：创建房间并进入等待页（固定 2 人，自己为玩家 1）
   /// 满员后等待页自动跳转联机对局页（连接所有权随之移交）；
   /// 象棋无规格选项，gameStartPayload 保持空对象
-  Future<void> _createRoom() async {
-    if (!await ensureProfileForOnline(context)) return;
-    if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RoomPage.host(
-          gameName: ChessPage.gameName,
-          hostName: ProfileScope.of(context).name,
-          icon: ChessPage.gameIcon,
-          capacity: 2,
-          hostGameBuilder: (context, host) => ChessOnlinePage.host(host: host),
-        ),
-      ),
-    );
-  }
+  Future<void> _createRoom() => RoomPage.pushHost(
+    context,
+    gameName: ChessPage.gameName,
+    icon: ChessPage.gameIcon,
+    capacity: 2,
+    hostGameBuilder: (context, host) => ChessOnlinePage.host(host: host),
+  );
 
   /// 回到设置视图并清空对局状态（终局弹窗「返回设置」路径）；
   /// 存档检测刷新由 [_resetForSetup] 后的统一 loadSavedState 负责
@@ -379,43 +370,20 @@ class _ChessPageState
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return LocalGamePageShell(
+      title: ChessPage.gameName,
+      started: _started,
       // 对局阶段拦截系统返回（回设置视图），设置阶段与终局后允许直接返回
       canPop: !_started || _gameOver,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _requestExit();
-      },
-      child: Scaffold(
-        body: SafeArea(
-          // 顶部由 AppTopBar 自行吸收状态栏（表面色整体延伸），此处不再避让
-          top: false,
-          bottom: false,
-          child: Column(
-            children: [
-              AppTopBar(
-                title: '中国象棋',
-                showBack: true,
-                onBack: _requestExit,
-              ),
-              Expanded(
-                // 阶段切换动画：设置视图 <-> 对局视图
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: _started
-                      ? _buildGameView()
-                      : ChessSetupView(
-                          key: const ValueKey('setup'),
-                          onStart: _onStart,
-                          onCreateRoom: _createRoom,
-                          savedState: savedState,
-                          onResume: _resumeSaved,
-                        ),
-                ),
-              ),
-            ],
-          ),
-        ),
+      onRequestExit: _requestExit,
+      setupBuilder: (context) => ChessSetupView(
+        key: const ValueKey('setup'),
+        onStart: _onStart,
+        onCreateRoom: _createRoom,
+        savedState: savedState,
+        onResume: _resumeSaved,
       ),
+      gameBuilder: (context) => _buildGameView(),
     );
   }
 

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
-import 'package:horyx/shared/widgets/lan_mode_panel.dart';
+import 'package:horyx/shared/widgets/lan_mode_setup.dart';
 import 'package:horyx/shared/widgets/option_block.dart';
 import 'package:horyx/shared/widgets/option_panel.dart';
-import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/resume_card.dart';
 import 'package:horyx/shared/widgets/setup_scaffold.dart';
 
@@ -51,9 +50,6 @@ class _AeroplaneSetupViewState extends State<AeroplaneSetupView> {
   /// 输入焦点（聚焦时主题色描边提示输入中）
   late final FocusNode _playersFocus;
 
-  /// 是否选择局域网模式；默认本地对弈
-  bool _isLan = false;
-
   @override
   void initState() {
     super.initState();
@@ -86,41 +82,31 @@ class _AeroplaneSetupViewState extends State<AeroplaneSetupView> {
           ),
           const SizedBox(height: 16),
         ],
-        LanModePanel(
-          isLan: _isLan,
-          onChanged: (v) => setState(() => _isLan = v),
+        LanModeSetup(
           description:
               '本地同屏轮流掷骰；局域网需各设备连接同一 Wi-Fi（或一方开热点）',
-        ),
-        const SizedBox(height: 16),
-        OptionPanel(
-          title: '参与人数',
-          description:
-              '输入参与人数（${AeroplaneSetupView.minPlayers}-${AeroplaneSetupView.maxPlayers}），'
-              '按座位顺序轮流行动',
-          child: NumberOptionBlock(
-            controller: _playersController,
-            focusNode: _playersFocus,
-            hintText:
-                '${AeroplaneSetupView.minPlayers}-${AeroplaneSetupView.maxPlayers}',
-            min: AeroplaneSetupView.minPlayers,
-            max: AeroplaneSetupView.maxPlayers,
-            defaultValue: AeroplaneSetupView.minPlayers,
-            onValid: (v) => _playerCount = v,
-            // 清空输入回退默认人数
-            onCleared: () => _playerCount = AeroplaneSetupView.minPlayers,
-          ),
-        ),
-        const SizedBox(height: 24),
-        PrimaryButton(
-          // 局域网模式按钮变为「创建房间」，进入房间等待页（自己为玩家 1）
-          label: _isLan ? '创建房间' : '开始对局',
-          icon: _isLan
-              ? Icons.wifi_tethering_rounded
-              : Icons.local_fire_department_rounded,
-          onPressed: _isLan
-              ? () => widget.onCreateRoom(_playerCount)
-              : () => widget.onStart(_playerCount),
+          onStart: () => widget.onStart(_playerCount),
+          onCreateRoom: () => widget.onCreateRoom(_playerCount),
+          children: [
+            OptionPanel(
+              title: '参与人数',
+              description:
+                  '输入参与人数（${AeroplaneSetupView.minPlayers}-${AeroplaneSetupView.maxPlayers}），'
+                  '按座位顺序轮流行动',
+              child: NumberOptionBlock(
+                controller: _playersController,
+                focusNode: _playersFocus,
+                hintText:
+                    '${AeroplaneSetupView.minPlayers}-${AeroplaneSetupView.maxPlayers}',
+                min: AeroplaneSetupView.minPlayers,
+                max: AeroplaneSetupView.maxPlayers,
+                defaultValue: AeroplaneSetupView.minPlayers,
+                onValid: (v) => _playerCount = v,
+                // 清空输入回退默认人数
+                onCleared: () => _playerCount = AeroplaneSetupView.minPlayers,
+              ),
+            ),
+          ],
         ),
       ],
     );
