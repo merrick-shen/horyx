@@ -44,12 +44,16 @@ class ChessOnlineController extends OnlineGameControllerBase
 
   ChessOnlineController._({super.host, super.client, required super.mySeat});
 
-  /// 对局棋盘（可变容器，与本地对局页同源；
-  /// 悔棋回退时从初始局面重放整体重建，故不可 final）
-  ChessBoard board = ChessBoard.initial();
+  ChessBoard _board = ChessBoard.initial();
+  final List<ChessMove> _moves = [];
 
-  /// 已生效走子序列（索引偶=红=座位1、奇=黑=座位2；悔棋快照回退用）
-  final List<ChessMove> moves = [];
+  /// 对局棋盘（悔棋回退时从初始局面重放整体重建，故非 final）：
+  /// 只读暴露，变更一律经控制器走子/回退路径
+  ChessBoard get board => _board;
+
+  /// 已生效走子序列（索引偶=红=座位1、奇=黑=座位2；悔棋快照回退用）：
+  /// 只读暴露（不可变视图），追加与回退一律经控制器内部路径
+  List<ChessMove> get moves => List.unmodifiable(_moves);
 
   /// 胜方座位号；null 表示对局进行中或异常终止（无胜负）
   @override
@@ -73,10 +77,10 @@ class ChessOnlineController extends OnlineGameControllerBase
       index.isEven ? ChessColor.red : ChessColor.black;
 
   /// 当前行棋方颜色（红先，随走子数奇偶推导，避免独立状态失同步）
-  ChessColor get turnColor => colorOfMoveIndex(moves.length);
+  ChessColor get turnColor => colorOfMoveIndex(_moves.length);
 
   /// 当前行棋座位（红=座位 1 起，随走子数奇偶推导）
-  int get currentSeat => moves.length.isEven ? 1 : 2;
+  int get currentSeat => _moves.length.isEven ? 1 : 2;
 
   /// 我执子的颜色（座位 1 执红）
   ChessColor get myColor => colorOfSeat(mySeat);
@@ -126,16 +130,16 @@ class ChessOnlineController extends OnlineGameControllerBase
   /// [move] 是否为「己方棋子的合法着法」：起点须有己方棋子
   /// （起点无子时 legalMovesFor 会断言失败，必须先判），且属于其合法着法集
   bool _isOwnLegalMove(ChessMove move) {
-    final piece = board.pieceAt(move.from);
+    final piece = _board.pieceAt(move.from);
     if (piece == null || piece.color != turnColor) return false;
-    return ChessRules.legalMovesFor(board, move.from).contains(move);
+    return ChessRules.legalMovesFor(_board, move.from).contains(move);
   }
 
   // ---- 悔棋/认输协商钩子实现（全流程见 UndoResignNegotiationMixin）----
 
   /// 已生效手数（悔棋快照基准）
   @override
-  int get moveCount => moves.length;
+  int get moveCount => _moves.length;
 
   /// 第 [moveIndex] 手（0 基）是否为 [seat] 方所下：随奇偶推导执子颜色
   @override
@@ -186,13 +190,13 @@ class ChessOnlineController extends OnlineGameControllerBase
       return;
     }
     // 起点棋子须为提交方执子颜色（防止「替对方走子」或以空格/敌子为起点）
-    final piece = board.pieceAt(move.from);
+    final piece = _board.pieceAt(move.from);
     if (piece == null ||
         piece.color != colorOfSeat(seat)) {
       host?.sendTo(seat, resultMessage(false, 'invalidMove'));
       return;
     }
-    if (!ChessRules.legalMovesFor(board, move.from).contains(move)) {
+    if (!ChessRules.legalMovesFor(_board, move.from).contains(move)) {
       // 含蹩马腿/塞象眼/送将等全部规则拒绝：与本地对局同一规则引擎裁决
       host?.sendTo(seat, resultMessage(false, 'invalidMove'));
       return;
@@ -204,13 +208,13 @@ class ChessOnlineController extends OnlineGameControllerBase
   /// 走子生效：搬运棋子 + 入列 + 终局判定；房主侧同步广播
   /// （将死/困毙时携带胜方座位与原因，与本地对局同一 judgeEnd 判定）
   void _applyMove(ChessMove move) {
-    lastCapturedPiece = board.applyMove(move);
-    moves.add(move);
+    lastCapturedPiece = _board.applyMove(move);
+    _moves.add(move);
     // 走子后轮到对方：judgeEnd 判对方是否无路可走（将死/困毙判负，
     // 胜方即刚走子的一方 = 当前序列末手执子方）
-    winReason = ChessRules.judgeEnd(board, turnColor);
+    winReason = ChessRules.judgeEnd(_board, turnColor);
     if (winReason != null) {
-      winnerSeat = moves.length.isOdd ? 1 : 2;
+      winnerSeat = _moves.length.isOdd ? 1 : 2;
     }
     notifyListeners();
     host?.broadcast(
@@ -232,13 +236,13 @@ class ChessOnlineController extends OnlineGameControllerBase
   /// （逐手 revert 需要被吃子记录，重放让被吃子随重放自然复原，
   /// 且不依赖任何额外状态，悔棋协商双方执行同一确定性过程）
   void _revertTo(int target) {
-    if (target < moves.length) {
+    if (target < _moves.length) {
       final rebuilt = ChessBoard.initial();
       for (var i = 0; i < target; i++) {
-        rebuilt.applyMove(moves[i]);
+        rebuilt.applyMove(_moves[i]);
       }
-      board = rebuilt;
-      moves.removeRange(target, moves.length);
+      _board = rebuilt;
+      _moves.removeRange(target, _moves.length);
     }
   }
 
@@ -261,8 +265,8 @@ class ChessOnlineController extends OnlineGameControllerBase
           endGame(EndGameReason.dataError);
           return;
         }
-        lastCapturedPiece = board.applyMove(move);
-        moves.add(move);
+        lastCapturedPiece = _board.applyMove(move);
+        _moves.add(move);
         // 载荷类型判别：异常载荷（协议演进/损坏）按无胜方降级而非抛 TypeError
         final winner = msg.payload['winner'];
         winnerSeat = winner is int ? winner : null;
