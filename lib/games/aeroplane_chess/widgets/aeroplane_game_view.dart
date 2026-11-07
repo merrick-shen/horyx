@@ -12,27 +12,32 @@ import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
 import 'package:horyx/shared/widgets/turn_card.dart';
 
-/// 飞行棋 - 本地对局视图：回合卡 + 棋盘（含棋子层与走子动画）+ 骰面
-/// （滚动翻动）+ 走子确认 + 掷骰按钮；撞子/飞越/惩罚等反馈走覆盖层
-/// 渐现渐隐提示（不拦截触摸）
+/// 飞行棋对局视图（本地与联机对局页共用）：回合卡 + 棋盘（含棋子层与
+/// 走子动画）+ 骰面（滚动翻动）+ 走子确认行 + 底部按钮 + 覆盖层渐现
+/// 渐隐提示（不拦截触摸）。默认回合卡与底部按钮为本地口径（当前回合 /
+/// 再来一局 / 掷骰子），联机页以 [turnTitle]/[turnSubtitle]/[actions]
+/// 注入差异（对方名字标题、退出对局按钮）
 class AeroplaneGameView extends StatelessWidget {
   const AeroplaneGameView({
     super.key,
     required this.state,
     required this.dice,
     required this.rolling,
-    required this.canRoll,
     required this.movable,
     required this.selected,
     required this.moveAnim,
-    required this.onRoll,
     required this.onPlaneTap,
     required this.onCancelMove,
     required this.onConfirmMove,
-    required this.onRestart,
     required this.hintTrigger,
     required this.hintText,
     required this.hintColor,
+    this.turnTitle,
+    this.turnSubtitle,
+    this.actions,
+    this.canRoll = false,
+    this.onRoll,
+    this.onRestart,
   });
 
   /// 对局状态
@@ -44,9 +49,6 @@ class AeroplaneGameView extends StatelessWidget {
   /// 骰子滚动动画中（骰面快速翻动 + 轻微放大）
   final bool rolling;
 
-  /// 掷骰按钮可用（等待掷骰阶段）
-  final bool canRoll;
-
   /// 可动棋子（高亮 + 可点击）
   final Set<(AeroplaneColor, int)> movable;
 
@@ -55,9 +57,6 @@ class AeroplaneGameView extends StatelessWidget {
 
   /// 走子/被撞飞行动画的移动棋子坐标流
   final ValueListenable<List<(AeroplaneColor, int, Point<double>)>>? moveAnim;
-
-  /// 点击「掷骰子」回调
-  final VoidCallback onRoll;
 
   /// 点击可动棋子回调
   final void Function(AeroplaneColor color, int planeId) onPlaneTap;
@@ -68,19 +67,40 @@ class AeroplaneGameView extends StatelessWidget {
   /// 点击「下棋」回调：执行走法
   final VoidCallback onConfirmMove;
 
-  /// 终局后点击「再来一局」回调
-  final VoidCallback onRestart;
-
   /// 覆盖层提示（触发序号 / 文本 / 语义色；文本为空不显示）
   final int hintTrigger;
   final String hintText;
   final Color hintColor;
 
+  /// 回合卡标题覆盖（联机按对方名字组装）；null 按本地口径：
+  /// 终局「X方胜利」，否则「玩家 · X方」
+  final String? turnTitle;
+
+  /// 回合卡副标题覆盖（联机按行动进度组装）；null 按本地口径：
+  /// 终局「对局结束」，否则「当前回合」
+  final String? turnSubtitle;
+
+  /// 底部按钮覆盖（联机为退出/掷骰组合）；null 按本地口径：
+  /// 终局「再来一局」，否则「掷骰子」（依赖 [canRoll]/[onRoll]/[onRestart]）
+  final Widget? actions;
+
+  /// 掷骰按钮可用（等待掷骰阶段；[actions] 覆盖时不参与）
+  final bool canRoll;
+
+  /// 点击「掷骰子」回调（[actions] 覆盖时不参与）
+  final VoidCallback? onRoll;
+
+  /// 终局后点击「再来一局」回调（[actions] 覆盖时不参与）
+  final VoidCallback? onRestart;
+
   @override
   Widget build(BuildContext context) {
     final over = state.gameOver;
     final turnColor = over ? state.winner! : state.currentPlayer;
-    final turnPlayer = state.players.firstWhere((p) => p.color == turnColor);
+    final title = turnTitle ??
+        (over
+            ? '${turnColor.label}方胜利'
+            : '${state.players.firstWhere((p) => p.color == turnColor).name} · ${turnColor.label}方');
     return SizedBox.expand(
       child: Stack(
         children: [
@@ -93,11 +113,9 @@ class AeroplaneGameView extends StatelessWidget {
                   icon: over
                       ? Icons.emoji_events_rounded
                       : Icons.flight_takeoff_rounded,
-                  subtitle: over ? '对局结束' : '当前回合',
-                  title: over
-                      ? '${turnColor.label}方胜利'
-                      : '${turnPlayer.name} · ${turnColor.label}方',
-                  titleKey: ValueKey(turnColor),
+                  subtitle: turnSubtitle ?? (over ? '对局结束' : '当前回合'),
+                  title: title,
+                  titleKey: ValueKey(title),
                 ),
                 const SizedBox(height: 12),
                 // 棋盘独占剩余高度（贴顶满宽）：骰子若与之均分弹性空间，
@@ -122,7 +140,7 @@ class AeroplaneGameView extends StatelessWidget {
                   onConfirmMove: onConfirmMove,
                 ),
                 const SizedBox(height: 12),
-                _buildAction(),
+                actions ?? _buildAction(),
               ],
             ),
           ),

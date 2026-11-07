@@ -6,8 +6,8 @@ import 'package:horyx/games/aeroplane_chess/models/aeroplane_colors.dart';
 import 'package:horyx/games/aeroplane_chess/models/aeroplane_game_state.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_engine.dart';
 import 'package:horyx/games/aeroplane_chess/services/aeroplane_online_controller.dart';
-import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_board_view.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_dice.dart';
+import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_game_view.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_hint_state.dart';
 import 'package:horyx/games/aeroplane_chess/widgets/aeroplane_move_animation.dart';
 import 'package:horyx/shared/network/room_client.dart';
@@ -15,12 +15,8 @@ import 'package:horyx/shared/network/room_host.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
 import 'package:horyx/shared/widgets/board_game_online_page.dart';
-import 'package:horyx/shared/widgets/confirm_move_row.dart';
-import 'package:horyx/shared/widgets/hint_overlay.dart';
 import 'package:horyx/shared/widgets/online_game_page_shell.dart';
-import 'package:horyx/shared/widgets/page_content.dart';
 import 'package:horyx/shared/widgets/primary_button.dart';
-import 'package:horyx/shared/widgets/turn_card.dart';
 
 /// 飞行棋联机对局页
 /// 由房间等待页满员开局后接管房间连接（房主/客户端所有权移入本页）。
@@ -399,66 +395,30 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
       turnTitle = '${turnName ?? '玩家$turnSeat'} · ${turnColor.label}方';
       turnSubtitle = _turnSubtitle(controller);
     }
-    return SizedBox.expand(
-      child: Stack(
-        children: [
-          PageContent(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 回合卡：对局中提示当前行动方，终局切换为胜方展示
-                TurnCard(
-                  icon: over
-                      ? Icons.emoji_events_rounded
-                      : Icons.flight_takeoff_rounded,
-                  subtitle: turnSubtitle,
-                  title: turnTitle,
-                  titleKey: ValueKey(turnTitle),
-                ),
-                const SizedBox(height: 12),
-                // 棋盘独占剩余高度（贴顶满宽）：骰子若与之均分弹性空间，
-                // 会把棋盘压小、两侧出现超出页边距的留白
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: AeroplaneBoardView(
-                      planes: state.planes,
-                      movable: _movable(controller),
-                      selected: _selected,
-                      moveAnim: _animator.movers,
-                      onPlaneTap: _onPlaneTap,
-                    ),
-                  ),
-                ),
-                AeroplaneDiceSlot(dice: _dice, rolling: _rolling),
-                const SizedBox(height: 12),
-                ConfirmMoveRow(
-                  visible: _selected != null,
-                  onCancelMove: () => setState(() => _selected = null),
-                  onConfirmMove: () => _confirmMove(controller),
-                ),
-                const SizedBox(height: 12),
-                PrimaryButton(
-                  label: ended ? '退出对局' : '掷骰子',
-                  icon: ended ? Icons.logout_rounded : Icons.casino_rounded,
-                  onPressed: ended
-                      ? requestExit
-                      : _canRoll(controller)
-                      ? _roll
-                      : null,
-                ),
-              ],
-            ),
-          ),
-          // 对局反馈提示覆盖层：不拦截触摸，仅做视觉提醒
-          HintOverlay(
-            trigger: hintTrigger,
-            text: hintText,
-            accentColor: hintColor,
-            fontSize: 30,
-          ),
-        ],
+    return AeroplaneGameView(
+      state: state,
+      dice: _dice,
+      rolling: _rolling,
+      movable: _movable(controller),
+      selected: _selected,
+      moveAnim: _animator.movers,
+      onPlaneTap: _onPlaneTap,
+      onCancelMove: () => setState(() => _selected = null),
+      onConfirmMove: () => _confirmMove(controller),
+      turnTitle: turnTitle,
+      turnSubtitle: turnSubtitle,
+      actions: PrimaryButton(
+        label: ended ? '退出对局' : '掷骰子',
+        icon: ended ? Icons.logout_rounded : Icons.casino_rounded,
+        onPressed: ended
+            ? requestExit
+            : _canRoll(controller)
+            ? _roll
+            : null,
       ),
+      hintTrigger: hintTrigger,
+      hintText: hintText,
+      hintColor: hintColor,
     );
   }
 
