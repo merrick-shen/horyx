@@ -10,6 +10,7 @@ import 'package:horyx/games/gomoku/services/gomoku_storage.dart';
 import 'package:horyx/shared/storage/archive_storage.dart';
 import 'package:horyx/shared/storage/game_archive_state.dart';
 import 'package:horyx/shared/utils/page_exit.dart';
+import 'package:horyx/shared/utils/page_exit_archive.dart';
 import 'package:horyx/shared/widgets/confirm_dialog.dart';
 import 'package:horyx/shared/widgets/local_game_page_shell.dart';
 import 'package:horyx/shared/widgets/local_win_dialog.dart';

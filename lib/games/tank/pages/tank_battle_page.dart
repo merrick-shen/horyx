@@ -12,7 +12,7 @@ import 'package:horyx/games/tank/widgets/tank_joystick.dart';
 import 'package:horyx/games/tank/widgets/tank_score_view.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/shared/utils/landscape_immersive_mixin.dart';
-import 'package:horyx/shared/widgets/confirm_dialog.dart';
+import 'package:horyx/shared/utils/page_exit_archive.dart';
 
 /// 坦克动荡本地对局页（横屏全屏，无顶栏）
 /// 布局复刻原版截图：两列控制呈中心对称，中间为战场区域，适合手机平放桌面对坐——
