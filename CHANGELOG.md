@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- 按钮移除主题色光晕投影
+
 ### Fixed
 
 - 修复五子棋联机悔棋回退后预选棋子残留的问题

@@ -50,15 +50,6 @@ class OptionBlock extends StatelessWidget {
         border: Border.all(
           color: selected ? Colors.transparent : palette.stroke,
         ),
-        boxShadow: selected
-            ? [
-                BoxShadow(
-                  color: palette.primary.withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
       ),
       // Material+InkWell 标准写法（同 PrimaryButton）：水波纹覆盖整块；
       // 原容器 padding/alignment 内移到内容层，避免水波纹仅覆盖文字区域
@@ -244,15 +235,6 @@ class _NumberOptionBlockState extends State<NumberOptionBlock> {
                   : palette.stroke,
               width: _invalid ? 1.6 : 1,
             ),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: palette.primary.withValues(alpha: 0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
           ),
           // Material+InkWell 标准写法（同 PrimaryButton）；
           // ClipRRect 把步进按钮的水波纹裁剪进块的圆角内

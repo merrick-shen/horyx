@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 弹窗底部操作按钮：默认描边样式，[filled] 为 true 时实底主按钮样式
-/// 实底默认主题色（带主题色光晕）；传入 [fillColor] 可自定义实底色
-/// （如颜色选择器的「确定」用当前所选色，此时不加光晕避免浅色光晕刺眼）
+/// 实底默认主题色；传入 [fillColor] 可自定义实底色
+/// （如颜色选择器的「确定」用当前所选色）
 /// 确认弹窗、终局弹窗、颜色选择器共用
 class DialogActionButton extends StatelessWidget {
   const DialogActionButton({
@@ -37,17 +37,6 @@ class DialogActionButton extends StatelessWidget {
         color: filled ? background : palette.scaffoldBg,
         borderRadius: BorderRadius.circular(Radii.control),
         border: filled ? null : Border.all(color: palette.stroke),
-        // 主题色实底带光晕强调主操作；自定义颜色（如当前所选色）不加，
-        // 浅色/高亮度的光晕视觉效果差
-        boxShadow: filled && fillColor == null
-            ? [
-                BoxShadow(
-                  color: palette.primary.withValues(alpha: 0.35),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ]
-            : null,
       ),
       // Material+InkWell 标准写法（同 PrimaryButton）：提供水波纹按压反馈
       child: Material(

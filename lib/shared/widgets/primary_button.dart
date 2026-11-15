@@ -5,7 +5,7 @@ import 'package:horyx/shared/theme/app_theme.dart';
 /// 主按钮
 /// 全应用通用的强调操作按钮（如「开始 PK」「提交」）
 /// outlined 为 true 时呈描边样式（次要操作，如「取消」）
-/// onPressed 为 null 时呈禁用态（灰底、无阴影、不可点击）
+/// onPressed 为 null 时呈禁用态（灰底、不可点击）
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
     super.key,
@@ -46,16 +46,6 @@ class PrimaryButton extends StatelessWidget {
                 : palette.primary,
         borderRadius: BorderRadius.circular(Radii.control),
         border: outlined ? Border.all(color: palette.stroke) : null,
-        boxShadow: enabled && !outlined
-            ? [
-                // 主题色光晕投影，与游戏卡片悬停效果呼应
-                BoxShadow(
-                  color: palette.primary.withValues(alpha: 0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ]
-            : null,
       ),
       child: Material(
         color: Colors.transparent,
