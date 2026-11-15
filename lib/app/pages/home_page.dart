@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:horyx/shared/widgets/app_page_scaffold.dart';
-import 'package:horyx/app/widgets/game_grid.dart';
+import 'package:horyx/app/widgets/game_list.dart';
 
 /// 主页：导航栏 + 游戏列表
 /// 底部导航由外层 AppShell 统一管理；状态栏样式由 MaterialApp 的
@@ -13,10 +13,10 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppPageScaffold(
       title: 'Horyx',
-      // 内容可能超出一屏（游戏卡片分多行），需要滚动容器承载
+      // 内容可能超出一屏（长方形卡片逐张纵向排列），需要滚动容器承载
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: const GameGrid(),
+        child: const GameList(),
       ),
     );
   }

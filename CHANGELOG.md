@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - 按钮移除主题色光晕投影
+- 主页游戏列表改为单列长方形卡片形式
 
 ### Fixed
 
