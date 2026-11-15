@@ -9,7 +9,7 @@ import 'package:horyx/games/tank/engine/tint_filter.dart';
 import 'package:horyx/games/tank/models/tank_battle_phase.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
-import 'package:horyx/games/tank/services/tank_audio.dart';
+import 'package:horyx/games/tank/models/tank_sound_event.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
 
 /// 远程影子战场驱动器对宿主战场的依赖契约（[TankMazeGame] 实现）。
@@ -37,6 +37,10 @@ abstract interface class RemoteBattleHost {
 
   /// 击毁爆炸（音效 + 特效），本地与远程共用
   void spawnExplosion(TankPlayer victim);
+
+  /// 战场音效统一播放点（事件语义见 [TankSoundEvent]）：
+  /// 驱动器按快照语义推断出的事件经此发声，不直接调音频服务
+  void playSound(TankSoundEvent event);
 
   /// 子弹消散特效（position 为屏幕坐标）
   void spawnBulletExpire(Vector2 screenPos);
@@ -129,7 +133,9 @@ class RemoteBattleDriver {
       seen.add(state.id);
       final existing = _remoteBullets[state.id];
       if (existing != null) {
-        existing.retarget(state.x, state.y, state.angle);
+        if (existing.retarget(state.x, state.y, state.angle)) {
+          _host.playSound(TankSoundEvent.wallBounce);
+        }
         continue;
       }
       // 素材未加载完成（onLoad 前）时暂不创建，待后续快照补齐
@@ -148,7 +154,7 @@ class RemoteBattleDriver {
       // 消失位置按逻辑坐标换算：新子弹可能在首次渲染同步前就被移除
       _host.spawnBulletExpire(_host.logicalToScreen(bullet.logicalPos));
       // 消失音效同本地到期语义；命中场景（同快照有坦克刚击毁）由爆炸声表达
-      if (!justDestroyed) TankAudio.bulletExpire();
+      if (!justDestroyed) _host.playSound(TankSoundEvent.bulletExpire);
       bullet.removeFromParent();
       return true;
     });
@@ -262,7 +268,7 @@ class RemoteBattleDriver {
 /// 每帧以 [Bullet.speed] 匀速推进——快照晚到时目标持续前进不停滞，
 /// 反弹折点呈短弧过渡；快照间隔短时两者几乎重合。
 /// 音效：快照朝向突变即房主侧发生反弹（直线飞行朝向恒定），
-/// 客户端无本地物理，撞墙声只能据此推断补播
+/// 反弹判定经 [retarget] 返回值上抛，播放由战场统一承载
 class _RemoteBullet extends PositionComponent {
   /// 反弹判定阈值（弧度）：掠射反弹的方向变化为入射角的 2 倍，
   /// 阈值覆盖入射角 3° 以上的反弹；更贴墙的滑行极罕见，漏一声可接受
@@ -302,13 +308,14 @@ class _RemoteBullet extends PositionComponent {
   /// 位置就停滞等下一条快照（卡顿感根源）
   double snapshotAge = 0;
 
-  /// 快照更新平滑目标；朝向突变（最短角差超阈值）补播撞墙音效
-  void retarget(double x, double y, double angle) {
-    if (Tank.angleDelta(heading, angle).abs() > _bounceAngleThreshold) {
-      TankAudio.wallBounce();
-    }
+  /// 快照更新平滑目标；朝向突变（最短角差超阈值）判定为撞墙反弹，
+  /// 返回是否发生反弹（供驱动器上抛撞墙音效）
+  bool retarget(double x, double y, double angle) {
+    final bounced =
+        Tank.angleDelta(heading, angle).abs() > _bounceAngleThreshold;
     heading = angle;
     _target = Vector2(x, y);
+    return bounced;
   }
 
   @override

@@ -13,6 +13,7 @@ import 'package:horyx/games/tank/engine/tank_remote_driver.dart';
 import 'package:horyx/games/tank/models/tank_battle_phase.dart';
 import 'package:horyx/games/tank/models/tank_maze.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
+import 'package:horyx/games/tank/models/tank_sound_event.dart';
 import 'package:horyx/games/tank/services/tank_audio.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
 import 'package:horyx/shared/utils/asset_image.dart';
@@ -239,14 +240,31 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
               Bullet.radius *
               _bulletSpawnFactor,
       angle: tank.angle,
+      onSound: playSound,
     );
     bullets.add(bullet);
     add(bullet);
-    TankAudio.shoot();
+    playSound(TankSoundEvent.shoot);
     return true;
   }
 
   // ============ RemoteBattleHost 契约实现（供远程驱动器操作战场） ============
+
+  /// 战场音效统一播放点：子弹上抛事件与远程驱动补播事件均经此发声，
+  /// 战场自身事件（开火/爆炸）直接调用——音效语义单点维护
+  @override
+  void playSound(TankSoundEvent event) {
+    switch (event) {
+      case TankSoundEvent.shoot:
+        TankAudio.shoot();
+      case TankSoundEvent.wallBounce:
+        TankAudio.wallBounce();
+      case TankSoundEvent.bulletExpire:
+        TankAudio.bulletExpire();
+      case TankSoundEvent.explosion:
+        TankAudio.explosion();
+    }
+  }
 
   /// 子弹白模素材（onLoad 完成前为 null，远程驱动器据此暂缓创建子弹）
   @override
@@ -387,7 +405,7 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
   /// 换算才能与坦克保持一致比例观感
   @override
   void spawnExplosion(TankPlayer victim) {
-    TankAudio.explosion();
+    playSound(TankSoundEvent.explosion);
     final shard = _shardSprite;
     final smoke = _smokeSprite;
     final flash = _flashSprite;
@@ -476,7 +494,7 @@ class TankMazeGame extends FlameGame implements RemoteBattleHost {
   /// 子弹本体的出现由快照承载，这里只负责声音的即时性；
   /// 双端音效一致，不区分开火方
   void remoteFire() {
-    TankAudio.shoot();
+    playSound(TankSoundEvent.shoot);
   }
 
   /// 坦克复位：回出生点、朝向复位、复活并清空输入

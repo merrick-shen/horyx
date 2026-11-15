@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'package:horyx/games/tank/engine/tank.dart';
 import 'package:horyx/games/tank/engine/tint_filter.dart';
-import 'package:horyx/games/tank/services/tank_audio.dart';
+import 'package:horyx/games/tank/models/tank_sound_event.dart';
 
 /// 子弹实体：从炮口沿车身朝向射出，无限反弹，发射 9 秒后消失。
 /// 状态存于迷宫坐标系（[logicalPos] 单位=格，原点迷宫左上角），
@@ -21,6 +21,7 @@ class Bullet extends PositionComponent {
     required Sprite sprite,
     required this.logicalPos,
     required double angle,
+    this.onSound,
   }) {
     // 以组件中心为锚点；priority 同坦克，保证绘制在迷宫之上
     anchor = Anchor.center;
@@ -42,6 +43,10 @@ class Bullet extends PositionComponent {
   /// 参与碰撞的墙体形状（迷宫单位，随迷宫生成一次、与画布无关；
   /// 换迷宫由战场原地重填，子弹持有同一列表引用自动生效）
   final List<TankWall> walls;
+
+  /// 音效事件上抛回调（战场创建时挂接）：子弹只产生语义事件，
+  /// 播放由战场统一承载
+  void Function(TankSoundEvent event)? onSound;
 
   /// 玩家色（子弹染色，同归属坦克）
   final Color color;
@@ -84,7 +89,7 @@ class Bullet extends PositionComponent {
     _life -= dt;
     if (_life <= 0) {
       _expired = true;
-      TankAudio.bulletExpire();
+      onSound?.call(TankSoundEvent.bulletExpire);
       return;
     }
 
@@ -119,7 +124,7 @@ class Bullet extends PositionComponent {
         // 圆心进入墙内（极端情况）：回退上一步并沿速度主导轴反弹
         _reflectDominantAxis();
         logicalPos = _previousPos.clone();
-        TankAudio.wallBounce();
+        onSound?.call(TankSoundEvent.wallBounce);
         return;
       }
 
@@ -135,7 +140,7 @@ class Bullet extends PositionComponent {
       logicalPos = Vector2(closestX, closestY) + Vector2(nx, ny) * radius;
       bounced = true;
     }
-    if (bounced) TankAudio.wallBounce();
+    if (bounced) onSound?.call(TankSoundEvent.wallBounce);
   }
 
   /// 沿速度主导轴反射（法线不可得的兜底）
