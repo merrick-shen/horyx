@@ -15,13 +15,19 @@ abstract class GameArchiveStateBase<W extends StatefulWidget,
   /// 各游戏的存档服务（如 WordPkStorage.instance）
   ArchiveStorage<T> get archiveStorage;
 
-  /// 进入时检测到的未完成存档；恢复或开始新对局后置 null 关闭入口
-  T? savedState;
+  T? _savedState;
+
+  /// 进入时检测到的未完成存档；恢复或开始新对局后置 null 关闭入口。
+  /// 只读暴露：变更一律经基类方法（检测加载/take/discard），不可绕过
+  T? get savedState => _savedState;
+
+  String? _resumedArchiveId;
 
   /// 当前对局绑定的存档 id：进入页面时绑定为最新一条（恢复后保存覆盖
   /// 该档）；开始新对局（[discardResumeEntry]）后解绑，保存新建存档；
-  /// 首次保存后重新绑定（此后保存与终局清档定位同一档）
-  String? resumedArchiveId;
+  /// 首次保存后重新绑定（此后保存与终局清档定位同一档）。
+  /// 只读暴露：绑定与解绑一律经基类方法
+  String? get resumedArchiveId => _resumedArchiveId;
 
   /// 当前是否仍处于设置阶段（恢复入口只在设置视图展示）
   /// 用于丢弃迟到的加载结果：加载是毫秒级异步，若用户恰好在其间
@@ -37,8 +43,8 @@ abstract class GameArchiveStateBase<W extends StatefulWidget,
       final record = await archiveStorage.loadLatest();
       if (record != null && mounted && isInSetupPhase) {
         setState(() {
-          savedState = record.state;
-          resumedArchiveId = record.id;
+          _savedState = record.state;
+          _resumedArchiveId = record.id;
         });
       }
     } catch (_) {
@@ -49,23 +55,24 @@ abstract class GameArchiveStateBase<W extends StatefulWidget,
   /// 保存当前对局进度：已绑定存档则覆盖更新，否则新建存档。
   /// 保存后绑定到该存档，保证后续保存与终局清档定位同一档
   Future<String> saveCurrent(T state) async {
-    final id = await archiveStorage.saveArchive(state, id: resumedArchiveId);
-    resumedArchiveId = id;
+    final id =
+        await archiveStorage.saveArchive(state, id: _resumedArchiveId);
+    _resumedArchiveId = id;
     return id;
   }
 
   /// 开始新对局：关闭恢复入口并解绑覆盖目标，此后保存新建存档
   void discardResumeEntry() {
-    savedState = null;
-    resumedArchiveId = null;
+    _savedState = null;
+    _resumedArchiveId = null;
   }
 
   /// 消费恢复入口：返回待恢复存档并关闭入口（此后保存覆盖该档）；
   /// 无可恢复内容时返回 null
   T? takeResumeEntry() {
-    final saved = savedState;
+    final saved = _savedState;
     if (saved == null) return null;
-    savedState = null;
+    _savedState = null;
     return saved;
   }
 
@@ -81,16 +88,16 @@ abstract class GameArchiveStateBase<W extends StatefulWidget,
   ) async {
     final record = await archiveStorage.loadById(id);
     if (record == null || !mounted || !isInSetupPhase) return;
-    resumedArchiveId = record.id;
+    _resumedArchiveId = record.id;
     onResumed(record.state);
   }
 
   /// 终局清档：删除当前对局绑定的存档并解绑；
   /// 未绑定（新对局且未保存过）时无档可删，无操作
   Future<void> clearCurrentArchive() async {
-    final id = resumedArchiveId;
+    final id = _resumedArchiveId;
     if (id == null) return;
-    resumedArchiveId = null;
+    _resumedArchiveId = null;
     await archiveStorage.remove(id);
   }
 }
