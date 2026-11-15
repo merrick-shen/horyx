@@ -6,7 +6,6 @@ import 'package:horyx/app/game_registry.dart';
 import 'package:horyx/shared/theme/app_theme.dart';
 import 'package:horyx/app/pages/home_page.dart';
 import 'package:horyx/app/pages/more_page.dart';
-import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 import 'package:horyx/shared/pages/room_join_page.dart';
 import 'package:horyx/shared/update/auto_update_checker.dart';
 
@@ -29,13 +28,9 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
-    // 预热单词PK词表（约 37 万词）：fire-and-forget 不阻塞首帧——
-    // 解析在后台 isolate 中执行，主线程只等待结果，不占启动帧预算；
-    // 用户从启动到进入单词PK并提交单词远慢于加载完成，
-    // 未加载完成的窗口内 isValid 返回 false 在真实操作路径上不可感知。
-    // 放在 app 层骨架而非 main 入口：入口不依赖具体游戏模块，
-    // 挂载时机与原先几乎一致（runApp 后首帧）
-    unawaited(WordPkValidator.load());
+    // 启动预热各游戏（经注册表遍历分发，app 骨架不感知具体游戏）：
+    // fire-and-forget 不阻塞首帧；挂载时机与原先几乎一致（runApp 后首帧）
+    GameRegistry.preheatAll();
     // 启动后自动检查更新：fire-and-forget，内部已做首帧等待、
     // 3 秒延迟、Debug 短路与异常兜底，失败静默不影响使用
     unawaited(AutoUpdateChecker().checkIfNeeded(context));

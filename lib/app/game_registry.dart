@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:horyx/shared/game/game_info.dart';
 import 'package:horyx/games/aeroplane_chess/pages/aeroplane_online_page.dart';
 import 'package:horyx/games/aeroplane_chess/pages/aeroplane_page.dart';
@@ -16,6 +18,7 @@ import 'package:horyx/games/tank/services/tank_storage.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_online_page.dart';
 import 'package:horyx/games/word_pk/pages/word_pk_page.dart';
 import 'package:horyx/games/word_pk/services/word_pk_storage.dart';
+import 'package:horyx/games/word_pk/services/word_pk_validator.dart';
 
 /// 游戏注册中心：所有游戏的单一事实来源（组合根）。
 /// 位于 app 层：注册表需引用全部游戏页面，放 shared 会让最底层
@@ -39,6 +42,9 @@ abstract final class GameRegistry {
       remove: WordPkStorage.instance.remove,
       renameArchive: WordPkStorage.instance.renameArchive,
     ),
+    // 启动预热词表解析（约 37 万词，后台 isolate 执行主线程只等待）：
+    // 未加载完成的窗口内 isValid 返回 false，真实操作路径上不可感知
+    preheat: WordPkValidator.load,
   );
 
   /// 五子棋
@@ -137,5 +143,15 @@ abstract final class GameRegistry {
       if (game.name == name) return game;
     }
     return null;
+  }
+
+  /// 触发全部已登记游戏的启动预热钩子：fire-and-forget 不等待完成
+  /// （游戏内部自行决定加载方式，不阻塞调用方首帧）；
+  /// 未登记 preheat 的游戏跳过。由 app 骨架启动时调用
+  static void preheatAll() {
+    for (final game in games) {
+      final preheat = game.preheat;
+      if (preheat != null) unawaited(preheat());
+    }
   }
 }

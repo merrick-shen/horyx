@@ -36,6 +36,7 @@ class GameInfo {
     required this.pageBuilder,
     this.onlineClientBuilder,
     this.archive,
+    this.preheat,
   });
 
   /// 游戏名称（联机房间按此名称匹配，发布后不可随意更改）
@@ -59,4 +60,9 @@ class GameInfo {
   /// 存档管理接入（存档管理页展示名称/图标/摘要与删除清档）；
   /// null 表示该游戏不参与存档管理
   final GameArchiveInfo? archive;
+
+  /// 启动预热钩子（可选）：app 骨架经 [GameRegistry.preheatAll] 遍历
+  /// 触发，游戏自行决定加载方式与兜底（如单词PK词表后台 isolate 解析）；
+  /// null 表示该游戏无启动预热
+  final Future<void> Function()? preheat;
 }
