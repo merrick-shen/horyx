@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 
 /// 全局调色板：随主题（深/浅）变化的语义化颜色集合
@@ -156,6 +157,11 @@ abstract final class AppTheme {
         ),
         // 注入调色板，组件侧经 context.palette 读取
         extensions: [palette],
+        // 页面转场统一为 iOS 风格：左右滑动 + 视差，支持左边缘右滑跟手返回；
+        // 覆盖 Android 默认 Zoom 过渡（避免返回手势时的缩小渐隐观感）
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {TargetPlatform.android: CupertinoPageTransitionsBuilder()},
+        ),
         // 开关配色与调色板对齐：M3 Switch 默认取 ColorScheme.fromSeed 的
         // 派生色，与自绘组件使用的原始主题色存在色差（观感偏深）
         switchTheme: SwitchThemeData(
