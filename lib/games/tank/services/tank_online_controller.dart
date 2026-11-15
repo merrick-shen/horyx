@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:horyx/games/tank/engine/bullet.dart';
 import 'package:horyx/games/tank/engine/tank.dart';
 import 'package:horyx/games/tank/engine/tank_maze_game.dart';
-import 'package:horyx/games/tank/models/tank_battle_phase.dart';
 import 'package:horyx/games/tank/models/tank_player.dart';
 import 'package:horyx/games/tank/services/tank_net_models.dart';
 import 'package:horyx/shared/network/net_message.dart';
@@ -104,7 +103,8 @@ class TankOnlineController extends OnlineGameControllerBase {
     if (snapshot != null) game.applySnapshot(snapshot);
     _pendingRoundStart = null;
     _pendingSnapshot = null;
-    _syncScores(snapshot);
+    // 暂存回放已把比分写入战场（回合消息/快照），直接读战场同步
+    _syncScoreValues(game.redScore, game.greenScore);
   }
 
   // ============ 客户端输入上报（联机对局页摇杆/开火回调调用） ============
@@ -214,10 +214,7 @@ class TankOnlineController extends OnlineGameControllerBase {
       bullets: bullets,
     );
     host?.broadcast(snapshot.toMessage());
-    if (snapshot.redScore != _lastRedScore ||
-        snapshot.greenScore != _lastGreenScore) {
-      _syncScores(snapshot);
-    }
+    _syncScoreValues(snapshot.redScore, snapshot.greenScore);
   }
 
   /// 坦克快照条目组装
@@ -228,12 +225,9 @@ class TankOnlineController extends OnlineGameControllerBase {
         destroyed: tank.destroyed,
       );
 
-  /// 比分变化通知页面（比分条重建；坦克/子弹渲染不依赖页面重建）
-  void _syncScores(TankNetSnapshot? snapshot) {
-    final game = _game;
-    final red = snapshot?.redScore ?? game?.redScore;
-    final green = snapshot?.greenScore ?? game?.greenScore;
-    if (red == null || green == null) return;
+  /// 比分变化通知页面（比分条重建；坦克/子弹渲染不依赖页面重建）：
+  /// 值与上次相同则跳过，避免 30Hz 快照节拍空重建
+  void _syncScoreValues(int red, int green) {
     if (red == _lastRedScore && green == _lastGreenScore) return;
     _lastRedScore = red;
     _lastGreenScore = green;
@@ -302,7 +296,7 @@ class TankOnlineController extends OnlineGameControllerBase {
           return;
         }
         game.applySnapshot(snapshot);
-        _syncScores(snapshot);
+        _syncScoreValues(snapshot.redScore, snapshot.greenScore);
       case NetMessageType.tankFireEvent:
         // 载荷校验：解析失败（非法载荷）丢弃，不播音效
         if (parseTankFireEvent(msg) == null) return;
@@ -314,16 +308,7 @@ class TankOnlineController extends OnlineGameControllerBase {
 
   /// 回合开始消息携带开新局时的比分：随迷宫重建同步给页面
   void _syncScoresFromRound(TankNetRoundStart round) {
-    _syncScores(
-      TankNetSnapshot(
-        redScore: round.redScore,
-        greenScore: round.greenScore,
-        phase: TankBattlePhase.playing,
-        redTank: _zeroTank,
-        greenTank: _zeroTank,
-        bullets: const [],
-      ),
-    );
+    _syncScoreValues(round.redScore, round.greenScore);
   }
 
   @override
@@ -335,6 +320,3 @@ class TankOnlineController extends OnlineGameControllerBase {
     super.dispose();
   }
 }
-
-/// 全零坦克快照（回合开始比分同步的占位条目，位置由快照驱动无意义）
-const _zeroTank = TankNetTankState(x: 0, y: 0, angle: 0, destroyed: false);
