@@ -13,8 +13,9 @@ import 'package:horyx/shared/widgets/primary_button.dart';
 const int _maxNameGlyphs = 12;
 
 /// 个人资料设置页
-/// 编辑用户名（联机时好友可见），保存后全局即时生效并持久化；
-/// pop(true) 表示已保存，供联机前引导判定「已保存后继续」
+/// 编辑用户名（联机时好友可见），保存后全局即时生效并持久化，页面不退出；
+/// 保存按钮固定页面底部：无有效改动（输入非法或与当前一致）时呈禁用灰态，
+/// 可保存时呈主题色
 class ProfileSettingsPage extends StatefulWidget {
   const ProfileSettingsPage({super.key});
 
@@ -45,6 +46,14 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     super.dispose();
   }
 
+  /// 输入合法且与当前名字不同才可保存（重复保存无意义，setName 会跳过）
+  bool _canSave() {
+    final name = _nameController.text.trim();
+    return name.isNotEmpty &&
+        name.characters.length <= _maxNameGlyphs &&
+        name != ProfileScope.of(context).name;
+  }
+
   Future<void> _save() async {
     final name = _nameController.text.trim();
     // 长度按字素计而非 UTF-16 码元，故不用 TextField 的 maxLength
@@ -53,7 +62,7 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       return;
     }
     await ProfileScope.of(context).setName(name);
-    if (mounted) Navigator.of(context).pop(true);
+    if (mounted) await showAlertDialog(context, message: '已保存');
   }
 
   @override
@@ -63,52 +72,73 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
     return AppPageScaffold(
       title: '个人资料',
       showBack: true,
-      child: SingleChildScrollView(
-        child: PageContent(
-          child: PanelCard(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '名字',
-                  style: TextStyle(
-                    color: palette.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: PageContent(
+              scrollable: true,
+              child: PanelCard(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      '名字',
+                      style: TextStyle(
+                        color: palette.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _nameController,
+                      // 不禁用联想/纠错：禁联想的输入框会被小米安全键盘
+                      // 当作密码类输入，强制只出英文数字键盘，中文无法输入
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _save(),
+                      decoration: buildAppTextFieldDecoration(
+                        palette,
+                        hintText: '输入你的名字',
+                        fillColor: palette.scaffoldBg,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '1-12 个字符，联机时好友将看到这个名字',
+                      style: TextStyle(
+                        color: palette.textSecondary,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: _nameController,
-                  // 不禁用联想/纠错：禁联想的输入框会被小米安全键盘
-                  // 当作密码类输入，强制只出英文数字键盘，中文无法输入
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _save(),
-                  decoration: buildAppTextFieldDecoration(
-                    palette,
-                    hintText: '输入你的名字',
-                    fillColor: palette.scaffoldBg,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '1-12 个字符，联机时好友将看到这个名字',
-                  style: TextStyle(
-                    color: palette.textSecondary,
-                    fontSize: 12.5,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                PrimaryButton(
-                  label: '保存',
-                  icon: Icons.check_rounded,
-                  onPressed: _save,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+          // 保存按钮固定页面底部，不随卡片滚动；SafeArea 避让底部手势条
+          SafeArea(
+            top: false,
+            child: PageContent(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: SizedBox(
+                width: double.infinity,
+                child: AnimatedBuilder(
+                  animation: _nameController,
+                  builder: (context, _) {
+                    return PrimaryButton(
+                      label: '保存',
+                      icon: Icons.check_rounded,
+                      // 无有效改动时禁用（灰态），可保存时呈主题色
+                      onPressed: _canSave() ? _save : null,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

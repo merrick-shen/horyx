@@ -49,8 +49,8 @@ class ProfileScope extends InheritedNotifier<ProfileController> {
 
 /// 联机前名字引导
 /// 名字已设置直接返回 true；未设置时先弹确认弹窗，确认后跳转个人资料
-/// 设置页，保存成功（pop(true)）返回 true；取消弹窗或在设置页未保存
-/// 返回均返回 false，调用方据此中断本次联机操作（可随时重新发起）
+/// 设置页。保存后页面不退出（保存即时全局生效并弹提示），用户自行返回；
+/// 返回时以是否已设置名字判定，调用方据此中断或继续本次联机操作
 Future<bool> ensureProfileForOnline(BuildContext context) async {
   if (ProfileScope.of(context).name != null) return true;
   final result = await showConfirmDialog(
@@ -60,8 +60,9 @@ Future<bool> ensureProfileForOnline(BuildContext context) async {
     confirmLabel: '去设置',
   );
   if (result != ConfirmResult.confirm || !context.mounted) return false;
-  final saved = await Navigator.of(context).push<bool>(
-    MaterialPageRoute(builder: (_) => const ProfileSettingsPage()),
-  );
-  return saved == true;
+  await Navigator.of(
+    context,
+  ).push(MaterialPageRoute(builder: (_) => const ProfileSettingsPage()));
+  if (!context.mounted) return false;
+  return ProfileScope.of(context).name != null;
 }

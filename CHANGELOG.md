@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 按钮移除主题色光晕投影
 - 主页游戏列表改为单列长方形卡片形式
 - 页面进入与退出动画调整为左右滑动视差风格
+- 个人资料页保存按钮固定页面底部，无改动时禁用，保存后不再退出页面并提示已保存
 
 ### Fixed
 
