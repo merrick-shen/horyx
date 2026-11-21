@@ -18,8 +18,13 @@ class GitHubReleaseApiException implements Exception {
 /// GitHub Release API 客户端
 /// 沿用项目零第三方网络依赖约定，基于 dart:io HttpClient 实现
 class GitHubReleaseApi {
+  /// 进程级共享连接池：各服务实例（自动检查/手动检查）复用同一 HttpClient，
+  /// 避免每次检查新建实例后遗留连接对象；空闲连接由 idleTimeout 自动回收，
+  /// 客户端对象本身随进程退出回收，无需 close 生命周期管理
+  static final HttpClient _sharedClient = HttpClient();
+
   GitHubReleaseApi({HttpClient? client, this.timeout = defaultTimeout})
-    : _client = client ?? HttpClient();
+    : _client = client ?? _sharedClient;
 
   /// 检查目标仓库（应用正式发布仓库）
   static const repoOwner = 'merrick-shen';
