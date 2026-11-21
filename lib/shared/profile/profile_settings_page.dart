@@ -62,7 +62,9 @@ class _ProfileSettingsPageState extends State<ProfileSettingsPage> {
       return;
     }
     await ProfileScope.of(context).setName(name);
-    if (mounted) await showAlertDialog(context, message: '已保存');
+    if (mounted) {
+      await showAlertDialog(context, message: '已保存', success: true);
+    }
   }
 
   @override

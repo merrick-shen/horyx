@@ -4,11 +4,13 @@ import 'package:horyx/shared/theme/app_theme.dart';
 
 /// 底部长条提示弹窗：校验错误等无需选择的告知场景
 /// 从屏幕底部浮出，与居中卡片式确认弹窗（confirm_dialog.dart）区分场景：
-/// 无遮罩（透明 barrier，点击条外区域也可关闭）、无标题，正文 + 「知道了」按钮
+/// 无遮罩（透明 barrier，点击条外区域也可关闭）、无标题，正文 + 「知道了」按钮；
+/// [success] 为 true 时呈成功确认形态（打勾图标、无按钮，点击条外关闭）
 Future<void> showAlertDialog(
   BuildContext context, {
   required String message,
   String buttonLabel = '知道了',
+  bool success = false,
 }) {
   return showDialog<void>(
     context: context,
@@ -26,20 +28,31 @@ Future<void> showAlertDialog(
         20,
         MediaQuery.paddingOf(dialogContext).bottom + 20,
       ),
-      child: _AlertDialogBar(message: message, buttonLabel: buttonLabel),
+      child: _AlertDialogBar(
+        message: message,
+        buttonLabel: buttonLabel,
+        success: success,
+      ),
     ),
   );
 }
 
-/// 长条提示条：警示图标 + 完整正文 + 确认按钮
+/// 长条提示条：警示图标 + 完整正文 + 确认按钮（成功形态无按钮）
 class _AlertDialogBar extends StatelessWidget {
-  const _AlertDialogBar({required this.message, required this.buttonLabel});
+  const _AlertDialogBar({
+    required this.message,
+    required this.buttonLabel,
+    this.success = false,
+  });
 
   /// 提示正文（通知类 UI，完整展示不截断）
   final String message;
 
   /// 确认按钮文案
   final String buttonLabel;
+
+  /// 成功确认形态：打勾图标 + 无按钮（点击条外关闭）
+  final bool success;
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +75,13 @@ class _AlertDialogBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.error_outline_rounded, color: palette.primary, size: 22),
+          Icon(
+            success
+                ? Icons.check_circle_outline_rounded
+                : Icons.error_outline_rounded,
+            color: palette.primary,
+            size: 22,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -74,36 +93,38 @@ class _AlertDialogBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          // 小号实底按钮：与 DialogActionButton 实底态同一视觉语言（主题色 + 白字）；
-          // Material+InkWell 标准写法（同 PrimaryButton）：提供水波纹按压反馈
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: palette.primary,
-              borderRadius: BorderRadius.circular(Radii.control),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
+          if (!success) ...[
+            const SizedBox(width: 12),
+            // 小号实底按钮：与 DialogActionButton 实底态同一视觉语言（主题色 + 白字）；
+            // Material+InkWell 标准写法（同 PrimaryButton）：提供水波纹按压反馈
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.primary,
                 borderRadius: BorderRadius.circular(Radii.control),
-                onTap: () => Navigator.of(context).pop(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    buttonLabel,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(Radii.control),
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      buttonLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

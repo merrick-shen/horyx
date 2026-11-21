@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- 个人资料保存成功的提示改为打勾样式
+
 ### Fixed
 
 - 修复飞行棋联机胜负分出后房主退出时可能叠加断线提示弹窗的问题
