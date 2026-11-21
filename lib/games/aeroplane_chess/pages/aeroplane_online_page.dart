@@ -321,10 +321,16 @@ class _AeroplaneOnlinePageState extends State<AeroplaneOnlinePage>
   // ---------------------------------------------------------------------------
 
   /// 胜负终局弹窗（无胜负终止走骨架通用弹窗）；延迟标记的弹窗在
-  /// 终局动画完成后经 [_applyTransition] 回调触发
-  bool _onGameEvent(AeroplaneOnlineController controller, VoidCallback _) {
+  /// 终局动画完成后经 [_applyTransition] 回调触发。
+  /// 判定为胜负即标记骨架终局：胜利后留守页面点返回直接放行、
+  /// 房主退出不再叠加断线弹窗（与棋类 handleGameEvent 同口径）
+  bool _onGameEvent(
+    AeroplaneOnlineController controller,
+    VoidCallback markEndShown,
+  ) {
     if (_winDialogShown || controller.winnerSeat == null) return false;
     _winDialogShown = true;
+    markEndShown();
     if (_animator.animating) {
       _pendingWinDialog = true;
     } else {
