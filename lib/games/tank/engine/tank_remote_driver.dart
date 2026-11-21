@@ -259,8 +259,10 @@ class RemoteBattleDriver {
     }
   }
 
-  /// 当前墙钟（秒）
-  static double _nowSec() => DateTime.now().microsecondsSinceEpoch / 1e6;
+  /// 当前单调时钟（秒）：快照年龄与估速均为差分运算，
+  /// 用 Stopwatch 消除系统时间跳变对差值的影响
+  static final Stopwatch _clock = Stopwatch()..start();
+  static double _nowSec() => _clock.elapsedMicroseconds / 1e6;
 }
 
 /// 远程子弹：纯渲染组件（不参与本地物理与碰撞），位置由状态快照驱动。

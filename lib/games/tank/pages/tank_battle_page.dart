@@ -76,6 +76,7 @@ class _TankBattlePageState extends State<TankBattlePage>
   /// 得分回调（战场游戏在坦克被击毁时触发）：
   /// 数字变化与烟雾特效同时出现
   void _onScored(TankPlayer player) {
+    if (!mounted) return;
     setState(() {
       if (player == TankPlayer.red) {
         _redScore++;
