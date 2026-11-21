@@ -19,7 +19,7 @@ class RoomHost extends ChangeNotifier {
     required this.capacity,
     this.basePort = defaultPort,
     this.gameStartPayload = const {},
-  }) : assert(capacity >= 2, '房间至少 2 人');
+  }) : assert(capacity >= 2 && capacity <= 8, '房间人数需为 2-8 人');
 
   /// 游戏名称（等待页标识卡展示用，随 joinResponse 发给客户端，如「单词PK」）
   final String gameName;
@@ -223,12 +223,12 @@ class RoomHost extends ChangeNotifier {
     _clients[seat] = session;
 
     // 名字载荷容错：非 String、trim 后为空或超长（>12 字素）不拒绝连接，
-    // 以「玩家$seat」兜底入表，座位号语义仍可用
+    // 以「玩家 $seat」兜底入表（与 nameOf 兜底格式一致），座位号语义仍可用
     final rawName = message.payload['name'];
     final name = rawName is String ? rawName.trim() : '';
     _names[seat] = name.isNotEmpty && name.characters.length <= 12
         ? name
-        : '玩家$seat';
+        : '玩家 $seat';
 
     // 应答：游戏名 + 自己的座位 + 房间总人数 + 当前所有已入座玩家（供等待页渲染）
     // 客户端改为输入 IP 加入后，连接前不知道游戏名，依赖此处的 gameName；

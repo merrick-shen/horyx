@@ -187,6 +187,8 @@ class _RoomPageState extends State<RoomPage> {
       return;
     }
     if (!ok) {
+      // 启动失败：释放已创建的房间实例，闭合 ChangeNotifier 生命周期
+      host.dispose();
       setState(() => _hostStartFailed = true);
       return;
     }

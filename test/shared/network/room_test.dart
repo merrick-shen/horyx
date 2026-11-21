@@ -193,12 +193,12 @@ void main() {
     );
     expect(await host.start(), isTrue);
 
-    // 缺 name（myName 为 null）不拒绝入座，以「玩家2」兜底入表
+    // 缺 name（myName 为 null）不拒绝入座，以「玩家 2」兜底入表
     final clientA = RoomClient(host: '127.0.0.1', port: host.port);
     unawaited(clientA.connect());
     await until(() => clientA.phase == RoomClientPhase.joined);
     expect(clientA.mySeat, 2);
-    expect(host.nameOf(2), '玩家2');
+    expect(host.nameOf(2), '玩家 2');
 
     // 非法 name（超 12 字素）同样兜底；房主未设置名字时按「玩家 1」兜底
     final clientB = RoomClient(
@@ -208,7 +208,7 @@ void main() {
     );
     unawaited(clientB.connect());
     await until(() => clientB.mySeat == 3);
-    expect(host.nameOf(3), '玩家3');
+    expect(host.nameOf(3), '玩家 3');
     expect(host.nameOf(1), '玩家 1');
 
     await host.close();

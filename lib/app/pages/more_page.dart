@@ -161,7 +161,13 @@ class _AutoUpdateToggleTileState extends State<_AutoUpdateToggleTile> {
   Future<void> _toggle() async {
     final next = !(_enabled ?? true);
     setState(() => _enabled = next);
-    await AutoUpdateStorage.save(next);
+    try {
+      await AutoUpdateStorage.save(next);
+    } catch (e) {
+      // 写盘失败仅影响重启后的开关恢复，UI 已即时生效不阻断交互，
+      // 与 ThemeController/ProfileController 的写盘容错风格对齐
+      debugPrint('AutoUpdateStorage.save 失败（开关仅本次会话生效）: $e');
+    }
   }
 
   @override
